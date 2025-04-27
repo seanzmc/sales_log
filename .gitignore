@@ -1,0 +1,6 @@
+# Ignore all secrets in .specs
+.specs/*.json
+
+# Ignore any local env or state files
+project_state.json
+.roomodes
