@@ -1,5 +1,6 @@
 # Ignore all secrets in .specs
-.specs/*.json
+.specs/*
+.specs/client_secret_551520968671-lnb9mkaqo01lja1csoqrvhea1bf66e47.apps.googleusercontent.com.json
 
 # Ignore any local env or state files
 project_state.json
@@ -7,4 +8,6 @@ project_state.json
 
 .specs/execution-api-setup.md
 .specs/oauth-client-id-secret.md
-.specs/oauth-scope-verification.md
+.specs/oauth-scope-verification.md  
+uv.lock
+
