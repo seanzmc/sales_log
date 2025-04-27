@@ -4,3 +4,7 @@
 # Ignore any local env or state files
 project_state.json
 .roomodes
+
+.specs/execution-api-setup.md
+.specs/oauth-client-id-secret.md
+.specs/oauth-scope-verification.md
