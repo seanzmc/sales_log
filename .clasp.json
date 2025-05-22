@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "scriptId": "1OOd-mqY16EPTWY7QwkCbKjGbfUsi0Jm6vWaJRwK-BNFvepd9tC7JiQnw",
     "rootDir": "",
     "scriptExtensions": [".js", ".gs"],
@@ -7,3 +8,20 @@
     "filePushOrder": [],
     "skipSubdirectories": false
 }
+=======
+  "scriptId": "1siLxdhCAu9mTXohlzjKf3xcGcEjupsgNdlFN1kk-ym3bvyfCowv_g1qk",
+  "rootDir": "",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ],
+  "htmlExtensions": [
+    ".html"
+  ],
+  "jsonExtensions": [
+    ".json"
+  ],
+  "filePushOrder": [],
+  "skipSubdirectories": false
+}
+>>>>>>> 0cf24a95709e1e467ad16284d7668dd567b1a0b8
