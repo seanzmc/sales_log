@@ -17,9 +17,9 @@ const SS = SpreadsheetApp.getActive();
 const RANGES = {
   dailyData: "A2:N51",        // Range on TODAY sheet for daily input
   dailyClear: "B2:N51",       // Range on TODAY sheet to clear after processing (excludes Col A)
-  leaderboard: "P2:R25",      // Range on TODAY sheet for the leaderboard (Name, MTD, Avg)
-  mtd: "Q2:Q25",              // MTD column on TODAY leaderboard
-  avg: "R2:R25",              // Average column on TODAY leaderboard
+  leaderboard: "P2:R26",      // Range on TODAY sheet for the leaderboard (Name, MTD, Avg)
+  mtd: "Q2:Q26",              // MTD column on TODAY leaderboard
+  avg: "R2:R26",              // Average column on TODAY leaderboard
   // Ranges for new CF rules on TODAY sheet
   todayNewCarDataRange: "B2:G101", // For rules 1 & 3
   todayUsedCarDataRange: "I2:N101"  // For rules 2 & 4
@@ -804,7 +804,8 @@ function rolloverMonth() {
       const lastRowMonthly = sheets.monthly.getLastRow();
       if (lastRowMonthly > 1) {
         sheets.monthly.getRange(2, 1, lastRowMonthly - 1, sheets.monthly.getMaxColumns())
-          .clear({ contentsOnly: false, formatOnly: false, commentsOnly: true, notesOnly: true });
+          .clear();
+        // Reset row heights for the cleared rows
         sheets.monthly.setRowHeights(2, lastRowMonthly - 1, 21);
       }
       sheets.monthly.getRange(1, 1, 51, 14)
