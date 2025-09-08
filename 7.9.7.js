@@ -17,9 +17,9 @@ const SS = SpreadsheetApp.getActive();
 const RANGES = {
     dailyData: "A2:N51", // Range on TODAY sheet for daily input
     dailyClear: "B2:N51", // Range on TODAY sheet to clear after processing (excludes Col A)
-    leaderboard: "P2:R26", // Range on TODAY sheet for the leaderboard (Name, MTD, Avg) - UPDATED
-    mtd: "Q2:Q26", // MTD column on TODAY leaderboard - UPDATED
-    avg: "R2:R26", // Average column on TODAY leaderboard - UPDATED
+    leaderboard: "P2:R27", // Range on TODAY sheet for the leaderboard (Name, MTD, Avg) - UPDATED
+    mtd: "Q2:Q27", // MTD column on TODAY leaderboard - UPDATED
+    avg: "R2:R27", // Average column on TODAY leaderboard - UPDATED
     // Ranges for new CF rules on TODAY sheet
     todayNewCarDataRange: "B2:G101", // For rules 1 & 3
     todayUsedCarDataRange: "I2:N101", // For rules 2 & 4
