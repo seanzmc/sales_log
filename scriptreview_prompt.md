@@ -31,5 +31,3 @@ Output Format:
 - **Rationale for Changes**: A brief explanation of why the revised code is more efficient and requires less upkeep.
 
 Here is the GAS code to review:
-
-[PASTE CODE HERE]
