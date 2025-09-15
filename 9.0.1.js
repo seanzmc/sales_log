@@ -275,7 +275,6 @@ function ensureMonthlyCF() {
       .whenFormulaSatisfied(nonDeliveredFormula)
       .setBackground(CONFIG.COLORS.NON_DELIVERED_DEAL)
       .setRanges([range])
-      .setRuleId(CONFIG.CF_RULE_SIGNATURE + '_nonDelivered_' + section.name)
       .build());
 
     const salesRange = sheet.getRange(`${String.fromCharCode(64 + section.salesCol)}2:${String.fromCharCode(64 + section.salesCol)}`);
@@ -285,7 +284,6 @@ function ensureMonthlyCF() {
       .whenFormulaSatisfied(salespersonErrorFormula)
       .setBackground(CONFIG.COLORS.SALESPERSON_ERROR)
       .setRanges([salesRange])
-      .setRuleId(CONFIG.CF_RULE_SIGNATURE + '_salespersonError_' + section.name)
       .build());
   });
 
