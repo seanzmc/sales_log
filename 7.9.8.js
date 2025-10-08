@@ -1,5 +1,5 @@
 /**
- * sales_log_v7.9.5.js (Font Color Handling, Clear Non-Delivered on Fix, Cleaned Logs, Add Today Sheet CF Rules, Preserve Trade BG on Non-Delivered, Fix Monthly Col A, Fix Error Clear, Log Sat on Mon, Fix totalErrorsFound scope)
+ * sales_log_v7.9.8.js (Find last row in A:N, Font Color Handling, etc.)
  * Performance-optimized Google Apps Script for sales logging (v7).
  * Handles flexible salesperson name/code input via an alias system.
  * Copies active rows to MONTHLY, generates sequence in Col A, counts/processes based on single-letter FI rule.
@@ -15,14 +15,14 @@ const sellingDaysCache = {};
 // Cached global reference for SpreadsheetApp's active spreadsheet
 const SS = SpreadsheetApp.getActive();
 const RANGES = {
-  dailyData: "A2:N51",        // Range on TODAY sheet for daily input
-  dailyClear: "B2:N51",       // Range on TODAY sheet to clear after processing (excludes Col A)
-  leaderboard: "P2:R26",      // Range on TODAY sheet for the leaderboard (Name, MTD, Avg)
-  mtd: "Q2:Q26",              // MTD column on TODAY leaderboard
-  avg: "R2:R26",              // Average column on TODAY leaderboard
+  dailyData: "A2:N51", // Range on TODAY sheet for daily input
+  dailyClear: "B2:N51", // Range on TODAY sheet to clear after processing (excludes Col A)
+  leaderboard: "P2:R28", // Range on TODAY sheet for the leaderboard (Name, MTD, Avg) - UPDATED
+  mtd: "Q2:Q28", // MTD column on TODAY leaderboard - UPDATED
+  avg: "R2:R28", // Average column on TODAY leaderboard - UPDATED
   // Ranges for new CF rules on TODAY sheet
   todayNewCarDataRange: "B2:G101", // For rules 1 & 3
-  todayUsedCarDataRange: "I2:N101"  // For rules 2 & 4
+  todayUsedCarDataRange: "I2:N101", // For rules 2 & 4
 };
 
 const NON_DELIVERED_DEAL_COLOR = "#FF0000"; // Standard Red
@@ -86,7 +86,6 @@ function memoizedGetSellingDays(year, month) {
     if (d.getDay() !== 0) total++; // Count if day is not Sunday (0)
   }
   sellingDaysCache[key] = { daysElapsed: elapsed, totalDays: total };
-  // Logger.log(`Selling days for ${year}-${month+1}: Elapsed=${elapsed}, Total=${total}`);
   return sellingDaysCache[key];
 }
 
@@ -185,11 +184,19 @@ function setCFRulesSheet(sheet, rules) {
 function withScriptLock(fn) {
   const lock = LockService.getScriptLock();
   if (lock.tryLock(30000)) {
-    try { return fn(); } finally { lock.releaseLock(); }
+    try {
+      return fn();
+    } finally {
+      lock.releaseLock();
+    }
   } else {
     const msg = "Could not acquire script lock. Another instance may be running.";
     Logger.log(msg);
-    try { SpreadsheetApp.getUi()?.alert(msg); } catch (e) { Logger.log("UI alert failed for lock: " + e); }
+    try {
+      SpreadsheetApp.getUi()?.alert(msg);
+    } catch (e) {
+      Logger.log("UI alert failed for lock: " + e);
+    }
     throw new Error(msg);
   }
 }
@@ -200,10 +207,15 @@ function toastInfo(msg, title) {
   else Logger.log(`Toast (SS not avail): ${title ? title + ": " : ""}${msg}`);
 }
 function showCustomAlert(title, msg) {
-  try { SpreadsheetApp.getUi().alert(title, msg, SpreadsheetApp.getUi().ButtonSet.OK); }
-  catch (e) { Logger.log(`Alert not shown (UI not avail): ${title}: ${msg}. Error: ${e}`); }
+  try {
+    SpreadsheetApp.getUi().alert(title, msg, SpreadsheetApp.getUi().ButtonSet.OK);
+  } catch (e) {
+    Logger.log(`Alert not shown (UI not avail): ${title}: ${msg}. Error: ${e}`);
+  }
 }
-function alertError(msg, title = "Error") { showCustomAlert(title, msg); }
+function alertError(msg, title = "Error") {
+  showCustomAlert(title, msg);
+}
 
 // Data transforms
 function tallyCounts(rows, aliasMap, sides) {
@@ -212,7 +224,9 @@ function tallyCounts(rows, aliasMap, sides) {
   rows.forEach((row) => {
     sides.forEach(({ fiIdx, saleIdx }) => {
       if (fiIdx >= row.length || saleIdx >= row.length) return;
-      const fiFlag = String(row[fiIdx] || "").trim().toUpperCase();
+      const fiFlag = String(row[fiIdx] || "")
+        .trim()
+        .toUpperCase();
       if (!/^[A-Z]$/.test(fiFlag)) return; // Only delivered
       const salespersonInput = String(row[saleIdx] || "").trim();
       if (!salespersonInput) return;
@@ -222,8 +236,8 @@ function tallyCounts(rows, aliasMap, sides) {
         if (!part) return;
         const fullName = aliasMap[part];
         if (fullName) counts[fullName] = (counts[fullName] || 0) + inc;
-        else if (!unknownInputs.includes(salespersonInput.split("/").find(p => p.trim().toUpperCase() === part) || part)) {
-          unknownInputs.push(salespersonInput.split("/").find(p => p.trim().toUpperCase() === part) || part);
+        else if (!unknownInputs.includes(salespersonInput.split("/").find((p) => p.trim().toUpperCase() === part) || part)) {
+          unknownInputs.push(salespersonInput.split("/").find((p) => p.trim().toUpperCase() === part) || part);
         }
       });
     });
@@ -232,37 +246,53 @@ function tallyCounts(rows, aliasMap, sides) {
 }
 
 function summarizeRows(rows) {
-  let newCount = 0, usedCount = 0, tradeCount = 0;
+  let newCount = 0,
+    usedCount = 0,
+    tradeCount = 0;
   rows.forEach((row) => {
-    const newFi = (row.length > 2) ? String(row[2] || "").trim().toUpperCase() : "";
-    const usedFi = (row.length > 9) ? String(row[9] || "").trim().toUpperCase() : "";
-    const newHasContent = (row.length > 1) && row.slice(1, Math.min(7, row.length)).some(val => val && String(val).trim() !== "");
-    const usedHasContent = (row.length > 8) && row.slice(8, Math.min(14, row.length)).some(val => val && String(val).trim() !== "");
+    const newFi =
+      row.length > 2
+        ? String(row[2] || "")
+          .trim()
+          .toUpperCase()
+        : "";
+    const usedFi =
+      row.length > 9
+        ? String(row[9] || "")
+          .trim()
+          .toUpperCase()
+        : "";
+    const newHasContent = row.length > 1 && row.slice(1, Math.min(7, row.length)).some((val) => val && String(val).trim() !== "");
+    const usedHasContent = row.length > 8 && row.slice(8, Math.min(14, row.length)).some((val) => val && String(val).trim() !== "");
     let newDelivered = /^[A-Z]$/.test(newFi) && newHasContent;
     let usedDelivered = /^[A-Z]$/.test(usedFi) && usedHasContent;
     if (newDelivered) {
       newCount++;
-      const tradeNew = (row.length > 5) ? String(row[5] || "").trim().toUpperCase() : "";
+      const tradeNew =
+        row.length > 5
+          ? String(row[5] || "")
+            .trim()
+            .toUpperCase()
+          : "";
       if (tradeNew && tradeNew !== "NT") tradeCount++;
     }
     if (usedDelivered) {
       usedCount++;
-      const tradeUsed = (row.length > 12) ? String(row[12] || "").trim().toUpperCase() : "";
+      const tradeUsed =
+        row.length > 12
+          ? String(row[12] || "")
+            .trim()
+            .toUpperCase()
+          : "";
       if (tradeUsed && tradeUsed !== "NT") tradeCount++;
     }
   });
   return { newCount, usedCount, tradeCount };
 }
 
-
 /**
  * Applies formatting to rows in the 'MONTHLY' sheet.
- * - Highlights entire deal sections (B:G or I:N) in NON_DELIVERED_DEAL_COLOR if they have data but FI is not a single letter,
- * PRESERVING the original background of the trade column (F or M).
- * - Clears NON_DELIVERED_DEAL_COLOR if the FI is fixed.
- * - Highlights salesperson code cells (G or N) in SALESPERSON_CODE_ERROR_COLOR if the deal is delivered but the code is invalid.
- * This is only applied if the section is not already red for being non-delivered.
- * - Clears previous salesperson code error highlights if conditions are no longer met.
+ * Highlights non-delivered deals and salesperson code errors.
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The 'MONTHLY' sheet object.
  * @param {any[][]} rowsData The 2D array of row data to process.
@@ -277,7 +307,6 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
   const salespersonErrorSheetRows = [];
   const numRows = rowsData.length;
 
-  // Fetch original backgrounds for the sections to be processed
   const originalBackgroundsNew = sheet.getRange(startSheetRow, 2, numRows, 6).getBackgrounds(); // B:G
   const originalBackgroundsUsed = sheet.getRange(startSheetRow, 9, numRows, 6).getBackgrounds(); // I:N
 
@@ -291,92 +320,53 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
     const newSectionBgRow = [...originalBackgroundsNew[i]];
     const usedSectionBgRow = [...originalBackgroundsUsed[i]];
 
-    // --- Process New Car Section (Cols B:G, FI in C (idx 2), Salesperson in G (idx 6), Trade in F (idx 5 from data, 4 in sectionBgRow)) ---
-    const newFiFlag = (rowData.length > 2) ? String(rowData[2] || "").trim().toUpperCase() : "";
-    const newSalespersonInput = (rowData.length > 6) ? String(rowData[6] || "").trim() : "";
+    // --- Process New Car Section ---
+    const newFiFlag = rowData.length > 2 ? String(rowData[2] || "").trim().toUpperCase() : "";
+    const newSalespersonInput = rowData.length > 6 ? String(rowData[6] || "").trim() : "";
     const isNewActuallyDeliveredByFI = /^[A-Z]$/.test(newFiFlag);
-    const newSectionHasAnyData = (rowData.length > 1) && rowData.slice(1, 7).some(cell => cell && String(cell).trim() !== "");
+    const newSectionHasAnyData = rowData.length > 1 && rowData.slice(1, 7).some((cell) => cell && String(cell).trim() !== "");
 
     if (newSectionHasAnyData && !isNewActuallyDeliveredByFI) {
-      // Case 1: Non-delivered with data - Apply NON_DELIVERED_DEAL_COLOR to B,C,D,E,G
-      for (let k = 0; k < 6; k++) { // B=0, C=1, D=2, E=3, F=4 (trade), G=5
-        if (k !== 4) { // Exclude Trade column F (index 4 of newSectionBgRow)
-          newSectionBgRow[k] = NON_DELIVERED_DEAL_COLOR;
-        }
-      }
+      for (let k = 0; k < 6; k++) { if (k !== 4) { newSectionBgRow[k] = NON_DELIVERED_DEAL_COLOR; } }
     } else if (isNewActuallyDeliveredByFI) {
-      // Case 2: Now considered delivered by FI
-      // Clear any previous NON_DELIVERED_DEAL_COLOR from B,C,D,E,G
-      for (let k = 0; k < 6; k++) {
-        if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) {
-          newSectionBgRow[k] = null; // Clear old non-delivered highlight
-        }
-      }
-      // Then, check for salesperson code error in G (newSectionBgRow[5])
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { newSectionBgRow[k] = null; } }
       if (newSalespersonInput) {
-        const newSalespersonParts = newSalespersonInput.split("/").map(s => s.trim().toUpperCase());
-        if (newSalespersonParts.some(part => part && !aliasMap[part])) {
-          newSectionBgRow[5] = SALESPERSON_CODE_ERROR_COLOR; // Apply salesperson error
-          if (!salespersonErrorSheetRows.includes(currentRowInSheet)) {
-            salespersonErrorSheetRows.push(currentRowInSheet);
-          }
+        const newSalespersonParts = newSalespersonInput.split("/").map((s) => s.trim().toUpperCase());
+        if (newSalespersonParts.some((part) => part && !aliasMap[part])) {
+          newSectionBgRow[5] = SALESPERSON_CODE_ERROR_COLOR;
+          if (!salespersonErrorSheetRows.includes(currentRowInSheet)) { salespersonErrorSheetRows.push(currentRowInSheet); }
         } else if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) {
-          newSectionBgRow[5] = null; // Clear old salesperson error
+          newSectionBgRow[5] = null;
         }
       }
     } else {
-      // Case 3: Not delivered by FI and no data, OR was already correctly formatted (e.g. blank)
-      // Clear any lingering NON_DELIVERED_DEAL_COLOR if data was removed and FI is now blank
-      for (let k = 0; k < 6; k++) {
-        if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) {
-          newSectionBgRow[k] = null;
-        }
-      }
-      // Also clear salesperson error if FI no longer valid for it or data removed
-      if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) {
-        newSectionBgRow[5] = null;
-      }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { newSectionBgRow[k] = null; } }
+      if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) { newSectionBgRow[5] = null; }
     }
     backgroundsNewSection.push(newSectionBgRow);
 
-    // --- Process Used Car Section (Cols I:N, FI in J (idx 9), Salesperson in N (idx 13), Trade in M (idx 12 from data, 4 in sectionBgRow)) ---
-    const usedFiFlag = (rowData.length > 9) ? String(rowData[9] || "").trim().toUpperCase() : "";
-    const usedSalespersonInput = (rowData.length > 13) ? String(rowData[13] || "").trim() : "";
+    // --- Process Used Car Section ---
+    const usedFiFlag = rowData.length > 9 ? String(rowData[9] || "").trim().toUpperCase() : "";
+    const usedSalespersonInput = rowData.length > 13 ? String(rowData[13] || "").trim() : "";
     const isUsedActuallyDeliveredByFI = /^[A-Z]$/.test(usedFiFlag);
-    const usedSectionHasAnyData = (rowData.length > 8) && rowData.slice(8, 14).some(cell => cell && String(cell).trim() !== "");
+    const usedSectionHasAnyData = rowData.length > 8 && rowData.slice(8, 14).some((cell) => cell && String(cell).trim() !== "");
 
     if (usedSectionHasAnyData && !isUsedActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) {
-        if (k !== 4) { // Exclude Trade column M (index 4 of usedSectionBgRow)
-          usedSectionBgRow[k] = NON_DELIVERED_DEAL_COLOR;
-        }
-      }
+      for (let k = 0; k < 6; k++) { if (k !== 4) { usedSectionBgRow[k] = NON_DELIVERED_DEAL_COLOR; } }
     } else if (isUsedActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) {
-        if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) {
-          usedSectionBgRow[k] = null;
-        }
-      }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
       if (usedSalespersonInput) {
-        const usedSalespersonParts = usedSalespersonInput.split("/").map(s => s.trim().toUpperCase());
-        if (usedSalespersonParts.some(part => part && !aliasMap[part])) {
+        const usedSalespersonParts = usedSalespersonInput.split("/").map((s) => s.trim().toUpperCase());
+        if (usedSalespersonParts.some((part) => part && !aliasMap[part])) {
           usedSectionBgRow[5] = SALESPERSON_CODE_ERROR_COLOR;
-          if (!salespersonErrorSheetRows.includes(currentRowInSheet)) {
-            salespersonErrorSheetRows.push(currentRowInSheet);
-          }
+          if (!salespersonErrorSheetRows.includes(currentRowInSheet)) { salespersonErrorSheetRows.push(currentRowInSheet); }
         } else if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) {
           usedSectionBgRow[5] = null;
         }
       }
     } else {
-      for (let k = 0; k < 6; k++) {
-        if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) {
-          usedSectionBgRow[k] = null;
-        }
-      }
-      if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) {
-        usedSectionBgRow[5] = null;
-      }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
+      if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) { usedSectionBgRow[5] = null; }
     }
     backgroundsUsedSection.push(usedSectionBgRow);
   }
@@ -389,6 +379,27 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
   return salespersonErrorSheetRows.sort((a, b) => a - b);
 }
 
+// NEW FUNCTION: To accurately find the last row within a specific range of columns.
+/**
+ * Finds the last row containing data within a specific range of columns, ignoring content outside this range.
+ * This is more reliable than getLastRow() when extraneous data exists in other columns.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet object to inspect.
+ * @param {number} startCol The 1-based index of the starting column for the check (e.g., 1 for A).
+ * @param {number} endCol The 1-based index of the ending column for the check (e.g., 14 for N).
+ * @returns {number} The row number of the last row with data in the specified columns. Returns 0 if the sheet is empty.
+ */
+function findLastRowInCols(sheet, startCol, endCol) {
+  const values = sheet.getRange(1, startCol, sheet.getMaxRows(), endCol - startCol + 1).getValues();
+  for (let i = values.length - 1; i >= 0; i--) {
+    // Check if any cell in the current row has content
+    if (values[i].some(cell => cell.toString().trim() !== '')) {
+      return i + 1; // Return the 1-based row number
+    }
+  }
+  return 0; // No data found in the specified columns
+}
+
 
 // Main flows
 function processDaily() {
@@ -396,7 +407,8 @@ function processDaily() {
     // ADD THIS CHECK FOR SUNDAY
     const today = new Date();
     // In Google Apps Script, Sunday is 0, Monday is 1, ..., Saturday is 6
-    if (today.getDay() === 0) { // 0 represents Sunday
+    if (today.getDay() === 0) {
+      // 0 represents Sunday
       Logger.log("Today is Sunday. Skipping processDaily execution.");
       return; // Exit the function if it's Sunday
     }
@@ -431,7 +443,7 @@ function processDaily() {
         return;
       }
 
-      // Modify Column A 
+      // Modify Column A
       rowsToLogToMonthly = rowsToLogToMonthly.map((row, index) => {
         row[0] = index + 1;
         return row;
@@ -439,15 +451,14 @@ function processDaily() {
       // Note: fontColorsToLogToMonthly does not need Column A modified, it's just colors.
 
       const dateStr = formatDateOffset(1);
-      const lastRowMonthly = sheets.monthly.getLastRow();
+
+      // MODIFIED: Use the new function to find the last row specifically within columns A:N
+      const lastRowMonthly = findLastRowInCols(sheets.monthly, 1, 14);
       const headerInsertRow = lastRowMonthly + 1;
       const dataInsertRow = headerInsertRow + 1;
 
       sheets.monthly.insertRowBefore(headerInsertRow);
-      sheets.monthly.getRange(headerInsertRow, 1, 1, 14).merge()
-        .setValue(dateStr).setHorizontalAlignment("center").setFontFamily("Calibri")
-        .setFontSize(10).setFontWeight("bold").setBackground("#FFFF00")
-        .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+      sheets.monthly.getRange(headerInsertRow, 1, 1, 14).merge().setValue(dateStr).setHorizontalAlignment("center").setFontFamily("Calibri").setFontSize(10).setFontWeight("bold").setBackground("#FFFF00").setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
       const numRowsToInsert = rowsToLogToMonthly.length;
       const numColsToInsert = 14;
@@ -457,16 +468,10 @@ function processDaily() {
       SpreadsheetApp.flush();
 
       // Apply general formatting (font family, size, borders) to B:N
-      sheets.monthly.getRange(dataInsertRow, 2, numRowsToInsert, 13)
-        .setFontFamily("Calibri").setFontWeight("bold").setFontSize(10)
-        .setHorizontalAlignment("center").setVerticalAlignment("middle")
-        .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      sheets.monthly.getRange(dataInsertRow, 2, numRowsToInsert, 13).setFontFamily("Calibri").setFontWeight("bold").setFontSize(10).setHorizontalAlignment("center").setVerticalAlignment("middle").setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
 
       // Specific formatting for Column A on monthly
-      sheets.monthly.getRange(dataInsertRow, 1, numRowsToInsert, 1)
-        .setNumberFormat("0").setFontFamily("Calibri").setFontWeight("bold")
-        .setFontSize(10).setHorizontalAlignment("center").setVerticalAlignment("middle")
-        .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      sheets.monthly.getRange(dataInsertRow, 1, numRowsToInsert, 1).setNumberFormat("0").setFontFamily("Calibri").setFontWeight("bold").setFontSize(10).setHorizontalAlignment("center").setVerticalAlignment("middle").setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
 
       sheets.monthly.getRange(dataInsertRow, 6, numRowsToInsert, 1).setFontSize(7); // Col F
       sheets.monthly.getRange(dataInsertRow, 13, numRowsToInsert, 1).setFontSize(7); // Col M
@@ -481,7 +486,10 @@ function processDaily() {
 
       errorSheetRows = applyMonthlyRowFormatting(sheets.monthly, rowsToLogToMonthly, dataInsertRow, aliasMap);
 
-      const sidesToTally = [{ fiIdx: 2, saleIdx: 6 }, { fiIdx: 9, saleIdx: 13 }];
+      const sidesToTally = [
+        { fiIdx: 2, saleIdx: 6 },
+        { fiIdx: 9, saleIdx: 13 },
+      ];
       const tallyResult = tallyCounts(rowsToLogToMonthly, aliasMap, sidesToTally);
       countsByFullName = tallyResult.counts;
       unknownInputs = tallyResult.unknownInputs;
@@ -499,17 +507,12 @@ function processDaily() {
       reapplyCF();
 
       const { newCount, usedCount, tradeCount } = summarizeRows(rowsToLogToMonthly);
-      const repLines = Object.entries(countsByFullName).filter(([, c]) => c > 0)
+      const repLines = Object.entries(countsByFullName)
+        .filter(([, c]) => c > 0)
         .map(([name, count]) => `  - ${displayCodeMap[name] || name}: ${count}`);
 
       let summaryTitle = `Daily Sales Logged: ${dateStr}`;
-      let summaryMsg = `NEW DELIVERED SALES: ${newCount}\n` +
-        `USED DELIVERED SALES: ${usedCount}\n` +
-        `TOTAL DELIVERED UNITS: ${newCount + usedCount}\n` +
-        `DELIVERED DEALS WITH TRADES: ${tradeCount}\n\n` +
-        `SALESPERSON DELIVERED COUNTS:\n` +
-        (repLines.length > 0 ? repLines.join("\n") : "  - No specific salesperson counts for delivered deals today.") +
-        `\n\nSALESPERSON CODE ERRORS (on delivered deals): ${errorSheetRows.length}`;
+      let summaryMsg = `NEW DELIVERED SALES: ${newCount}\n` + `USED DELIVERED SALES: ${usedCount}\n` + `TOTAL DELIVERED UNITS: ${newCount + usedCount}\n` + `DELIVERED DEALS WITH TRADES: ${tradeCount}\n\n` + `SALESPERSON DELIVERED COUNTS:\n` + (repLines.length > 0 ? repLines.join("\n") : "  - No specific salesperson counts for delivered deals today.") + `\n\nSALESPERSON CODE ERRORS (on delivered deals): ${errorSheetRows.length}`;
 
       if (errorSheetRows.length > 0) {
         summaryMsg += `\n(Salesperson code errors for delivered deals are highlighted on 'MONTHLY' in rows ${dataInsertRow}-${dataInsertRow + numRowsToInsert - 1}.)`;
@@ -525,7 +528,6 @@ function processDaily() {
       dailyClearRange.setBackground(null);
       dailyClearRange.setFontColor(null); // *** NEW: Reset font color to default ***
       Logger.log("Daily processing complete.");
-
     } catch (e) {
       Logger.log("Error in processDaily: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
       alertError("Error during daily processing: " + e.toString(), "Processing Failed");
@@ -533,15 +535,8 @@ function processDaily() {
   });
 }
 
-// Ensure these global constants are defined at the top of your script:
-// const LEADERBOARD_ZERO_MTD_BG_COLOR = "#F0F8FF"; // Or your chosen blue
-// const LEADERBOARD_ZERO_MTD_BG_COLOR_UPPER = LEADERBOARD_ZERO_MTD_BG_COLOR.toUpperCase();
-// const RANGES = { ... leaderboard: "P2:R26", ... }; // Ensure RANGES.leaderboard is correct
-
 /**
  * Reapplies conditional formatting rules to the TODAY sheet.
- * Includes leaderboard pace rules (or a blue background if all MTD is 0)
- * and duplicate/deposit check rules.
  */
 function reapplyCF() {
   try {
@@ -555,69 +550,46 @@ function reapplyCF() {
     const { daysElapsed, totalDays } = memoizedGetSellingDays(now.getFullYear(), now.getMonth());
     const paceBase = totalDays > 0 ? `($Q2/${daysElapsed}*${totalDays})` : null;
 
-    // --- Define signatures for identifying managed rules ---
-    const managedDataRulesSignatures = [ /* ... keep as is ... */ ]; // Your existing data rule signatures
-
-    // Signature for the "all MTD zero" blue rule
+    const managedDataRulesSignatures = [ /* ... keep as is ... */ ];
     const managedLeaderboardBlueRuleSignature = {
-      formula: "=1=1", // Dummy formula for reliable identification
+      formula: "=1=1",
       rangeA1: RANGES.leaderboard,
-      background: LEADERBOARD_ZERO_MTD_BG_COLOR_UPPER
+      background: LEADERBOARD_ZERO_MTD_BG_COLOR_UPPER,
     };
+    const PACE_COLORS_UPPER = ["#70AD47", "#FFEE32", "#C00000"].map((c) => c.toUpperCase());
 
-    // Define pace colors for easier checking (ensure these match your pace rule backgrounds)
-    const PACE_COLORS_UPPER = ["#70AD47", "#FFEE32", "#C00000"].map(c => c.toUpperCase()); // Green, Yellow, Red
-
-    existingRules.forEach(rule => {
+    existingRules.forEach((rule) => {
       const bc = rule.getBooleanCondition();
       let isManagedByThisScript = false;
-
       if (bc && bc.getCriteriaType() === SpreadsheetApp.BooleanCriteria.CUSTOM_FORMULA) {
         const currentFormulaFull = bc.getCriteriaValues()[0].toString();
-        const currentFormulaNormalized = currentFormulaFull.replace(/\s+/g, '');
+        const currentFormulaNormalized = currentFormulaFull.replace(/\s+/g, "");
         const ranges = rule.getRanges();
-
         if (ranges.length === 1) {
           const currentRangeA1 = ranges[0].getA1Notation();
           const ruleBg = bc.getBackground() ? bc.getBackground().toUpperCase() : null;
-
-          // 1. Check Data Rules (stable formulas)
           for (const sig of managedDataRulesSignatures) {
-            if (sig.formula.replace(/\s+/g, '') === currentFormulaNormalized && sig.rangeA1 === currentRangeA1) {
+            if (sig.formula.replace(/\s+/g, "") === currentFormulaNormalized && sig.rangeA1 === currentRangeA1) {
               isManagedByThisScript = true;
               break;
             }
           }
-
-          // 2. Check Leaderboard-specific rules (Blue or Pace)
           if (!isManagedByThisScript && currentRangeA1 === RANGES.leaderboard) {
-            // Check if it's the Blue Rule
-            if (currentFormulaNormalized === managedLeaderboardBlueRuleSignature.formula &&
-                ruleBg === managedLeaderboardBlueRuleSignature.background) {
-              isManagedByThisScript = true;
-            }
-            // Check if it's a Pace Rule (current or old) by its background color
-            // This assumes these background colors on this specific range are unique to script-managed pace rules
+            if (currentFormulaNormalized === managedLeaderboardBlueRuleSignature.formula && ruleBg === managedLeaderboardBlueRuleSignature.background) { isManagedByThisScript = true; }
             if (!isManagedByThisScript && PACE_COLORS_UPPER.includes(ruleBg)) {
-              // Further check if formula involves $Q (typical for MTD column in pace calc)
-              // This helps distinguish from other potential rules if colors overlapped.
-              if (currentFormulaNormalized.includes("$Q")) { // Adjust if your MTD column isn't Q or formula structure differs
-                 isManagedByThisScript = true;
-                 Logger.log(`Identified old/current pace rule for removal on ${currentRangeA1} (color: ${ruleBg}, formula: ${currentFormulaFull})`);
+              if (currentFormulaNormalized.includes("$Q")) {
+                isManagedByThisScript = true;
+                Logger.log(`Identified old/current pace rule for removal on ${currentRangeA1} (color: ${ruleBg}, formula: ${currentFormulaFull})`);
               }
             }
           }
         }
       }
-
-      if (!isManagedByThisScript) {
-        rulesToKeep.push(rule.copy().build());
-      }
+      if (!isManagedByThisScript) { rulesToKeep.push(rule.copy().build()); }
     });
 
     let newRules = [...rulesToKeep];
 
-    // --- Check MTD sales data ---
     let allMtdAreZero = true;
     try {
       if (RANGES.mtd && RANGES.mtd.match(/^[A-Z]+\d+:[A-Z]+\d+$/)) {
@@ -642,13 +614,7 @@ function reapplyCF() {
 
     if (allMtdAreZero) {
       Logger.log("All MTD are zero. Applying faint powder blue background to leaderboard.");
-      newRules.push(
-        SpreadsheetApp.newConditionalFormatRule()
-          .whenFormulaSatisfied(managedLeaderboardBlueRuleSignature.formula)
-          .setBackground(LEADERBOARD_ZERO_MTD_BG_COLOR)
-          .setRanges([cfLeaderboardRange])
-          .build()
-      );
+      newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(managedLeaderboardBlueRuleSignature.formula).setBackground(LEADERBOARD_ZERO_MTD_BG_COLOR).setRanges([cfLeaderboardRange]).build());
     } else {
       Logger.log("MTD sales detected or error in MTD check. Applying standard pace conditional formatting.");
       if (totalDays > 0 && paceBase) {
@@ -662,40 +628,16 @@ function reapplyCF() {
       }
     }
 
-    // --- Add Data Validation Rules (Stock Duplicates, Deposits on TODAY sheet) ---
-    // ... (keep your existing data validation rule additions as they are) ...
-    const todayNewCarRange = todaySheet.getRange(RANGES.todayNewCarDataRange); 
-    const todayUsedCarRange = todaySheet.getRange(RANGES.todayUsedCarDataRange); 
+    const todayNewCarRange = todaySheet.getRange(RANGES.todayNewCarDataRange);
+    const todayUsedCarRange = todaySheet.getRange(RANGES.todayUsedCarDataRange);
 
-    newRules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied("=COUNTIF($E$2:$E$101,$E2)>1")
-      .setFontColor(DUPLICATE_STOCK_TEXT_COLOR)
-      .setBackground(DUPLICATE_STOCK_FILL_COLOR)
-      .setRanges([todayNewCarRange])
-      .build());
-    newRules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied("=COUNTIF($L$2:$L$101,$L2)>1")
-      .setFontColor(DUPLICATE_STOCK_TEXT_COLOR)
-      .setBackground(DUPLICATE_STOCK_FILL_COLOR)
-      .setRanges([todayUsedCarRange])
-      .build());
-    newRules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$E2)>0')
-      .setFontColor(DUPLICATE_STOCK_TEXT_COLOR)
-      .setBackground(DUPLICATE_STOCK_FILL_COLOR)
-      .setRanges([todayNewCarRange])
-      .build());
-    newRules.push(SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$L2)>0')
-      .setFontColor(DUPLICATE_STOCK_TEXT_COLOR)
-      .setBackground(DUPLICATE_STOCK_FILL_COLOR)
-      .setRanges([todayUsedCarRange])
-      .build());
-
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=COUNTIF($E$2:$E$101,$E2)>1").setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayNewCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=COUNTIF($L$2:$L$101,$L2)>1").setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayUsedCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$E2)>0').setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayNewCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$L2)>0').setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayUsedCarRange]).build());
 
     setCFRulesSheet(todaySheet, newRules);
     toastInfo("Conditional formatting updated for Leaderboard and Data Entry.", "CF Updated");
-
   } catch (e) {
     Logger.log("Error reapplying CF: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
     alertError("Error reapplying CF: " + e.toString(), "CF Error");
@@ -715,7 +657,8 @@ function recalcMtdFromMonthly() {
       const maxColsMonthly = monthlySheet.getMaxColumns();
 
       if (maxColsMonthly < 14) {
-        alertError('"MONTHLY" sheet needs at least 14 columns (A:N).'); return;
+        alertError('"MONTHLY" sheet needs at least 14 columns (A:N).');
+        return;
       }
       if (lastRowMonthly < 2) {
         todaySheet.getRange(RANGES.mtd).clearContent();
@@ -725,20 +668,18 @@ function recalcMtdFromMonthly() {
       }
 
       const { aliasMap } = getSalespersonMaps();
-      // For recalc, we process all data rows in monthly. Font colors are not read from monthly and reapplied;
-      // they are only carried over during processDaily. applyMonthlyRowFormatting only handles backgrounds.
       const monthlyValues = monthlySheet.getRange(2, 1, lastRowMonthly - 1, maxColsMonthly).getValues();
 
       const salespersonErrorRowsFound = applyMonthlyRowFormatting(monthlySheet, monthlyValues, 2, aliasMap);
       totalSalespersonErrors = salespersonErrorRowsFound.length;
 
-
       const allMonthlyContent = monthlySheet.getRange(1, 1, lastRowMonthly, maxColsMonthly).getValues();
       const mergedRanges = monthlySheet.getRange(1, 1, lastRowMonthly, 1).getMergedRanges();
       let actualDataRows = [];
       const dateHeaderRows = mergedRanges
-        .filter(mr => mr.getRow() > 0 && mr.getColumn() === 1 && mr.getWidth() >= 14)
-        .map(mr => mr.getRow()).sort((a, b) => a - b);
+        .filter((mr) => mr.getRow() > 0 && mr.getColumn() === 1 && mr.getWidth() >= 14)
+        .map((mr) => mr.getRow())
+        .sort((a, b) => a - b);
 
       if (dateHeaderRows.length > 0) {
         let startDataRowIdx = dateHeaderRows[0];
@@ -764,19 +705,23 @@ function recalcMtdFromMonthly() {
         return;
       }
 
-      const sidesToTally = [{ fiIdx: 2, saleIdx: 6 }, { fiIdx: 9, saleIdx: 13 }];
+      const sidesToTally = [
+        { fiIdx: 2, saleIdx: 6 },
+        { fiIdx: 9, saleIdx: 13 },
+      ];
       const { counts: countsByFullName } = tallyCounts(actualDataRows, aliasMap, sidesToTally);
 
       const lbRange = todaySheet.getRange(RANGES.leaderboard);
       const lbValues = lbRange.getValues();
-      lbValues.forEach((r) => { r[1] = countsByFullName[r[0]] || 0; });
+      lbValues.forEach((r) => {
+        r[1] = countsByFullName[r[0]] || 0;
+      });
       lbValues.sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0) || (Number(b[2]) || 0) - (Number(a[2]) || 0));
       lbRange.setValues(lbValues);
       todaySheet.getRange(RANGES.mtd).setNumberFormat("0.#");
       reapplyCF();
 
       toastInfo(`MTD recalculated. Found ${totalSalespersonErrors} salesperson code errors in 'MONTHLY'. Non-delivered deals also highlighted.`, "Recalc & Format Complete");
-
     } catch (e) {
       Logger.log("Error in recalcMtdFromMonthly: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
       alertError("Error during MTD recalculation: " + e.toString(), "Recalc Failed");
@@ -787,16 +732,11 @@ function recalcMtdFromMonthly() {
 function rolloverMonth() {
   withScriptLock(() => {
     const ui = SpreadsheetApp.getUi();
-    const response = ui.alert("Confirm Month Rollover",
-      'This will:\n' +
-      '1. Archive the current "MONTHLY" sheet (e.g., as "5/25").\n' +
-      '2. Copy the final leaderboard to the archive.\n' +
-      '3. Clear the "MONTHLY" sheet for the new month.\n' +
-      '4. Clear MTD sales (Column Q) on the "TODAY" sheet.\n' +
-      '5. Recalculate 3-Month Rolling Averages (Column R) on "TODAY".\n\n' +
-      'Are you sure you want to proceed?',
-      ui.ButtonSet.YES_NO);
-    if (response !== ui.Button.YES) { toastInfo("Rollover cancelled.", "Cancelled"); return; }
+    const response = ui.alert("Confirm Month Rollover", "This will:\n" + '1. Archive the current "MONTHLY" sheet (e.g., as "5/25").\n' + "2. Copy the final leaderboard to the archive.\n" + '3. Clear the "MONTHLY" sheet for the new month.\n' + '4. Clear MTD sales (Column Q) on the "TODAY" sheet.\n' + '5. Recalculate 3-Month Rolling Averages (Column R) on "TODAY".\n\n' + "Are you sure you want to proceed?", ui.ButtonSet.YES_NO);
+    if (response !== ui.Button.YES) {
+      toastInfo("Rollover cancelled.", "Cancelled");
+      return;
+    }
 
     toastInfo("Starting month rollover...", "Working (1/5)");
     try {
@@ -804,11 +744,15 @@ function rolloverMonth() {
       const currentDate = new Date();
       let archiveYear = currentDate.getFullYear();
       let archiveMonth = currentDate.getMonth() - 1;
-      if (archiveMonth < 0) { archiveMonth = 11; archiveYear--; }
-      const archiveSheetName = `${archiveMonth + 1}/${String(archiveYear % 100).padStart(2, '0')}`;
+      if (archiveMonth < 0) {
+        archiveMonth = 11;
+        archiveYear--;
+      }
+      const archiveSheetName = `${archiveMonth + 1}/${String(archiveYear % 100).padStart(2, "0")}`;
 
       if (SS.getSheetByName(archiveSheetName)) {
-        alertError(`Archive "${archiveSheetName}" already exists. Rollover aborted.`); return;
+        alertError(`Archive "${archiveSheetName}" already exists. Rollover aborted.`);
+        return;
       }
       const archiveSheet = sheets.monthly.copyTo(SS);
       try {
@@ -819,31 +763,32 @@ function rolloverMonth() {
       } catch (e) {
         Logger.log(`Error renaming archive: ${e}`);
         alertError(`Error renaming archive: ${e}. Try deleting partial archive.`);
-        try { SS.deleteSheet(archiveSheet); } catch (delErr) { Logger.log(`Failed to delete partial: ${delErr}`); }
+        try {
+          SS.deleteSheet(archiveSheet);
+        } catch (delErr) {
+          Logger.log(`Failed to delete partial: ${delErr}`);
+        }
         return;
       }
 
       const lbRangeToday = sheets.today.getRange(RANGES.leaderboard);
-      archiveSheet.getRange(RANGES.leaderboard)
+      archiveSheet
+        .getRange(RANGES.leaderboard)
         .setValues(lbRangeToday.getValues())
         .setBackgrounds(lbRangeToday.getBackgrounds())
         .setFontWeights(lbRangeToday.getFontWeights())
         .setFontSizes(lbRangeToday.getFontSizes())
         .setFontFamilies(lbRangeToday.getFontFamilies())
         .setFontColors(lbRangeToday.getFontColors());
-      [16, 17, 18].forEach(col => archiveSheet.autoResizeColumn(col));
+      [16, 17, 18].forEach((col) => archiveSheet.autoResizeColumn(col));
       toastInfo("Leaderboard copied to archive.", "Working (3/5)");
 
       const lastRowMonthly = sheets.monthly.getLastRow();
       if (lastRowMonthly > 1) {
-        sheets.monthly.getRange(2, 1, lastRowMonthly - 1, sheets.monthly.getMaxColumns())
-          .clear();
-        // Reset row heights for the cleared rows
+        sheets.monthly.getRange(2, 1, lastRowMonthly - 1, sheets.monthly.getMaxColumns()).clear();
         sheets.monthly.setRowHeights(2, lastRowMonthly - 1, 21);
       }
-      sheets.monthly.getRange(1, 1, 51, 14)
-        .setBorder(null, null, null, null, null, null)
-        .setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
+      sheets.monthly.getRange(1, 1, 51, 14).setBorder(null, null, null, null, null, null).setBorder(true, true, true, true, true, true, "#000000", SpreadsheetApp.BorderStyle.SOLID);
       toastInfo(`"MONTHLY" sheet cleared.`, "Working (4/5)");
 
       sheets.today.getRange(RANGES.mtd).clearContent();
@@ -857,18 +802,26 @@ function rolloverMonth() {
         for (let j = 0; j < 3; j++) {
           let loopYear = cursorDate.getFullYear();
           let loopM = cursorDate.getMonth() - 1;
-          if (loopM < 0) { loopM = 11; loopYear--; }
-          const prevArchiveName = `${loopM + 1}/${String(loopYear % 100).padStart(2, '0')}`;
+          if (loopM < 0) {
+            loopM = 11;
+            loopYear--;
+          }
+          const prevArchiveName = `${loopM + 1}/${String(loopYear % 100).padStart(2, "0")}`;
           const prevSheet = SS.getSheetByName(prevArchiveName);
           if (prevSheet) {
             try {
-              const prevLbVals = prevSheet.getRange(RANGES.leaderboard).getValues();
-              const personRow = prevLbVals.find(row => row[0] === currentFullName);
-              if (personRow && typeof personRow[1] === 'number') {
-                totalSales += personRow[1];
-                months++;
+              const lastRowInArchive = prevSheet.getLastRow();
+              if (lastRowInArchive > 1) {
+                const prevLbVals = prevSheet.getRange("P2:R" + lastRowInArchive).getValues();
+                const personRow = prevLbVals.find((row) => row[0] === currentFullName);
+                if (personRow && typeof personRow[1] === "number") {
+                  totalSales += personRow[1];
+                  months++;
+                }
               }
-            } catch (e) { Logger.log(`Error reading archive ${prevArchiveName}: ${e}`); }
+            } catch (e) {
+              Logger.log(`Error reading archive ${prevArchiveName}: ${e}`);
+            }
           }
           cursorDate.setMonth(cursorDate.getMonth() - 1);
         }
@@ -889,13 +842,7 @@ function rolloverMonth() {
 // onOpen
 function onOpen() {
   try {
-    SpreadsheetApp.getUi().createMenu("Sales Tools")
-      .addItem("Log Yesterday's Sales", "processDaily")
-      .addSeparator()
-      .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
-      .addSeparator()
-      .addItem("Start New Month (Rollover)", "rolloverMonth")
-      .addToUi();
+    SpreadsheetApp.getUi().createMenu("Sales Tools").addItem("Log Yesterday's Sales", "processDaily").addSeparator().addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly").addSeparator().addItem("Start New Month (Rollover)", "rolloverMonth").addToUi();
   } catch (e) {
     Logger.log("Failed to create menu in onOpen: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
   }
