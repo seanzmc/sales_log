@@ -2,23 +2,20 @@
 
 ## 1. Choose Your Product Model
 
-### Option A: Template + Script (Easiest to start)
+### Option A: Template + Script (This is the one I'm going with)
 
 Pre-configured Google Sheet template with the script already installed
 Customers make a copy and it's ready to use
 Price: $49-$199 one-time
 
-Option B: Add-on Marketplace
-
-Publish as a Google Workspace Marketplace add-on
+*Option B: Add-on Marketplace*
+*Publish as a Google Workspace Marketplace add-on
 Recurring revenue potential ($9-29/month)
-Wider reach but requires Google's approval
-
-Option C: Self-Hosted SaaS
-
-Rebuild as a standalone web app with Google Sheets integration
+Wider reach but requires Google's approval*
+*Option C: Self-Hosted SaaS*
+*Rebuild as a standalone web app with Google Sheets integration
 Monthly subscription ($29-99/month)
-Most scalable but requires more development
+Most scalable but requires more development*
 
 ## 2. Productization Steps
 
