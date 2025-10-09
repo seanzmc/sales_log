@@ -4,6 +4,17 @@
       // Handles UI interactions, validation, and server communication
       // ========================================================================
 
+      // Server-injected initial configuration (eliminates initial API call)
+      const INITIAL_CONFIG = <?= prepareInitialState(getConfiguration()) ?>;
+
+      // Feature flags from server
+      const FEATURE_FLAGS = {
+        hasSalespeople: <?= prepareFeatureFlags(getConfiguration()).hasSalespeople ?>,
+        hasCustomColors: <?= prepareFeatureFlags(getConfiguration()).hasCustomColors ?>,
+        skipSundays: <?= prepareFeatureFlags(getConfiguration()).skipSundays ?>,
+        mondayLogsSaturday: <?= prepareFeatureFlags(getConfiguration()).mondayLogsSaturday ?>
+      };
+
       // Configuration cache
       let configCache = null;
       let editingMode = false;
@@ -35,19 +46,31 @@
       // ========================================================================
 
       function loadConfiguration() {
-        showLoading(true);
-
-        google.script.run
-          .withSuccessHandler(function (config) {
-            configCache = config;
-            populateUI(config);
-            showLoading(false);
-          })
-          .withFailureHandler(function (error) {
-            showToast('Error loading configuration: ' + error.message, 'error');
-            showLoading(false);
-          })
-          .getConfiguration();
+        // Use server-injected initial configuration (no API call needed on first load)
+        try {
+          const config = JSON.parse(INITIAL_CONFIG);
+          configCache = config;
+          populateUI(config);
+          
+          // Log successful load from injected data
+          console.log('Configuration loaded from server injection (no API call)');
+        } catch (e) {
+          // Fallback to API call if injection fails
+          console.warn('Failed to parse injected config, falling back to API call:', e);
+          showLoading(true);
+          
+          google.script.run
+            .withSuccessHandler(function (config) {
+              configCache = config;
+              populateUI(config);
+              showLoading(false);
+            })
+            .withFailureHandler(function (error) {
+              showToast('Error loading configuration: ' + error.message, 'error');
+              showLoading(false);
+            })
+            .getConfiguration();
+        }
       }
 
       function populateUI(config) {

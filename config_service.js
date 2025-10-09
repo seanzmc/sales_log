@@ -753,7 +753,7 @@ function exportConfiguration() {
 /**
  * Imports configuration from JSON string
  * Validates before saving
- * 
+ *
  * @param {string} json - Configuration JSON string
  * @returns {Object} Imported configuration
  * @throws {Error} If JSON is invalid or validation fails
@@ -775,4 +775,146 @@ function importConfiguration(json) {
     Logger.log('Error in importConfiguration: ' + e);
     throw new Error('Failed to import configuration: ' + e.message);
   }
+}
+
+// ============================================================================
+// SCRIPTLET INTEGRATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Prepares all data needed for scriptlet injection in HTML templates
+ * This is the main entry point for server-side rendering optimization
+ *
+ * @returns {Object} Object containing all scriptlet data
+ */
+function prepareScriptletData() {
+  try {
+    const config = getConfiguration();
+    
+    return {
+      cssVariables: generateCssVariables(config.visual),
+      initialState: prepareInitialState(config),
+      featureFlags: prepareFeatureFlags(config)
+    };
+  } catch (e) {
+    Logger.log('Error in prepareScriptletData: ' + e.toString());
+    // Return safe defaults on error
+    return {
+      cssVariables: generateCssVariables(DEFAULT_CONFIG.visual),
+      initialState: prepareInitialState(DEFAULT_CONFIG),
+      featureFlags: prepareFeatureFlags(DEFAULT_CONFIG)
+    };
+  }
+}
+
+/**
+ * Generates CSS variable declarations from visual configuration
+ * Used in config_sidebar_css.html for dynamic theming
+ *
+ * @param {Object} visual - Visual configuration object
+ * @returns {string} CSS variable declarations
+ */
+function generateCssVariables(visual) {
+  if (!visual) {
+    visual = DEFAULT_CONFIG.visual;
+  }
+  
+  const vars = [];
+  
+  // Color variables
+  if (visual.nonDeliveredColor) {
+    vars.push(`--color-non-delivered: ${visual.nonDeliveredColor};`);
+  }
+  if (visual.salespersonErrorColor) {
+    vars.push(`--color-salesperson-error: ${visual.salespersonErrorColor};`);
+  }
+  if (visual.duplicateStockFillColor) {
+    vars.push(`--color-duplicate-fill: ${visual.duplicateStockFillColor};`);
+  }
+  if (visual.duplicateStockTextColor) {
+    vars.push(`--color-duplicate-text: ${visual.duplicateStockTextColor};`);
+  }
+  if (visual.leaderboardZeroMtdBgColor) {
+    vars.push(`--color-leaderboard-zero: ${visual.leaderboardZeroMtdBgColor};`);
+  }
+  
+  // Pace threshold variables (for potential future use)
+  if (visual.paceThresholds) {
+    vars.push(`--threshold-green: ${visual.paceThresholds.green};`);
+    vars.push(`--threshold-yellow: ${visual.paceThresholds.yellow};`);
+    vars.push(`--threshold-red: ${visual.paceThresholds.red};`);
+  }
+  
+  return vars.join('\n        ');
+}
+
+/**
+ * Prepares initial configuration state for injection into JavaScript
+ * Eliminates the need for initial API call on page load
+ *
+ * @param {Object} config - Full configuration object
+ * @returns {string} JSON-encoded configuration safe for script injection
+ */
+function prepareInitialState(config) {
+  if (!config) {
+    config = DEFAULT_CONFIG;
+  }
+  
+  // Create a clean copy for client-side use
+  const clientConfig = {
+    version: config.version || "1",
+    salespeople: config.salespeople || [],
+    visual: config.visual || DEFAULT_CONFIG.visual,
+    dates: config.dates || DEFAULT_CONFIG.dates,
+    lastModified: config.lastModified,
+    modifiedBy: config.modifiedBy
+  };
+  
+  // Convert to JSON and escape for safe injection
+  return escapeHtmlForScriptlet(JSON.stringify(clientConfig));
+}
+
+/**
+ * Prepares feature flags for conditional rendering in templates
+ * Allows server-side decisions about which features to enable
+ *
+ * @param {Object} config - Configuration object
+ * @returns {Object} Feature flags object
+ */
+function prepareFeatureFlags(config) {
+  return {
+    hasSalespeople: config.salespeople && config.salespeople.length > 0,
+    hasCustomColors: config.visual && (
+      config.visual.nonDeliveredColor !== DEFAULT_CONFIG.visual.nonDeliveredColor ||
+      config.visual.salespersonErrorColor !== DEFAULT_CONFIG.visual.salespersonErrorColor
+    ),
+    hasCustomThresholds: config.visual && config.visual.paceThresholds && (
+      config.visual.paceThresholds.green !== DEFAULT_CONFIG.visual.paceThresholds.green ||
+      config.visual.paceThresholds.yellow !== DEFAULT_CONFIG.visual.paceThresholds.yellow ||
+      config.visual.paceThresholds.red !== DEFAULT_CONFIG.visual.paceThresholds.red
+    ),
+    skipSundays: config.dates ? config.dates.skipSundays : true,
+    mondayLogsSaturday: config.dates ? config.dates.mondayLogsSaturday : true
+  };
+}
+
+/**
+ * Escapes HTML special characters for safe scriptlet injection
+ * Prevents XSS attacks when injecting user data into templates
+ *
+ * @param {string} text - Text to escape
+ * @returns {string} HTML-escaped text
+ */
+function escapeHtmlForScriptlet(text) {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/\//g, '&#x2F;');
 }

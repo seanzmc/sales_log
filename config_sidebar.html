@@ -7,6 +7,19 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
     <title>Sales Log Settings</title>
+    
+    <!-- Server-side scriptlet data injection for performance optimization -->
+    <script>
+      // Global scriptlet data initialized server-side
+      window.SCRIPTLET_DATA = {
+        version: '<?= getConfiguration().version ?>',
+        configVersion: '<?= getConfiguration().version ?>',
+        lastModified: '<?= getConfiguration().lastModified ?>',
+        hasSalespeople: <?= prepareFeatureFlags(getConfiguration()).hasSalespeople ?>,
+        hasCustomColors: <?= prepareFeatureFlags(getConfiguration()).hasCustomColors ?>,
+        timestamp: new Date().toISOString()
+      };
+    </script>
 
     <?!= include('config_sidebar_css') ?>
   </head>
@@ -84,7 +97,11 @@
            style="margin-top: 24px;">Current Team</div>
       <div id="salesperson-list"
            class="salesperson-list">
-        <!-- Populated dynamically -->
+        <? if (!prepareFeatureFlags(getConfiguration()).hasSalespeople) { ?>
+          <div class="help-text">No salespeople configured yet. Add your first team member using the form above.</div>
+        <? } else { ?>
+          <!-- Populated dynamically via JavaScript -->
+        <? } ?>
       </div>
 
       <!-- Edit Form (Hidden by default) -->

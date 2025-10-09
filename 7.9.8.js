@@ -856,8 +856,9 @@ function openConfigurationSidebar() {
       migrateToConfigUI();
     }
     
-    // Create and show sidebar
-    const html = HtmlService.createHtmlOutputFromFile('config_sidebar')
+    // Create template from file (enables server-side scriptlet execution)
+    const template = HtmlService.createTemplateFromFile('config_sidebar');
+    const html = template.evaluate()
       .setTitle('Sales Log Settings')
       .setWidth(350);
     

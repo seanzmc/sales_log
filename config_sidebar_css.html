@@ -4,6 +4,11 @@
        Mobile-first: 280px minimum, 350px desktop optimal
        ======================================================================== */
 
+      /* CSS Variables from Server Configuration */
+      :root {
+        <?!= generateCssVariables(getConfiguration().visual) ?>
+      }
+
       * {
         box-sizing: border-box;
         margin: 0;
