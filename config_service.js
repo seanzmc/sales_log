@@ -42,6 +42,56 @@ const DEFAULT_CONFIG = {
 };
 
 // ============================================================================
+// DATE SETTINGS HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Gets date configuration settings
+ * Used by main script for date calculations
+ *
+ * @returns {Object} Date settings {skipSundays, mondayLogsSaturday, archiveFormat}
+ */
+function getDateSettings() {
+  try {
+    const config = getConfiguration();
+    return config.dates || DEFAULT_CONFIG.dates;
+  } catch (e) {
+    Logger.log('Error getting date settings: ' + e);
+    return DEFAULT_CONFIG.dates;
+  }
+}
+
+/**
+ * Checks if Sundays should be counted as selling days
+ *
+ * @returns {boolean} True if Sundays should be skipped, false otherwise
+ */
+function shouldSkipSundays() {
+  try {
+    const dateSettings = getDateSettings();
+    return dateSettings.skipSundays !== false; // Default to true if not set
+  } catch (e) {
+    Logger.log('Error checking skipSundays: ' + e);
+    return true; // Default to skipping Sundays on error
+  }
+}
+
+/**
+ * Checks if Monday should log Saturday's date
+ *
+ * @returns {boolean} True if Monday should default to Saturday, false otherwise
+ */
+function shouldMondayLogSaturday() {
+  try {
+    const dateSettings = getDateSettings();
+    return dateSettings.mondayLogsSaturday !== false; // Default to true if not set
+  } catch (e) {
+    Logger.log('Error checking mondayLogsSaturday: ' + e);
+    return true; // Default to true on error
+  }
+}
+
+// ============================================================================
 // HTML TEMPLATE UTILITIES
 // ============================================================================
 
@@ -145,6 +195,11 @@ function updateConfiguration(updates) {
     
     // Invalidate cache
     CacheService.getScriptCache().remove(CONFIG_CACHE_KEY);
+    
+    // Invalidate visual config cache if visual settings were updated
+    if (updates.visual) {
+      CacheService.getScriptCache().remove('visualConfig');
+    }
     
     // Sync salespeople to sheet for backward compatibility
     if (updates.salespeople) {

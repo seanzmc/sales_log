@@ -11,6 +11,7 @@
 // Module-scope constants & caches
 const CACHE = CacheService.getScriptCache();
 const CACHE_KEY_NAME_MAP = "salespersonMaps"; // Updated cache key name
+const CACHE_KEY_COLORS = "visualConfig"; // Cache key for color configuration
 const sellingDaysCache = {};
 // Cached global reference for SpreadsheetApp's active spreadsheet
 const SS = SpreadsheetApp.getActive();
@@ -25,16 +26,94 @@ const RANGES = {
   todayUsedCarDataRange: "I2:N101", // For rules 2 & 4
 };
 
-const NON_DELIVERED_DEAL_COLOR = "#FF0000"; // Standard Red
-const NON_DELIVERED_DEAL_COLOR_UPPER = NON_DELIVERED_DEAL_COLOR.toUpperCase();
-const SALESPERSON_CODE_ERROR_COLOR = "#FFEBEE"; // Light Red
-const SALESPERSON_CODE_ERROR_COLOR_UPPER = SALESPERSON_CODE_ERROR_COLOR.toUpperCase();
-const DUPLICATE_STOCK_FILL_COLOR = "#b4ff0c"; // Light green/yellow for duplicates
-const DUPLICATE_STOCK_TEXT_COLOR = "#ff0000"; // Red text for duplicates
+// Default color constants (used as fallbacks if configuration not available)
+const DEFAULT_COLORS = {
+  nonDeliveredColor: "#FF0000",
+  salespersonErrorColor: "#FFEBEE",
+  duplicateStockFillColor: "#b4ff0c",
+  duplicateStockTextColor: "#ff0000",
+  leaderboardZeroMtdBgColor: "#F0F8FF",
+  paceThresholds: {
+    green: 10,
+    yellow: 8,
+    red: 0
+  }
+};
 
-// New color for leaderboard when MTD is all zero - MAKE SURE THESE ARE HERE
-const LEADERBOARD_ZERO_MTD_BG_COLOR = "#F0F8FF"; // AliceBlue (a faint light powder blue)
-const LEADERBOARD_ZERO_MTD_BG_COLOR_UPPER = LEADERBOARD_ZERO_MTD_BG_COLOR.toUpperCase();
+// Module-scope color configuration cache
+let colorConfig = null;
+
+/**
+ * Loads visual configuration (colors and thresholds) from Properties Service
+ * Uses caching for performance optimization
+ *
+ * @returns {Object} Visual configuration object with colors and pace thresholds
+ */
+function getVisualConfig() {
+  // Return cached config if available
+  if (colorConfig) {
+    return colorConfig;
+  }
+  
+  // Check script cache first
+  const cached = CACHE.get(CACHE_KEY_COLORS);
+  if (cached) {
+    try {
+      colorConfig = JSON.parse(cached);
+      return colorConfig;
+    } catch (e) {
+      Logger.log('Error parsing cached visual config: ' + e);
+    }
+  }
+  
+  // Load from configuration service
+  try {
+    const config = getConfiguration();
+    if (config && config.visual) {
+      colorConfig = config.visual;
+      // Cache for 5 minutes
+      CACHE.put(CACHE_KEY_COLORS, JSON.stringify(colorConfig), 300);
+      return colorConfig;
+    }
+  } catch (e) {
+    Logger.log('Error loading visual config from Properties Service: ' + e);
+  }
+  
+  // Fallback to defaults
+  Logger.log('Using default color configuration');
+  colorConfig = DEFAULT_COLORS;
+  return colorConfig;
+}
+
+/**
+ * Gets a specific color value with fallback to defaults
+ *
+ * @param {string} colorKey - Key for the color (e.g., 'nonDeliveredColor')
+ * @returns {string} Hex color code
+ */
+function getColor(colorKey) {
+  const config = getVisualConfig();
+  return config[colorKey] || DEFAULT_COLORS[colorKey];
+}
+
+/**
+ * Gets pace threshold values with fallback to defaults
+ *
+ * @returns {Object} Pace thresholds {green, yellow, red}
+ */
+function getPaceThresholds() {
+  const config = getVisualConfig();
+  return config.paceThresholds || DEFAULT_COLORS.paceThresholds;
+}
+
+/**
+ * Invalidates the visual configuration cache
+ * Should be called after configuration updates
+ */
+function invalidateVisualConfigCache() {
+  colorConfig = null;
+  CACHE.remove(CACHE_KEY_COLORS);
+}
 
 // Utility: get sheet references once
 /**
@@ -61,29 +140,41 @@ function getSheets() {
 // cacheOps
 /**
  * Returns cached or newly computed selling days elapsed and total for a given month/year.
- * Counts weekdays and Saturdays (excludes Sunday).
+ * Respects user configuration for whether to count Sundays as selling days.
  *
  * @param {number} year Full year number (e.g., 2025).
  * @param {number} month Zero-based month index (0-11).
  * @returns {{daysElapsed: number, totalDays: number}} Selling days counts.
  */
 function memoizedGetSellingDays(year, month) {
-  const key = `${year}-${month}`;
+  // Get Sunday configuration
+  const skipSundays = shouldSkipSundays();
+  const key = `${year}-${month}-${skipSundays}`;
   if (sellingDaysCache[key]) return sellingDaysCache[key];
+  
   const todayDate = new Date();
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
   let elapsed = 0,
     total = 0;
-  // Calculate elapsed selling days (Mon-Sat) up to today within the month
+  
+  // Calculate elapsed selling days up to today within the month
   for (let d = new Date(first); d <= todayDate && d <= last; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() !== 0) elapsed++; // Count if day is not Sunday (0)
+    const dayOfWeek = d.getDay();
+    // Count day if: (1) skipSundays is false, OR (2) day is not Sunday
+    if (!skipSundays || dayOfWeek !== 0) {
+      elapsed++;
+    }
   }
   elapsed = Math.max(elapsed, 1); // Ensure at least 1 day elapsed
 
-  // Calculate total selling days (Mon-Sat) in the month
+  // Calculate total selling days in the month
   for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() !== 0) total++; // Count if day is not Sunday (0)
+    const dayOfWeek = d.getDay();
+    // Count day if: (1) skipSundays is false, OR (2) day is not Sunday
+    if (!skipSundays || dayOfWeek !== 0) {
+      total++;
+    }
   }
   sellingDaysCache[key] = { daysElapsed: elapsed, totalDays: total };
   return sellingDaysCache[key];
@@ -159,8 +250,16 @@ function formatDateOffset(offsetDays = 1) {
   const d = new Date();
   const dayOfWeek = d.getDay();
   let daysToSubtract = offsetDays;
-  if (dayOfWeek === 1 && offsetDays === 1) daysToSubtract = 2; // Monday, log Saturday
-  else if (dayOfWeek === 0 && offsetDays === 1) daysToSubtract = 2; // Sunday, log Friday
+  
+  // Get Monday logs Saturday configuration
+  const mondayLogsSaturday = shouldMondayLogSaturday();
+  
+  if (mondayLogsSaturday && dayOfWeek === 1 && offsetDays === 1) {
+    daysToSubtract = 2; // Monday, log Saturday
+  } else if (dayOfWeek === 0 && offsetDays === 1) {
+    daysToSubtract = 2; // Sunday, log Friday (always applies)
+  }
+  
   d.setDate(d.getDate() - daysToSubtract);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
@@ -304,6 +403,13 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
   if (!rowsData || rowsData.length === 0) {
     return []; // No data to process
   }
+  
+  // Get configured colors
+  const NON_DELIVERED_COLOR = getColor('nonDeliveredColor');
+  const NON_DELIVERED_COLOR_UPPER = NON_DELIVERED_COLOR.toUpperCase();
+  const SALESPERSON_ERROR_COLOR = getColor('salespersonErrorColor');
+  const SALESPERSON_ERROR_COLOR_UPPER = SALESPERSON_ERROR_COLOR.toUpperCase();
+  
   const salespersonErrorSheetRows = [];
   const numRows = rowsData.length;
 
@@ -327,21 +433,21 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
     const newSectionHasAnyData = rowData.length > 1 && rowData.slice(1, 7).some((cell) => cell && String(cell).trim() !== "");
 
     if (newSectionHasAnyData && !isNewActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4) { newSectionBgRow[k] = NON_DELIVERED_DEAL_COLOR; } }
+      for (let k = 0; k < 6; k++) { if (k !== 4) { newSectionBgRow[k] = NON_DELIVERED_COLOR; } }
     } else if (isNewActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { newSectionBgRow[k] = null; } }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { newSectionBgRow[k] = null; } }
       if (newSalespersonInput) {
         const newSalespersonParts = newSalespersonInput.split("/").map((s) => s.trim().toUpperCase());
         if (newSalespersonParts.some((part) => part && !aliasMap[part])) {
-          newSectionBgRow[5] = SALESPERSON_CODE_ERROR_COLOR;
+          newSectionBgRow[5] = SALESPERSON_ERROR_COLOR;
           if (!salespersonErrorSheetRows.includes(currentRowInSheet)) { salespersonErrorSheetRows.push(currentRowInSheet); }
-        } else if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) {
+        } else if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) {
           newSectionBgRow[5] = null;
         }
       }
     } else {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { newSectionBgRow[k] = null; } }
-      if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) { newSectionBgRow[5] = null; }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { newSectionBgRow[k] = null; } }
+      if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) { newSectionBgRow[5] = null; }
     }
     backgroundsNewSection.push(newSectionBgRow);
 
@@ -352,21 +458,21 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
     const usedSectionHasAnyData = rowData.length > 8 && rowData.slice(8, 14).some((cell) => cell && String(cell).trim() !== "");
 
     if (usedSectionHasAnyData && !isUsedActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4) { usedSectionBgRow[k] = NON_DELIVERED_DEAL_COLOR; } }
+      for (let k = 0; k < 6; k++) { if (k !== 4) { usedSectionBgRow[k] = NON_DELIVERED_COLOR; } }
     } else if (isUsedActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
       if (usedSalespersonInput) {
         const usedSalespersonParts = usedSalespersonInput.split("/").map((s) => s.trim().toUpperCase());
         if (usedSalespersonParts.some((part) => part && !aliasMap[part])) {
-          usedSectionBgRow[5] = SALESPERSON_CODE_ERROR_COLOR;
+          usedSectionBgRow[5] = SALESPERSON_ERROR_COLOR;
           if (!salespersonErrorSheetRows.includes(currentRowInSheet)) { salespersonErrorSheetRows.push(currentRowInSheet); }
-        } else if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) {
+        } else if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) {
           usedSectionBgRow[5] = null;
         }
       }
     } else {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_DEAL_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
-      if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_CODE_ERROR_COLOR_UPPER) { usedSectionBgRow[5] = null; }
+      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
+      if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) { usedSectionBgRow[5] = null; }
     }
     backgroundsUsedSection.push(usedSectionBgRow);
   }
@@ -404,15 +510,17 @@ function findLastRowInCols(sheet, startCol, endCol) {
 // Main flows
 function processDaily() {
   withScriptLock(() => {
-    // ADD THIS CHECK FOR SUNDAY
+    // Check if Sundays should be skipped based on configuration
     const today = new Date();
+    const skipSundays = shouldSkipSundays();
+    
     // In Google Apps Script, Sunday is 0, Monday is 1, ..., Saturday is 6
-    if (today.getDay() === 0) {
+    if (skipSundays && today.getDay() === 0) {
       // 0 represents Sunday
-      Logger.log("Today is Sunday. Skipping processDaily execution.");
-      return; // Exit the function if it's Sunday
+      Logger.log("Today is Sunday and skipSundays is enabled. Skipping processDaily execution.");
+      toastInfo("Sunday is configured as a non-sales day. No processing performed.", "Sunday Skip");
+      return; // Exit the function if it's Sunday and skipSundays is true
     }
-    // END OF SUNDAY CHECK
 
     toastInfo("Processing daily sales...", "Working");
     let errorSheetRows = [];
@@ -540,6 +648,13 @@ function processDaily() {
  */
 function reapplyCF() {
   try {
+    // Get configured colors and thresholds
+    const LEADERBOARD_ZERO_BG_COLOR = getColor('leaderboardZeroMtdBgColor');
+    const LEADERBOARD_ZERO_BG_COLOR_UPPER = LEADERBOARD_ZERO_BG_COLOR.toUpperCase();
+    const DUPLICATE_FILL_COLOR = getColor('duplicateStockFillColor');
+    const DUPLICATE_TEXT_COLOR = getColor('duplicateStockTextColor');
+    const paceThresholds = getPaceThresholds();
+    
     const sheets = getSheets();
     const todaySheet = sheets.today;
 
@@ -554,7 +669,7 @@ function reapplyCF() {
     const managedLeaderboardBlueRuleSignature = {
       formula: "=1=1",
       rangeA1: RANGES.leaderboard,
-      background: LEADERBOARD_ZERO_MTD_BG_COLOR_UPPER,
+      background: LEADERBOARD_ZERO_BG_COLOR_UPPER,
     };
     const PACE_COLORS_UPPER = ["#70AD47", "#FFEE32", "#C00000"].map((c) => c.toUpperCase());
 
@@ -613,15 +728,15 @@ function reapplyCF() {
     const cfLeaderboardRange = todaySheet.getRange(RANGES.leaderboard);
 
     if (allMtdAreZero) {
-      Logger.log("All MTD are zero. Applying faint powder blue background to leaderboard.");
-      newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(managedLeaderboardBlueRuleSignature.formula).setBackground(LEADERBOARD_ZERO_MTD_BG_COLOR).setRanges([cfLeaderboardRange]).build());
+      Logger.log("All MTD are zero. Applying configured background to leaderboard.");
+      newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(managedLeaderboardBlueRuleSignature.formula).setBackground(LEADERBOARD_ZERO_BG_COLOR).setRanges([cfLeaderboardRange]).build());
     } else {
       Logger.log("MTD sales detected or error in MTD check. Applying standard pace conditional formatting.");
       if (totalDays > 0 && paceBase) {
         newRules.push(
-          SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(`=${paceBase}>=10`).setBackground(PACE_COLORS_UPPER[0]).setRanges([cfLeaderboardRange]).build(), // Green
-          SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(`=AND(${paceBase}>=8,${paceBase}<10)`).setBackground(PACE_COLORS_UPPER[1]).setRanges([cfLeaderboardRange]).build(), // Yellow
-          SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(`=${paceBase}<8`).setBackground(PACE_COLORS_UPPER[2]).setRanges([cfLeaderboardRange]).build() // Red
+          SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(`=${paceBase}>=${paceThresholds.green}`).setBackground(PACE_COLORS_UPPER[0]).setRanges([cfLeaderboardRange]).build(), // Green
+          SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(`=AND(${paceBase}>=${paceThresholds.yellow},${paceBase}<${paceThresholds.green})`).setBackground(PACE_COLORS_UPPER[1]).setRanges([cfLeaderboardRange]).build(), // Yellow
+          SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(`=${paceBase}<${paceThresholds.yellow}`).setBackground(PACE_COLORS_UPPER[2]).setRanges([cfLeaderboardRange]).build() // Red
         );
       } else {
         Logger.log("Cannot apply leaderboard pace CF: Total selling days is zero or paceBase is null.");
@@ -631,10 +746,10 @@ function reapplyCF() {
     const todayNewCarRange = todaySheet.getRange(RANGES.todayNewCarDataRange);
     const todayUsedCarRange = todaySheet.getRange(RANGES.todayUsedCarDataRange);
 
-    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=COUNTIF($E$2:$E$101,$E2)>1").setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayNewCarRange]).build());
-    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=COUNTIF($L$2:$L$101,$L2)>1").setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayUsedCarRange]).build());
-    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$E2)>0').setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayNewCarRange]).build());
-    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$L2)>0').setFontColor(DUPLICATE_STOCK_TEXT_COLOR).setBackground(DUPLICATE_STOCK_FILL_COLOR).setRanges([todayUsedCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=COUNTIF($E$2:$E$101,$E2)>1").setFontColor(DUPLICATE_TEXT_COLOR).setBackground(DUPLICATE_FILL_COLOR).setRanges([todayNewCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied("=COUNTIF($L$2:$L$101,$L2)>1").setFontColor(DUPLICATE_TEXT_COLOR).setBackground(DUPLICATE_FILL_COLOR).setRanges([todayUsedCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$E2)>0').setFontColor(DUPLICATE_TEXT_COLOR).setBackground(DUPLICATE_FILL_COLOR).setRanges([todayNewCarRange]).build());
+    newRules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$L2)>0').setFontColor(DUPLICATE_TEXT_COLOR).setBackground(DUPLICATE_FILL_COLOR).setRanges([todayUsedCarRange]).build());
 
     setCFRulesSheet(todaySheet, newRules);
     toastInfo("Conditional formatting updated for Leaderboard and Data Entry.", "CF Updated");
