@@ -1,0 +1,763 @@
+/**
+ * Configuration Service for Sales Log Pro
+ * Server-side API for managing dynamic configuration via Properties Service
+ * Implements hybrid storage: Properties Service (primary) + SALESPEOPLE sheet (sync)
+ * 
+ * Security: Server-side validation, LockService for atomic updates, XSS prevention
+ * Performance: <300ms target for all operations, 10-minute cache TTL
+ */
+
+// Configuration constants
+const CONFIG_PROPERTY_KEY = 'SALES_LOG_CONFIG';
+const CONFIG_VERSION_KEY = 'CONFIG_VERSION';
+const CONFIG_CACHE_KEY = 'config_cache';
+const CONFIG_CACHE_TTL = 600; // 10 minutes in seconds
+
+/**
+ * Default configuration based on 7.9.8.js hardcoded constants
+ * This serves as the fallback and migration source
+ */
+const DEFAULT_CONFIG = {
+  version: "1",
+  salespeople: [], // Will be populated from SALESPEOPLE sheet during migration
+  visual: {
+    nonDeliveredColor: "#FF0000",
+    salespersonErrorColor: "#FFEBEE",
+    duplicateStockFillColor: "#b4ff0c",
+    duplicateStockTextColor: "#ff0000",
+    leaderboardZeroMtdBgColor: "#F0F8FF",
+    paceThresholds: {
+      green: 10,
+      yellow: 8,
+      red: 0
+    }
+  },
+  dates: {
+    skipSundays: true,
+    mondayLogsSaturday: true,
+    archiveFormat: "M/YY" // Options: "M/YY", "MM/YY", "MMM/YY"
+  },
+  lastModified: new Date().toISOString(),
+  modifiedBy: Session.getActiveUser().getEmail()
+};
+
+// ============================================================================
+// CORE CONFIGURATION MANAGEMENT
+// ============================================================================
+
+/**
+ * Retrieves the full configuration from Properties Service
+ * Falls back to defaults if configuration doesn't exist
+ * Uses caching for performance optimization
+ * 
+ * @returns {Object} Complete configuration object
+ */
+function getConfiguration() {
+  try {
+    // Check cache first
+    const cached = CacheService.getScriptCache().get(CONFIG_CACHE_KEY);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch (e) {
+        Logger.log('Cache parse error in getConfiguration: ' + e);
+      }
+    }
+
+    // Read from Properties Service
+    const props = PropertiesService.getDocumentProperties();
+    const configJson = props.getProperty(CONFIG_PROPERTY_KEY);
+
+    if (configJson) {
+      const config = JSON.parse(configJson);
+      
+      // Validate structure and fill in any missing defaults
+      const validatedConfig = mergeWithDefaults(config);
+      
+      // Cache the result
+      CacheService.getScriptCache().put(CONFIG_CACHE_KEY, JSON.stringify(validatedConfig), CONFIG_CACHE_TTL);
+      
+      return validatedConfig;
+    } else {
+      // No configuration exists - return defaults
+      Logger.log('No configuration found in Properties. Returning defaults.');
+      return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); // Deep copy
+    }
+  } catch (e) {
+    Logger.log('Error in getConfiguration: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    // Return defaults on error
+    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  }
+}
+
+/**
+ * Updates configuration with provided changes (partial updates supported)
+ * Uses LockService for atomic updates to prevent race conditions
+ * Invalidates cache and syncs to SALESPEOPLE sheet
+ * 
+ * @param {Object} updates - Partial configuration object with changes
+ * @returns {Object} Updated configuration object
+ * @throws {Error} If validation fails or update operation fails
+ */
+function updateConfiguration(updates) {
+  const lock = LockService.getScriptLock();
+  
+  try {
+    // Wait up to 30 seconds for lock
+    lock.waitLock(30000);
+    
+    // Get current configuration
+    const currentConfig = getConfiguration();
+    
+    // Merge updates (deep merge for nested objects)
+    const updatedConfig = deepMerge(currentConfig, updates);
+    
+    // Update metadata
+    updatedConfig.lastModified = new Date().toISOString();
+    updatedConfig.modifiedBy = Session.getActiveUser().getEmail();
+    updatedConfig.version = String(parseInt(updatedConfig.version || "1") + 1);
+    
+    // Validate the complete configuration
+    const validationErrors = validateConfiguration(updatedConfig);
+    if (validationErrors.length > 0) {
+      throw new Error('Configuration validation failed: ' + validationErrors.join('; '));
+    }
+    
+    // Save to Properties Service
+    const props = PropertiesService.getDocumentProperties();
+    props.setProperty(CONFIG_PROPERTY_KEY, JSON.stringify(updatedConfig));
+    props.setProperty(CONFIG_VERSION_KEY, updatedConfig.version);
+    
+    // Invalidate cache
+    CacheService.getScriptCache().remove(CONFIG_CACHE_KEY);
+    
+    // Sync salespeople to sheet for backward compatibility
+    if (updates.salespeople) {
+      syncToSalespeopleSheet(updatedConfig);
+    }
+    
+    Logger.log('Configuration updated successfully. Version: ' + updatedConfig.version);
+    
+    return updatedConfig;
+    
+  } catch (e) {
+    Logger.log('Error in updateConfiguration: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    throw e;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Resets configuration to default values
+ * Preserves salespeople from SALESPEOPLE sheet
+ * 
+ * @returns {Object} Reset configuration object
+ */
+function resetToDefaults() {
+  try {
+    // Get current salespeople to preserve them
+    const currentConfig = getConfiguration();
+    const salespeople = currentConfig.salespeople || [];
+    
+    // Create fresh default config
+    const defaultConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    defaultConfig.salespeople = salespeople;
+    defaultConfig.lastModified = new Date().toISOString();
+    defaultConfig.modifiedBy = Session.getActiveUser().getEmail();
+    
+    // Save using updateConfiguration for proper locking
+    return updateConfiguration(defaultConfig);
+    
+  } catch (e) {
+    Logger.log('Error in resetToDefaults: ' + e.toString());
+    throw new Error('Failed to reset configuration: ' + e.message);
+  }
+}
+
+// ============================================================================
+// SALESPERSON MANAGEMENT (CRUD OPERATIONS)
+// ============================================================================
+
+/**
+ * Returns array of salespeople from configuration
+ * 
+ * @returns {Array} Array of salesperson objects
+ */
+function getSalespeople() {
+  try {
+    const config = getConfiguration();
+    return config.salespeople || [];
+  } catch (e) {
+    Logger.log('Error in getSalespeople: ' + e);
+    return [];
+  }
+}
+
+/**
+ * Adds a new salesperson to the configuration
+ * Validates data and checks for duplicates
+ * 
+ * @param {Object} data - Salesperson data {fullName, aliases, displayCode}
+ * @returns {Object} Updated configuration
+ * @throws {Error} If validation fails
+ */
+function addSalesperson(data) {
+  try {
+    // Validate salesperson data
+    const errors = validateSalesperson(data);
+    if (errors.length > 0) {
+      throw new Error('Validation failed: ' + errors.join('; '));
+    }
+    
+    // Sanitize input
+    const sanitized = {
+      fullName: sanitizeText(data.fullName).trim(),
+      aliases: sanitizeText(data.aliases).trim(),
+      displayCode: sanitizeText(data.displayCode).trim().toUpperCase()
+    };
+    
+    // Get current configuration
+    const config = getConfiguration();
+    const salespeople = config.salespeople || [];
+    
+    // Check for duplicate full name
+    if (salespeople.some(sp => sp.fullName === sanitized.fullName)) {
+      throw new Error('A salesperson with the name "' + sanitized.fullName + '" already exists');
+    }
+    
+    // Check for alias conflicts
+    const aliasConflict = checkAliasConflict(sanitized.aliases, null);
+    if (aliasConflict) {
+      throw new Error('Alias conflict: ' + aliasConflict);
+    }
+    
+    // Add new salesperson
+    salespeople.push(sanitized);
+    
+    // Update configuration
+    return updateConfiguration({ salespeople: salespeople });
+    
+  } catch (e) {
+    Logger.log('Error in addSalesperson: ' + e.toString());
+    throw e;
+  }
+}
+
+/**
+ * Updates an existing salesperson
+ * 
+ * @param {string} fullName - Current full name of salesperson to update
+ * @param {Object} data - New salesperson data
+ * @returns {Object} Updated configuration
+ * @throws {Error} If validation fails or salesperson not found
+ */
+function updateSalesperson(fullName, data) {
+  try {
+    // Validate new data
+    const errors = validateSalesperson(data);
+    if (errors.length > 0) {
+      throw new Error('Validation failed: ' + errors.join('; '));
+    }
+    
+    // Sanitize input
+    const sanitized = {
+      fullName: sanitizeText(data.fullName).trim(),
+      aliases: sanitizeText(data.aliases).trim(),
+      displayCode: sanitizeText(data.displayCode).trim().toUpperCase()
+    };
+    
+    // Get current configuration
+    const config = getConfiguration();
+    const salespeople = config.salespeople || [];
+    
+    // Find the salesperson
+    const index = salespeople.findIndex(sp => sp.fullName === fullName);
+    if (index === -1) {
+      throw new Error('Salesperson "' + fullName + '" not found');
+    }
+    
+    // If name is changing, check for duplicates
+    if (sanitized.fullName !== fullName) {
+      if (salespeople.some(sp => sp.fullName === sanitized.fullName)) {
+        throw new Error('A salesperson with the name "' + sanitized.fullName + '" already exists');
+      }
+    }
+    
+    // Check for alias conflicts (excluding current salesperson)
+    const aliasConflict = checkAliasConflict(sanitized.aliases, fullName);
+    if (aliasConflict) {
+      throw new Error('Alias conflict: ' + aliasConflict);
+    }
+    
+    // Update the salesperson
+    salespeople[index] = sanitized;
+    
+    // Update configuration
+    return updateConfiguration({ salespeople: salespeople });
+    
+  } catch (e) {
+    Logger.log('Error in updateSalesperson: ' + e.toString());
+    throw e;
+  }
+}
+
+/**
+ * Deletes a salesperson from configuration
+ * 
+ * @param {string} fullName - Full name of salesperson to delete
+ * @returns {Object} Updated configuration
+ * @throws {Error} If salesperson not found
+ */
+function deleteSalesperson(fullName) {
+  try {
+    // Get current configuration
+    const config = getConfiguration();
+    const salespeople = config.salespeople || [];
+    
+    // Find and remove the salesperson
+    const filtered = salespeople.filter(sp => sp.fullName !== fullName);
+    
+    if (filtered.length === salespeople.length) {
+      throw new Error('Salesperson "' + fullName + '" not found');
+    }
+    
+    // Update configuration
+    return updateConfiguration({ salespeople: filtered });
+    
+  } catch (e) {
+    Logger.log('Error in deleteSalesperson: ' + e.toString());
+    throw e;
+  }
+}
+
+// ============================================================================
+// VALIDATION FUNCTIONS
+// ============================================================================
+
+/**
+ * Validates salesperson data structure and content
+ * Server-side validation is mandatory for security
+ * 
+ * @param {Object} data - Salesperson data to validate
+ * @returns {Array<string>} Array of error messages (empty if valid)
+ */
+function validateSalesperson(data) {
+  const errors = [];
+  
+  if (!data) {
+    errors.push('Salesperson data is required');
+    return errors;
+  }
+  
+  // Validate fullName
+  if (!data.fullName || typeof data.fullName !== 'string') {
+    errors.push('Full name is required');
+  } else {
+    const fullName = data.fullName.trim();
+    if (fullName.length < 2) {
+      errors.push('Full name must be at least 2 characters');
+    }
+    if (fullName.length > 100) {
+      errors.push('Full name must be less than 100 characters');
+    }
+    if (!/^[A-Za-z\s\-']+$/.test(fullName)) {
+      errors.push('Full name can only contain letters, spaces, hyphens, and apostrophes');
+    }
+  }
+  
+  // Validate aliases (optional but must be valid if provided)
+  if (data.aliases !== undefined && data.aliases !== null && data.aliases !== '') {
+    const aliases = String(data.aliases).trim();
+    if (aliases.length > 200) {
+      errors.push('Aliases must be less than 200 characters');
+    }
+    // Aliases can contain letters, numbers, spaces, commas
+    if (!/^[A-Za-z0-9\s,\-']+$/.test(aliases)) {
+      errors.push('Aliases can only contain letters, numbers, spaces, commas, hyphens, and apostrophes');
+    }
+  }
+  
+  // Validate displayCode
+  if (!data.displayCode || typeof data.displayCode !== 'string') {
+    errors.push('Display code is required');
+  } else {
+    const displayCode = data.displayCode.trim();
+    if (!/^[A-Za-z0-9]{2,4}$/.test(displayCode)) {
+      errors.push('Display code must be 2-4 alphanumeric characters');
+    }
+  }
+  
+  return errors;
+}
+
+/**
+ * Validates a hex color code
+ * 
+ * @param {string} colorHex - Color in hex format (e.g., "#FF0000")
+ * @returns {boolean} True if valid, false otherwise
+ */
+function validateColor(colorHex) {
+  if (!colorHex || typeof colorHex !== 'string') {
+    return false;
+  }
+  return /^#[0-9A-F]{6}$/i.test(colorHex);
+}
+
+/**
+ * Checks if an alias conflicts with existing salespeople
+ * 
+ * @param {string} aliasesStr - Comma-separated aliases to check
+ * @param {string|null} excludeFullName - Full name to exclude from conflict check (for updates)
+ * @returns {string|null} Conflict description or null if no conflict
+ */
+function checkAliasConflict(aliasesStr, excludeFullName) {
+  try {
+    if (!aliasesStr || !aliasesStr.trim()) {
+      return null; // No aliases to check
+    }
+    
+    const newAliases = aliasesStr.split(',').map(a => a.trim().toUpperCase()).filter(a => a);
+    const config = getConfiguration();
+    const salespeople = config.salespeople || [];
+    
+    for (const sp of salespeople) {
+      // Skip the salesperson being updated
+      if (excludeFullName && sp.fullName === excludeFullName) {
+        continue;
+      }
+      
+      // Check against full name
+      if (newAliases.includes(sp.fullName.toUpperCase())) {
+        return 'Alias "' + sp.fullName + '" conflicts with existing salesperson name';
+      }
+      
+      // Check against display code
+      if (newAliases.includes(sp.displayCode.toUpperCase())) {
+        return 'Alias "' + sp.displayCode + '" conflicts with existing display code for ' + sp.fullName;
+      }
+      
+      // Check against existing aliases
+      const existingAliases = sp.aliases.split(',').map(a => a.trim().toUpperCase()).filter(a => a);
+      for (const newAlias of newAliases) {
+        if (existingAliases.includes(newAlias)) {
+          return 'Alias "' + newAlias + '" is already used by ' + sp.fullName;
+        }
+      }
+    }
+    
+    return null; // No conflicts
+  } catch (e) {
+    Logger.log('Error in checkAliasConflict: ' + e);
+    return 'Error checking aliases: ' + e.message;
+  }
+}
+
+/**
+ * Validates the complete configuration object
+ * 
+ * @param {Object} config - Configuration object to validate
+ * @returns {Array<string>} Array of error messages (empty if valid)
+ */
+function validateConfiguration(config) {
+  const errors = [];
+  
+  if (!config || typeof config !== 'object') {
+    errors.push('Configuration must be an object');
+    return errors;
+  }
+  
+  // Validate visual settings if present
+  if (config.visual) {
+    const visual = config.visual;
+    
+    if (visual.nonDeliveredColor && !validateColor(visual.nonDeliveredColor)) {
+      errors.push('Invalid non-delivered deal color');
+    }
+    if (visual.salespersonErrorColor && !validateColor(visual.salespersonErrorColor)) {
+      errors.push('Invalid salesperson error color');
+    }
+    if (visual.duplicateStockFillColor && !validateColor(visual.duplicateStockFillColor)) {
+      errors.push('Invalid duplicate stock fill color');
+    }
+    if (visual.duplicateStockTextColor && !validateColor(visual.duplicateStockTextColor)) {
+      errors.push('Invalid duplicate stock text color');
+    }
+    if (visual.leaderboardZeroMtdBgColor && !validateColor(visual.leaderboardZeroMtdBgColor)) {
+      errors.push('Invalid leaderboard zero MTD background color');
+    }
+    
+    // Validate pace thresholds
+    if (visual.paceThresholds) {
+      const thresholds = visual.paceThresholds;
+      if (typeof thresholds.green !== 'number' || thresholds.green < 0) {
+        errors.push('Green pace threshold must be a positive number');
+      }
+      if (typeof thresholds.yellow !== 'number' || thresholds.yellow < 0) {
+        errors.push('Yellow pace threshold must be a positive number');
+      }
+      if (typeof thresholds.red !== 'number' || thresholds.red < 0) {
+        errors.push('Red pace threshold must be a positive number');
+      }
+    }
+  }
+  
+  // Validate date settings if present
+  if (config.dates) {
+    const dates = config.dates;
+    
+    if (dates.skipSundays !== undefined && typeof dates.skipSundays !== 'boolean') {
+      errors.push('skipSundays must be a boolean');
+    }
+    if (dates.mondayLogsSaturday !== undefined && typeof dates.mondayLogsSaturday !== 'boolean') {
+      errors.push('mondayLogsSaturday must be a boolean');
+    }
+    if (dates.archiveFormat && !['M/YY', 'MM/YY', 'MMM/YY'].includes(dates.archiveFormat)) {
+      errors.push('Invalid archive format (must be M/YY, MM/YY, or MMM/YY)');
+    }
+  }
+  
+  // Check total size (Properties Service has 9KB per property limit)
+  const configJson = JSON.stringify(config);
+  if (configJson.length > 8192) {
+    errors.push('Configuration is too large (max 8KB)');
+  }
+  
+  return errors;
+}
+
+// ============================================================================
+// MIGRATION & SYNC FUNCTIONS
+// ============================================================================
+
+/**
+ * Auto-migration from hardcoded constants to Properties Service configuration
+ * Safe to call multiple times - only migrates if no configuration exists
+ * 
+ * @returns {Object} Migration result with status and message
+ */
+function migrateToConfigUI() {
+  try {
+    const props = PropertiesService.getDocumentProperties();
+    
+    // Check if already migrated
+    if (props.getProperty(CONFIG_PROPERTY_KEY)) {
+      Logger.log('Configuration already exists. Migration not needed.');
+      return {
+        success: true,
+        alreadyMigrated: true,
+        message: 'Configuration already exists'
+      };
+    }
+    
+    Logger.log('Starting migration to configuration UI...');
+    
+    // Create default configuration
+    const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    
+    // Migrate salespeople from SALESPEOPLE sheet
+    try {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      const salesSheet = ss.getSheetByName('SALESPEOPLE');
+      
+      if (salesSheet) {
+        const lastRow = salesSheet.getLastRow();
+        if (lastRow > 1) {
+          const data = salesSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+          
+          config.salespeople = data
+            .filter(row => row[0] && String(row[0]).trim()) // Has full name
+            .map(row => ({
+              fullName: String(row[0]).trim(),
+              aliases: String(row[1] || '').trim(),
+              displayCode: String(row[2] || '').trim()
+            }));
+          
+          Logger.log('Migrated ' + config.salespeople.length + ' salespeople from SALESPEOPLE sheet');
+        }
+      }
+    } catch (e) {
+      Logger.log('Warning: Could not migrate from SALESPEOPLE sheet: ' + e);
+      // Continue with empty salespeople array
+    }
+    
+    // Set metadata
+    config.lastModified = new Date().toISOString();
+    config.modifiedBy = Session.getActiveUser().getEmail();
+    config.version = "1";
+    
+    // Save to Properties Service
+    props.setProperty(CONFIG_PROPERTY_KEY, JSON.stringify(config));
+    props.setProperty(CONFIG_VERSION_KEY, config.version);
+    
+    Logger.log('Migration complete. Configuration saved to Properties Service.');
+    
+    // Show success message to user
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      'Configuration system upgraded! Open Settings to customize.',
+      'Migration Complete',
+      5
+    );
+    
+    return {
+      success: true,
+      alreadyMigrated: false,
+      message: 'Migration completed successfully',
+      salespeopleCount: config.salespeople.length
+    };
+    
+  } catch (e) {
+    Logger.log('Error in migrateToConfigUI: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    return {
+      success: false,
+      message: 'Migration failed: ' + e.message
+    };
+  }
+}
+
+/**
+ * Syncs configuration salespeople to SALESPEOPLE sheet for backward compatibility
+ * Properties Service remains the source of truth
+ * 
+ * @param {Object} config - Configuration object containing salespeople
+ */
+function syncToSalespeopleSheet(config) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const salesSheet = ss.getSheetByName('SALESPEOPLE');
+    
+    if (!salesSheet) {
+      Logger.log('SALESPEOPLE sheet not found. Cannot sync.');
+      return;
+    }
+    
+    const salespeople = config.salespeople || [];
+    
+    // Clear existing data (except header)
+    const lastRow = salesSheet.getLastRow();
+    if (lastRow > 1) {
+      salesSheet.getRange(2, 1, lastRow - 1, 3).clearContent();
+    }
+    
+    // Write new data
+    if (salespeople.length > 0) {
+      const data = salespeople.map(sp => [
+        sp.fullName,
+        sp.aliases,
+        sp.displayCode
+      ]);
+      
+      salesSheet.getRange(2, 1, data.length, 3).setValues(data);
+    }
+    
+    Logger.log('Synced ' + salespeople.length + ' salespeople to SALESPEOPLE sheet');
+    
+    // Invalidate the salesperson maps cache to force refresh
+    CacheService.getScriptCache().remove('salespersonMaps');
+    
+  } catch (e) {
+    Logger.log('Error in syncToSalespeopleSheet: ' + e.toString());
+    // Don't throw - sync is secondary operation
+  }
+}
+
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Sanitizes text input to prevent XSS attacks
+ * Removes HTML tags and encodes special characters
+ * 
+ * @param {string} text - Text to sanitize
+ * @returns {string} Sanitized text
+ */
+function sanitizeText(text) {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  
+  // Remove HTML tags
+  let sanitized = text.replace(/<[^>]*>/g, '');
+  
+  // Remove potentially dangerous characters for script injection
+  sanitized = sanitized.replace(/[<>]/g, '');
+  
+  return sanitized;
+}
+
+/**
+ * Deep merges two objects (source overwrites target for conflicts)
+ * 
+ * @param {Object} target - Target object
+ * @param {Object} source - Source object with updates
+ * @returns {Object} Merged object
+ */
+function deepMerge(target, source) {
+  const result = JSON.parse(JSON.stringify(target)); // Deep copy
+  
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        result[key] = deepMerge(result[key] || {}, source[key]);
+      } else {
+        result[key] = source[key];
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Merges configuration with defaults to ensure all required fields exist
+ * 
+ * @param {Object} config - Configuration object
+ * @returns {Object} Configuration with defaults filled in
+ */
+function mergeWithDefaults(config) {
+  const defaults = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  return deepMerge(defaults, config);
+}
+
+/**
+ * Exports configuration as JSON string for backup/migration
+ * 
+ * @returns {string} Configuration as JSON
+ */
+function exportConfiguration() {
+  try {
+    const config = getConfiguration();
+    return JSON.stringify(config, null, 2);
+  } catch (e) {
+    Logger.log('Error in exportConfiguration: ' + e);
+    throw new Error('Failed to export configuration: ' + e.message);
+  }
+}
+
+/**
+ * Imports configuration from JSON string
+ * Validates before saving
+ * 
+ * @param {string} json - Configuration JSON string
+ * @returns {Object} Imported configuration
+ * @throws {Error} If JSON is invalid or validation fails
+ */
+function importConfiguration(json) {
+  try {
+    const config = JSON.parse(json);
+    
+    // Validate structure
+    const errors = validateConfiguration(config);
+    if (errors.length > 0) {
+      throw new Error('Invalid configuration: ' + errors.join('; '));
+    }
+    
+    // Update using standard update function (includes locking)
+    return updateConfiguration(config);
+    
+  } catch (e) {
+    Logger.log('Error in importConfiguration: ' + e);
+    throw new Error('Failed to import configuration: ' + e.message);
+  }
+}

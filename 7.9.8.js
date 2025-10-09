@@ -839,10 +839,61 @@ function rolloverMonth() {
   });
 }
 
+// ============================================================================
+// CONFIGURATION UI FUNCTIONS
+// ============================================================================
+
+/**
+ * Opens the configuration sidebar
+ * Initializes migration if needed on first open
+ */
+function openConfigurationSidebar() {
+  try {
+    // Check if migration is needed (first time opening settings)
+    const props = PropertiesService.getDocumentProperties();
+    if (!props.getProperty('SALES_LOG_CONFIG')) {
+      // Auto-migrate from hardcoded constants
+      migrateToConfigUI();
+    }
+    
+    // Create and show sidebar
+    const html = HtmlService.createHtmlOutputFromFile('config_sidebar')
+      .setTitle('Sales Log Settings')
+      .setWidth(350);
+    
+    SpreadsheetApp.getUi().showSidebar(html);
+  } catch (e) {
+    Logger.log('Error opening configuration sidebar: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    alertError('Failed to open settings: ' + e.message, 'Configuration Error');
+  }
+}
+
+// ============================================================================
+// MENU & INITIALIZATION
+// ============================================================================
+
 // onOpen
 function onOpen() {
   try {
-    SpreadsheetApp.getUi().createMenu("Sales Tools").addItem("Log Yesterday's Sales", "processDaily").addSeparator().addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly").addSeparator().addItem("Start New Month (Rollover)", "rolloverMonth").addToUi();
+    // Run migration check silently (safe to call multiple times)
+    try {
+      migrateToConfigUI();
+    } catch (migrationError) {
+      Logger.log('Migration check failed (non-critical): ' + migrationError);
+      // Continue with menu creation even if migration fails
+    }
+    
+    // Create menu with configuration option
+    SpreadsheetApp.getUi()
+      .createMenu("Sales Tools")
+      .addItem("Log Yesterday's Sales", "processDaily")
+      .addSeparator()
+      .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
+      .addSeparator()
+      .addItem("Start New Month (Rollover)", "rolloverMonth")
+      .addSeparator()
+      .addItem("⚙️ Settings", "openConfigurationSidebar")
+      .addToUi();
   } catch (e) {
     Logger.log("Failed to create menu in onOpen: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
   }
