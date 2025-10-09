@@ -635,6 +635,22 @@ function processDaily() {
       dailyClearRange.clearContent();
       dailyClearRange.setBackground(null);
       dailyClearRange.setFontColor(null); // *** NEW: Reset font color to default ***
+      
+      // --- Calculate and Write Monthly Analytics ---
+      try {
+        Logger.log("Calculating monthly analytics...");
+        invalidateAnalyticsCache(); // Clear cache since new data added
+        const analyticsData = calculateMonthlyAnalytics();
+        if (analyticsData) {
+          writeAnalyticsToMonthly(analyticsData, sheets.monthly);
+          Logger.log("Analytics updated: " +
+            analyticsData.totals.delivered + " total units delivered this month");
+        }
+      } catch (analyticsError) {
+        // Non-critical error - log but don't fail processDaily
+        Logger.log("Analytics calculation failed (non-critical): " + analyticsError.toString());
+      }
+      
       Logger.log("Daily processing complete.");
     } catch (e) {
       Logger.log("Error in processDaily: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
@@ -869,6 +885,21 @@ function rolloverMonth() {
         alertError(`Archive "${archiveSheetName}" already exists. Rollover aborted.`);
         return;
       }
+      
+      // Recalculate final analytics before archiving for accuracy
+      try {
+        Logger.log("Recalculating final analytics for archive...");
+        invalidateAnalyticsCache();
+        const finalAnalytics = calculateMonthlyAnalytics();
+        if (finalAnalytics) {
+          writeAnalyticsToMonthly(finalAnalytics, sheets.monthly);
+          SpreadsheetApp.flush(); // Ensure writes complete before copy
+        }
+      } catch (e) {
+        Logger.log("Pre-rollover analytics refresh failed: " + e);
+        // Continue with rollover even if analytics fail
+      }
+      
       const archiveSheet = sheets.monthly.copyTo(SS);
       try {
         archiveSheet.setName(archiveSheetName);
@@ -1005,6 +1036,7 @@ function onOpen() {
       .addItem("Log Yesterday's Sales", "processDaily")
       .addSeparator()
       .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
+      .addItem("🔄 Refresh Analytics", "refreshAnalyticsManually")
       .addSeparator()
       .addItem("Start New Month (Rollover)", "rolloverMonth")
       .addSeparator()
