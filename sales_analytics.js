@@ -250,7 +250,8 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
     salespersonAccumulator: {},
     unknownSalespeople: [],
     totalRowsProcessed: monthlyData.length,
-    deliveredRowsProcessed: 0
+    deliveredRowsProcessed: 0,
+    salesDates: new Set() // Track unique sales dates
   };
 
   monthlyData.forEach((row, index) => {
@@ -261,6 +262,13 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
 
       if (/^[A-Z]$/.test(newFI) && newSalesperson) {
         processNewSale(newSalesperson, metrics, aliasMap);
+        // Track the date from column A (index 0)
+        const saleDate = row[0];
+        if (saleDate) {
+          // Convert to string representation for Set uniqueness
+          const dateKey = saleDate instanceof Date ? saleDate.toDateString() : String(saleDate);
+          metrics.salesDates.add(dateKey);
+        }
         metrics.deliveredRowsProcessed++;
       }
 
@@ -270,6 +278,13 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
 
       if (/^[A-Z]$/.test(usedFI) && usedSalesperson) {
         processUsedSale(usedSalesperson, metrics, aliasMap);
+        // Track the date from column A (index 0)
+        const saleDate = row[0];
+        if (saleDate) {
+          // Convert to string representation for Set uniqueness
+          const dateKey = saleDate instanceof Date ? saleDate.toDateString() : String(saleDate);
+          metrics.salesDates.add(dateKey);
+        }
         if (!/^[A-Z]$/.test(newFI)) {
           // Only increment if not already counted from new section
           metrics.deliveredRowsProcessed++;
@@ -280,6 +295,10 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
       Logger.log(`Analytics: Error processing row ${index + 2}: ${e}`);
     }
   });
+
+  // Convert Set to count before returning
+  metrics.salesDays = metrics.salesDates.size;
+  delete metrics.salesDates; // Remove Set from return object
 
   return metrics;
 }
@@ -397,7 +416,8 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
     totals: {
       delivered: totalDelivered,
       newDelivered: processedData.totalNew,
-      usedDelivered: processedData.totalUsed
+      usedDelivered: processedData.totalUsed,
+      salesDays: processedData.salesDays || 0
     },
     salespersonMetrics: salespersonMetrics,
     dataQuality: {
@@ -420,16 +440,30 @@ function buildSummarySection(analyticsData) {
   const now = new Date();
   const dateStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} ${now.toLocaleTimeString()}`;
 
+  // Get salesDays from totals (default to 0 if not present)
+  const salesDays = analyticsData.totals.salesDays || 0;
+  
+  // Calculate per-day averages, handling division by zero
+  const newPerDay = salesDays > 0 ? (analyticsData.totals.newDelivered / salesDays) : "N/A";
+  const usedPerDay = salesDays > 0 ? (analyticsData.totals.usedDelivered / salesDays) : "N/A";
+  
+  // Format averages to 2 decimal places if numeric
+  const newPerDayFormatted = typeof newPerDay === 'number' ? Math.round(newPerDay * 100) / 100 : newPerDay;
+  const usedPerDayFormatted = typeof usedPerDay === 'number' ? Math.round(usedPerDay * 100) / 100 : usedPerDay;
+
   return [
     ["MONTHLY ANALYTICS", "", "", "", "", "", "", ""],  // Row 1 (will merge)
     ["Metric", "Value", "", "", "", "", "", ""],        // Row 2
-    ["Total Delivered", analyticsData.totals.delivered, "", "", "", "", "", ""],
-    ["New Delivered", analyticsData.totals.newDelivered, "", "", "", "", "", ""],
-    ["Used Delivered", analyticsData.totals.usedDelivered, "", "", "", "", "", ""],
-    ["Last Updated", dateStr, "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],                   // Row 7 (separator)
-    ["Salesperson", "New", "Used", "Total", "% of Team", "", "", "Rank"], // Row 8
-    ["", "", "", "", "", "", "", ""]                    // Row 9 (separator)
+    ["Total Delivered", analyticsData.totals.delivered, "", "", "", "", "", ""],  // Row 3
+    ["New Delivered", analyticsData.totals.newDelivered, "", "", "", "", "", ""],  // Row 4
+    ["Used Delivered", analyticsData.totals.usedDelivered, "", "", "", "", "", ""],  // Row 5
+    ["Number of Sales Days", salesDays, "", "", "", "", "", ""],  // Row 6
+    ["New Sales per Day", newPerDayFormatted, "", "", "", "", "", ""],  // Row 7
+    ["Used Sales per Day", usedPerDayFormatted, "", "", "", "", "", ""],  // Row 8
+    ["Last Updated", dateStr, "", "", "", "", "", ""],  // Row 9
+    ["", "", "", "", "", "", "", ""],                   // Row 10 (separator)
+    ["Salesperson", "New", "Used", "Total", "% of Team", "", "", "Rank"], // Row 11
+    ["", "", "", "", "", "", "", ""]                    // Row 12 (separator)
   ];
 }
 
@@ -475,13 +509,13 @@ function formatSummarySection(sheet) {
       .setBackground("#E8F0FE")
       .setHorizontalAlignment("center");
 
-    // Format data rows (3-6)
-    sheet.getRange(3, ANALYTICS_START_COL, 4, 2)
+    // Format data rows (3-9)
+    sheet.getRange(3, ANALYTICS_START_COL, 7, 2)
       .setFontFamily("Calibri")
       .setFontSize(10);
 
-    // Format salesperson header row (row 8)
-    sheet.getRange(8, ANALYTICS_START_COL, 1, ANALYTICS_COL_COUNT)
+    // Format salesperson header row (row 11)
+    sheet.getRange(11, ANALYTICS_START_COL, 1, ANALYTICS_COL_COUNT)
       .setFontWeight("bold")
       .setBackground("#E8F0FE")
       .setHorizontalAlignment("center");
