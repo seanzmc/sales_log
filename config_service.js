@@ -42,6 +42,21 @@ const DEFAULT_CONFIG = {
 };
 
 // ============================================================================
+// HTML TEMPLATE UTILITIES
+// ============================================================================
+
+/**
+ * Server-side include function for HTML templates
+ * Allows separation of CSS and JavaScript into separate files
+ * 
+ * @param {string} filename - Name of the HTML file to include (without .html extension)
+ * @returns {string} Content of the file
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+// ============================================================================
 // CORE CONFIGURATION MANAGEMENT
 // ============================================================================
 
