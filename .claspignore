@@ -3,4 +3,3 @@ docs/*
 .gitignore
 .github/*
 setup_wizard.js
-usage_analytics.js
