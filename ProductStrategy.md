@@ -19,7 +19,7 @@ Most scalable but requires more development*
 
 ## 2. Productization Steps
 
-### Immediate improvements needed:
+### Immediate improvements needed
 
 1. Setup Wizard - Create an onInstall() function that:
 
@@ -46,7 +46,7 @@ Most scalable but requires more development*
    - Branded splash screen on first use
    - "Powered by [Your Brand]" footer
 
-**### 3. Recommended Go-to-Market Strategy**
+### 3. Recommended Go-to-Market Strategy
 
 **Start with a Template Product:**
 
@@ -71,7 +71,7 @@ Most scalable but requires more development*
         Pro ($149): Template + setup call + 90-day support
         Dealership ($499): Custom setup + training + 1-year support
 
-**4. Legal/Protection Considerations**
+### 4. Legal/Protection Considerations
 
 Add license key verification (store in Script Properties)
 Obfuscate the code using Google's V8 runtime
