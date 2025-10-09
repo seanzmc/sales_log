@@ -285,6 +285,19 @@
     <div id="toast"
          class="toast"></div>
 
+    <!-- Inject server-side data before loading client script -->
+    <script>
+      // Server-injected configuration data (evaluated server-side, then included)
+      window.__SIDEBAR_INITIAL_CONFIG__ = '<?!= prepareInitialState(getConfiguration()) ?>';
+      window.__SIDEBAR_FEATURE_FLAGS__ = {
+        hasSalespeople: <?!= prepareFeatureFlags(getConfiguration()).hasSalespeople ? 'true' : 'false' ?>,
+        hasCustomColors: <?!= prepareFeatureFlags(getConfiguration()).hasCustomColors ? 'true' : 'false' ?>,
+        skipSundays: <?!= prepareFeatureFlags(getConfiguration()).skipSundays ? 'true' : 'false' ?>,
+        mondayLogsSaturday: <?!= prepareFeatureFlags(getConfiguration()).mondayLogsSaturday ? 'true' : 'false' ?>
+      };
+      console.log('[DEBUG] Server data injected successfully');
+    </script>
+
     <?!= include('sidebar_js') ?>
   </body>
 

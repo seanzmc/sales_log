@@ -4,16 +4,21 @@
       // Handles UI interactions, validation, and server communication
       // ========================================================================
 
-      // Server-injected initial configuration (eliminates initial API call)
-      const INITIAL_CONFIG = <?= prepareInitialState(getConfiguration()) ?>;
+      // DIAGNOSTIC: Log script loading
+      console.log('[DEBUG] sidebar_js.html script block starting to load...');
 
-      // Feature flags from server
-      const FEATURE_FLAGS = {
-        hasSalespeople: <?= prepareFeatureFlags(getConfiguration()).hasSalespeople ?>,
-        hasCustomColors: <?= prepareFeatureFlags(getConfiguration()).hasCustomColors ?>,
-        skipSundays: <?= prepareFeatureFlags(getConfiguration()).skipSundays ?>,
-        mondayLogsSaturday: <?= prepareFeatureFlags(getConfiguration()).mondayLogsSaturday ?>
+      // Use configuration data injected by parent HTML file
+      // This avoids scriptlet processing issues inside included files
+      const INITIAL_CONFIG = window.__SIDEBAR_INITIAL_CONFIG__ || '{}';
+      const FEATURE_FLAGS = window.__SIDEBAR_FEATURE_FLAGS__ || {
+        hasSalespeople: false,
+        hasCustomColors: false,
+        skipSundays: true,
+        mondayLogsSaturday: true
       };
+      
+      console.log('[DEBUG] Using injected config. INITIAL_CONFIG length:', INITIAL_CONFIG.length);
+      console.log('[DEBUG] FEATURE_FLAGS:', FEATURE_FLAGS);
 
       // Configuration cache
       let configCache = null;
@@ -34,16 +39,28 @@
        * @param {string} tabName - The name of the tab to switch to
        */
       window.switchTab = function(tabName) {
+        console.log('[DEBUG] switchTab called with:', tabName);
+        
         // Update tab buttons
         const tabs = document.querySelectorAll('.tab');
         tabs.forEach(tab => tab.classList.remove('active'));
-        event.target.classList.add('active');
+        
+        // Find the clicked tab by matching the onclick attribute
+        tabs.forEach(tab => {
+          if (tab.getAttribute('onclick') && tab.getAttribute('onclick').includes("'" + tabName + "'")) {
+            tab.classList.add('active');
+          }
+        });
 
         // Update tab content
         const contents = document.querySelectorAll('.tab-content');
         contents.forEach(content => content.classList.remove('active'));
         document.getElementById('tab-' + tabName).classList.add('active');
+        
+        console.log('[DEBUG] switchTab completed for:', tabName);
       };
+      
+      console.log('[DEBUG] switchTab function defined on window:', typeof window.switchTab);
 
       // ========================================================================
       // CONFIGURATION LOADING
