@@ -7,12 +7,14 @@ Headers:
 
 ## Sheet Name: TODAY
 
-Headers:
+Headers [Bold]:
     [Newcar sales= A:G] #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [H] *blank*
     [Usedcar sales= I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [O] *blank*
     [Leaderboard= P:R] SALESPERSON, MTD SALES, 3mo. AVERAGE
+
+Text Wrapping ON for Columns: F, M, R
 
 Column width:
     A: 30
@@ -37,19 +39,22 @@ Column width:
 Font:
     Calibri
 Font Size:
-    A:N= 18pt
+    A:E, G, I:L, N= 18pt
     F, M= 10pt
     P:R= 14pt
 
 ## Sheet Name: MONTHLY
 
-Headers:
+Headers [Bold]:
     [A:G] #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [H] *blank*
     [I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [O] *blank*
     [P:R] SALESPERSON, SALES, 3mo. AVERAGE
     [S:X] MONTHLY ANALYTICS (merged cells)
+
+Text Wrapping ON for Columns: F, M, R
+
 Column width:
     A: 45
     B: 115
@@ -79,12 +84,15 @@ Column width:
 Font:
     Calibri
 Font Size:
-    10pt
+    ENTIRE SHEET= 10pt
 
 ## Sheet Name: SALESPEOPLE
 
-Headers:
+Headers [Bold]:
     [A:C] FULL NAME, ALIASES, DISPLAY CODE
+
+Text Wrapping ON for all cells in sheet
+
 Column width:
     A: 150
     B: 150

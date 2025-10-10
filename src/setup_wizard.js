@@ -50,7 +50,7 @@ function runSetupWizard() {
  *           [I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
  *           [O] blank separator
  *           [P:R] SALESPERSON, MTD SALES, 3mo. AVERAGE
- * - Font: Calibri, sizes: A:N=18pt, G&N=10pt, P:R=14pt
+ * - Font: Calibri, sizes: A:E,G,I:L,N=18pt, F&M=10pt, P:R=14pt
  * - Column widths as specified in documentation
  *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
@@ -96,10 +96,10 @@ function checkAndCreateTodaySheet(ss, results) {
     // Set font sizes per documentation
     // A:N = 18pt
     sheet.getRange("A:N").setFontSize(18);
-    // G (SALES PERSON for new cars) = 10pt
-    sheet.getRange("G:G").setFontSize(10);
-    // N (SALES PERSON for used cars) = 10pt
-    sheet.getRange("N:N").setFontSize(10);
+    // F (TRADE STK# for new cars) = 10pt
+    sheet.getRange("F:F").setFontSize(10);
+    // M (TRADE STK# for used cars) = 10pt
+    sheet.getRange("M:M").setFontSize(10);
     // P:R (Leaderboard) = 14pt
     sheet.getRange("P:R").setFontSize(14);
     
@@ -110,18 +110,18 @@ function checkAndCreateTodaySheet(ss, results) {
     // Set column widths per documentation
     sheet.setColumnWidth(1, 30);   // A: #
     sheet.setColumnWidth(2, 165);  // B: CUSTOMER
-    sheet.setColumnWidth(3, 50);   // C: FI
-    sheet.setColumnWidth(4, 35);   // D: MODEL
-    sheet.setColumnWidth(5, 150);  // E: STOCK #
-    sheet.setColumnWidth(6, 125);  // F: TRADE STK#
-    sheet.setColumnWidth(7, 60);   // G: SALES PERSON
+    sheet.setColumnWidth(3, 35);   // C: FI
+    sheet.setColumnWidth(4, 150);  // D: MODEL
+    sheet.setColumnWidth(5, 125);  // E: STOCK #
+    sheet.setColumnWidth(6, 60);   // F: TRADE STK#
+    sheet.setColumnWidth(7, 150);  // G: SALES PERSON
     sheet.setColumnWidth(8, 5);    // H: separator
     sheet.setColumnWidth(9, 165);  // I: CUSTOMER (used)
-    sheet.setColumnWidth(10, 50);  // J: FI (used)
-    sheet.setColumnWidth(11, 35);  // K: MODEL (used)
-    sheet.setColumnWidth(12, 150); // L: STOCK # (used)
-    sheet.setColumnWidth(13, 125); // M: TRADE STK# (used)
-    sheet.setColumnWidth(14, 60);  // N: SALES PERSON (used)
+    sheet.setColumnWidth(10, 35);  // J: FI (used)
+    sheet.setColumnWidth(11, 150); // K: MODEL (used)
+    sheet.setColumnWidth(12, 125); // L: STOCK # (used)
+    sheet.setColumnWidth(13, 60);  // M: TRADE STK# (used)
+    sheet.setColumnWidth(14, 150); // N: SALES PERSON (used)
     sheet.setColumnWidth(15, 5);   // O: separator
     sheet.setColumnWidth(16, 170); // P: MTD SALES
     sheet.setColumnWidth(17, 50);  // Q: (middle column)
@@ -230,8 +230,8 @@ function applyTodayConditionalFormatting(sheet) {
  *           [O] blank separator
  *           [P:R] SALESPERSON, SALES, 3mo. AVERAGE
  *           [S:X] MONTHLY ANALYTICS (merged cells)
- * - Font: Calibri, 10pt
- * - Column widths as specified in documentation
+ * - Font: Calibri, entire sheet 10pt
+ * - Column widths: A:45, B:115, C:45, D:100, E:70, F:90, G:125, etc.
  *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
@@ -281,18 +281,18 @@ function checkAndCreateMonthlySheet(ss, results) {
     // Set column widths per documentation
     sheet.setColumnWidth(1, 45);   // A: #
     sheet.setColumnWidth(2, 115);  // B: CUSTOMER
-    sheet.setColumnWidth(3, 50);   // C: FI
-    sheet.setColumnWidth(4, 45);   // D: MODEL
-    sheet.setColumnWidth(5, 100);  // E: STOCK #
-    sheet.setColumnWidth(6, 70);   // F: TRADE STK#
-    sheet.setColumnWidth(7, 90);   // G: SALES PERSON
+    sheet.setColumnWidth(3, 45);   // C: FI
+    sheet.setColumnWidth(4, 100);  // D: MODEL
+    sheet.setColumnWidth(5, 70);   // E: STOCK #
+    sheet.setColumnWidth(6, 90);   // F: TRADE STK#
+    sheet.setColumnWidth(7, 125);  // G: SALES PERSON
     sheet.setColumnWidth(8, 5);    // H: separator
     sheet.setColumnWidth(9, 115);  // I: CUSTOMER (used)
-    sheet.setColumnWidth(10, 50);  // J: FI (used)
-    sheet.setColumnWidth(11, 45);  // K: MODEL (used)
-    sheet.setColumnWidth(12, 100); // L: STOCK # (used)
-    sheet.setColumnWidth(13, 70);  // M: TRADE STK# (used)
-    sheet.setColumnWidth(14, 90);  // N: SALES PERSON (used)
+    sheet.setColumnWidth(10, 45);  // J: FI (used)
+    sheet.setColumnWidth(11, 100); // K: MODEL (used)
+    sheet.setColumnWidth(12, 70);  // L: STOCK # (used)
+    sheet.setColumnWidth(13, 90);  // M: TRADE STK# (used)
+    sheet.setColumnWidth(14, 125); // N: SALES PERSON (used)
     sheet.setColumnWidth(15, 5);   // O: separator
     sheet.setColumnWidth(16, 160); // P: MTD SALES
     sheet.setColumnWidth(17, 50);  // Q: (middle)
