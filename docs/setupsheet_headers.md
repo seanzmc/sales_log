@@ -12,7 +12,7 @@ Headers:
     [H] *blank*
     [Usedcar sales= I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [O] *blank*
-    [Leaderboard= P:R] MTD SALES, 3mo. AVERAGE
+    [Leaderboard= P:R] SALESPERSON, MTD SALES, 3mo. AVERAGE
 
 Column width:
     A: 30
@@ -48,7 +48,7 @@ Headers:
     [H] *blank*
     [I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [O] *blank*
-    [P:R] MTD SALES, 3mo. AVERAGE
+    [P:R] SALESPERSON, SALES, 3mo. AVERAGE
     [S:X] MONTHLY ANALYTICS (merged cells)
 Column width:
     A: 45
