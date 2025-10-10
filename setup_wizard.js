@@ -49,7 +49,7 @@ function runSetupWizard() {
  *           [H] blank separator
  *           [I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
  *           [O] blank separator
- *           [P:R] MTD SALES, 3mo. AVERAGE
+ *           [P:R] SALESPERSON, MTD SALES, 3mo. AVERAGE
  * - Font: Calibri, sizes: A:N=18pt, G&N=10pt, P:R=14pt
  * - Column widths as specified in documentation
  *
@@ -79,7 +79,7 @@ function checkAndCreateTodaySheet(ss, results) {
         "", // H - separator
         "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // I:N
         "", // O - separator
-        "MTD SALES", "", "3mo. AVERAGE" // P, Q, R
+        "SALESPERSON", "MTD SALES", "3mo. AVERAGE" // P, Q, R
       ]
     ];
     sheet.getRange(1, 1, 1, 18).setValues(headers);
@@ -228,7 +228,7 @@ function applyTodayConditionalFormatting(sheet) {
  *           [H] blank separator
  *           [I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
  *           [O] blank separator
- *           [P:R] MTD SALES, 3mo. AVERAGE
+ *           [P:R] SALESPERSON, SALES, 3mo. AVERAGE
  *           [S:X] MONTHLY ANALYTICS (merged cells)
  * - Font: Calibri, 10pt
  * - Column widths as specified in documentation
@@ -259,7 +259,7 @@ function checkAndCreateMonthlySheet(ss, results) {
         "", // H - separator
         "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // I:N
         "", // O - separator
-        "MTD SALES", "", "3mo. AVERAGE", // P:R
+        "SALESPERSON", "SALES", "3mo. AVERAGE", // P:R
         "MONTHLY ANALYTICS", "", "", "", "", "" // S:X (will be merged)
       ]
     ];
