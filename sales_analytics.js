@@ -14,7 +14,7 @@
 // ============================================================================
 
 const ANALYTICS_START_COL = 19; // Column S (1-indexed)
-const ANALYTICS_COL_COUNT = 8;  // Columns S through Z
+const ANALYTICS_COL_COUNT = 6;  // Columns S through X
 const CACHE_KEY_ANALYTICS = "monthlyAnalytics";
 const CACHE_TTL_ANALYTICS = 300; // 5 minutes (consistent with existing patterns)
 
@@ -99,23 +99,21 @@ function calculateMonthlyAnalytics() {
 }
 
 /**
- * Writes analytics data to MONTHLY sheet in designated columns (S-Z).
+ * Writes analytics data to MONTHLY sheet in designated columns (S-X).
  * Creates formatted summary section at top of sheet with headers, totals, and team metrics.
  * Writes per-salesperson breakdown below summary section.
  *
- * Summary Section (Rows 1-9):
+ * Summary Section (Rows 1-8):
  *   Columns S-T: Total Delivered, New Delivered, Used Delivered, Last Updated
  *   Columns U-V: Team metrics (Selling Days, New Sold per Day, Used Sold per Day)
  *
- * Salesperson Section (Row 10+):
+ * Salesperson Section (Row 9+):
  *   S: Salesperson Display Code
  *   T: New Sales Count
  *   U: Used Sales Count
  *   V: Total Sales Count
  *   W: Percentage of Team Total
- *   X: (empty)
- *   Y: (empty)
- *   Z: Rank
+ *   X: Rank
  *
  * @param {Object} analyticsData - Output from calculateMonthlyAnalytics()
  * @param {GoogleAppsScript.Spreadsheet.Sheet} monthlySheet - MONTHLY sheet reference
@@ -130,11 +128,11 @@ function writeAnalyticsToMonthly(analyticsData, monthlySheet) {
   }
 
   try {
-    // Clear existing analytics columns (S:Z)
+    // Clear existing analytics columns (S:X)
     const maxRows = monthlySheet.getMaxRows();
     monthlySheet.getRange(1, ANALYTICS_START_COL, maxRows, ANALYTICS_COL_COUNT).clear();
 
-    // Build summary section (rows 1-9)
+    // Build summary section (rows 1-8)
     const summaryData = buildSummarySection(analyticsData);
 
     // Write summary section
@@ -147,9 +145,9 @@ function writeAnalyticsToMonthly(analyticsData, monthlySheet) {
     // Build salesperson data array
     const salespersonData = buildSalespersonSection(analyticsData);
 
-    // Write salesperson data starting at row 10
+    // Write salesperson data starting at row 9
     if (salespersonData.length > 0) {
-      monthlySheet.getRange(10, ANALYTICS_START_COL, salespersonData.length, ANALYTICS_COL_COUNT)
+      monthlySheet.getRange(9, ANALYTICS_START_COL, salespersonData.length, ANALYTICS_COL_COUNT)
         .setValues(salespersonData);
 
       // Apply salesperson data formatting
@@ -157,7 +155,7 @@ function writeAnalyticsToMonthly(analyticsData, monthlySheet) {
     }
 
     SpreadsheetApp.flush();
-    Logger.log('Analytics written to MONTHLY sheet columns S-Z');
+    Logger.log('Analytics written to MONTHLY sheet columns S-X');
 
   } catch (e) {
     Logger.log('Analytics write error: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
@@ -440,7 +438,7 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
 
 /**
  * Builds summary section data array for MONTHLY sheet.
- * Creates rows 1-9 with headers, totals, and team metrics.
+ * Creates rows 1-8 with headers, totals, and team metrics.
  *
  * @param {Object} analyticsData - Formatted analytics data
  * @returns {Array<Array>} 2D array for summary section
@@ -454,22 +452,21 @@ function buildSummarySection(analyticsData) {
   const usedPerDay = sellingDays > 0 ? analyticsData.teamMetrics.usedPerDay : "N/A";
 
   return [
-    ["MONTHLY ANALYTICS", "", "", "", "", "", "", ""],      // Row 1 (will merge S1:Z1)
-    ["Metric", "Value", "Metric", "Value", "", "", "", ""], // Row 2
-    ["Total Delivered", analyticsData.totals.delivered, "Selling Days", sellingDays, "", "", "", ""],  // Row 3
-    ["New Delivered", analyticsData.totals.newDelivered, "New Sold per Day", newPerDay, "", "", "", ""],  // Row 4
-    ["Used Delivered", analyticsData.totals.usedDelivered, "Used Sold per Day", usedPerDay, "", "", "", ""],  // Row 5
-    ["Last Updated", dateStr, "", "", "", "", "", ""],      // Row 6
-    ["", "", "", "", "", "", "", ""],                       // Row 7 (separator)
-    ["Salesperson", "New", "Used", "Total", "% of Team", "", "", "Rank"], // Row 8
-    ["", "", "", "", "", "", "", ""]                        // Row 9 (separator)
+    ["MONTHLY ANALYTICS", "", "", "", "", ""],              // Row 1 (will merge S1:X1)
+    ["Metric", "Value", "Metric", "Value", "", ""],         // Row 2
+    ["Total Delivered", analyticsData.totals.delivered, "Selling Days", sellingDays, "", ""],  // Row 3
+    ["New Delivered", analyticsData.totals.newDelivered, "New Sold per Day", newPerDay, "", ""],  // Row 4
+    ["Used Delivered", analyticsData.totals.usedDelivered, "Used Sold per Day", usedPerDay, "", ""],  // Row 5
+    ["Last Updated", dateStr, "", "", "", ""],              // Row 6
+    ["", "", "", "", "", ""],                               // Row 7 (separator)
+    ["Salesperson", "New", "Used", "Total", "% of Team", "Rank"]  // Row 8
   ];
 }
 
 /**
  * Builds salesperson data array for MONTHLY sheet.
- * Creates rows starting at row 10 with individual metrics.
- * Outputs 8 columns (S-Z): Salesperson, New, Used, Total, % of Team, (empty), (empty), Rank
+ * Creates rows starting at row 9 with individual metrics.
+ * Outputs 6 columns (S-X): Salesperson, New, Used, Total, % of Team, Rank
  *
  * @param {Object} analyticsData - Formatted analytics data
  * @returns {Array<Array>} 2D array for salesperson section
@@ -481,9 +478,7 @@ function buildSalespersonSection(analyticsData) {
     person.usedSales,                           // Column U
     person.totalSales,                          // Column V
     Math.round(person.percentOfTeam * 10) / 10, // Column W - Round to 1 decimal
-    "",                                         // Column X - empty
-    "",                                         // Column Y - empty
-    person.rank                                 // Column Z
+    person.rank                                 // Column X
   ]);
 }
 
@@ -535,7 +530,7 @@ function formatSalespersonSection(sheet, rowCount) {
   try {
     if (rowCount === 0) return;
 
-    const dataRange = sheet.getRange(10, ANALYTICS_START_COL, rowCount, ANALYTICS_COL_COUNT);
+    const dataRange = sheet.getRange(9, ANALYTICS_START_COL, rowCount, ANALYTICS_COL_COUNT);
 
     dataRange
       .setFontFamily("Calibri")
@@ -543,10 +538,10 @@ function formatSalespersonSection(sheet, rowCount) {
       .setHorizontalAlignment("center");
 
     // Set number formats
-    sheet.getRange(10, ANALYTICS_START_COL + 1, rowCount, 3) // Columns T-V (counts)
+    sheet.getRange(9, ANALYTICS_START_COL + 1, rowCount, 3) // Columns T-V (counts)
       .setNumberFormat("0.#");
 
-    sheet.getRange(10, ANALYTICS_START_COL + 4, rowCount, 1) // Column W (percentage)
+    sheet.getRange(9, ANALYTICS_START_COL + 4, rowCount, 1) // Column W (percentage)
       .setNumberFormat("0.0\"%\"");
 
   } catch (e) {
