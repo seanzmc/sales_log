@@ -1033,6 +1033,8 @@ function onOpen() {
     // Create menu with configuration option
     SpreadsheetApp.getUi()
       .createMenu("Sales Tools")
+      .addItem("🚀 Run Setup Wizard", "runSetupWizard")
+      .addSeparator()
       .addItem("Log Yesterday's Sales", "processDaily")
       .addSeparator()
       .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
