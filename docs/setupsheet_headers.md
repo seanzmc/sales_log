@@ -8,9 +8,9 @@ Headers:
 ## Sheet Name: TODAY
 
 Headers:
-    [Newcar sales= A:G] #, CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+    [Newcar sales= A:G] #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [H] *blank*
-    [Usedcar sales= I:N] CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+    [Usedcar sales= I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [O] *blank*
     [Leaderboard= P:R] MTD SALES, 3mo. AVERAGE
 
@@ -44,9 +44,9 @@ Font Size:
 ## Sheet Name: MONTHLY
 
 Headers:
-    [A:G] #, CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+    [A:G] #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [H] *blank*
-    [I:N] CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+    [I:N] CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
     [O] *blank*
     [P:R] MTD SALES, 3mo. AVERAGE
     [S:X] MONTHLY ANALYTICS (merged cells)
