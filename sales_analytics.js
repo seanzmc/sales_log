@@ -14,7 +14,7 @@
 // ============================================================================
 
 const ANALYTICS_START_COL = 19; // Column S (1-indexed)
-const ANALYTICS_COL_COUNT = 8;  // Columns S through Z
+const ANALYTICS_COL_COUNT = 9;  // Columns S through AA
 const CACHE_KEY_ANALYTICS = "monthlyAnalytics";
 const CACHE_TTL_ANALYTICS = 300; // 5 minutes (consistent with existing patterns)
 
@@ -108,9 +108,10 @@ function calculateMonthlyAnalytics() {
  *   U: Used Sales Count
  *   V: Total Sales Count
  *   W: Percentage of Team Total
- *   X: Reserved for future metrics
- *   Y: Reserved for future metrics
- *   Z: Rank
+ *   X: Sales Days (per salesperson)
+ *   Y: New Sales per Day (per salesperson)
+ *   Z: Used Sales per Day (per salesperson)
+ *   AA: Rank
  * 
  * @param {Object} analyticsData - Output from calculateMonthlyAnalytics()
  * @param {GoogleAppsScript.Spreadsheet.Sheet} monthlySheet - MONTHLY sheet reference
@@ -250,25 +251,21 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
     salespersonAccumulator: {},
     unknownSalespeople: [],
     totalRowsProcessed: monthlyData.length,
-    deliveredRowsProcessed: 0,
-    salesDates: new Set() // Track unique sales dates
+    deliveredRowsProcessed: 0
   };
 
   monthlyData.forEach((row, index) => {
     try {
+      // Get the date for this row
+      const saleDate = row[0];
+      const dateKey = saleDate instanceof Date ? saleDate.toDateString() : String(saleDate);
+      
       // Process New Car Section (columns B-G, array indices 1-6)
       const newFI = String(row[2] || "").trim().toUpperCase(); // Col C (index 2)
       const newSalesperson = String(row[6] || "").trim(); // Col G (index 6)
 
       if (/^[A-Z]$/.test(newFI) && newSalesperson) {
-        processNewSale(newSalesperson, metrics, aliasMap);
-        // Track the date from column A (index 0)
-        const saleDate = row[0];
-        if (saleDate) {
-          // Convert to string representation for Set uniqueness
-          const dateKey = saleDate instanceof Date ? saleDate.toDateString() : String(saleDate);
-          metrics.salesDates.add(dateKey);
-        }
+        processNewSale(newSalesperson, metrics, aliasMap, dateKey);
         metrics.deliveredRowsProcessed++;
       }
 
@@ -277,14 +274,7 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
       const usedSalesperson = String(row[13] || "").trim(); // Col N (index 13)
 
       if (/^[A-Z]$/.test(usedFI) && usedSalesperson) {
-        processUsedSale(usedSalesperson, metrics, aliasMap);
-        // Track the date from column A (index 0)
-        const saleDate = row[0];
-        if (saleDate) {
-          // Convert to string representation for Set uniqueness
-          const dateKey = saleDate instanceof Date ? saleDate.toDateString() : String(saleDate);
-          metrics.salesDates.add(dateKey);
-        }
+        processUsedSale(usedSalesperson, metrics, aliasMap, dateKey);
         if (!/^[A-Z]$/.test(newFI)) {
           // Only increment if not already counted from new section
           metrics.deliveredRowsProcessed++;
@@ -296,22 +286,20 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
     }
   });
 
-  // Convert Set to count before returning
-  metrics.salesDays = metrics.salesDates.size;
-  delete metrics.salesDates; // Remove Set from return object
-
   return metrics;
 }
 
 /**
  * Processes a single new car sale.
  * Handles split sales by dividing credit (0.5 each for "John/Jane").
- * 
+ * Tracks sales dates per salesperson.
+ *
  * @param {string} salespersonInput - Raw salesperson input from sheet
  * @param {Object} metrics - Metrics accumulator object
  * @param {Object} aliasMap - Alias to full name mapping
+ * @param {string} dateKey - Date key for tracking unique sales days
  */
-function processNewSale(salespersonInput, metrics, aliasMap) {
+function processNewSale(salespersonInput, metrics, aliasMap, dateKey) {
   const parts = salespersonInput.split("/").map(s => s.trim());
   const increment = parts.length > 1 ? 0.5 : 1;
 
@@ -323,10 +311,19 @@ function processNewSale(salespersonInput, metrics, aliasMap) {
 
     if (fullName) {
       if (!metrics.salespersonAccumulator[fullName]) {
-        metrics.salespersonAccumulator[fullName] = { newCount: 0, usedCount: 0 };
+        metrics.salespersonAccumulator[fullName] = {
+          newCount: 0,
+          usedCount: 0,
+          salesDates: new Set()
+        };
       }
       metrics.salespersonAccumulator[fullName].newCount += increment;
       metrics.totalNew += increment;
+      
+      // Track unique sales date for this salesperson
+      if (dateKey) {
+        metrics.salespersonAccumulator[fullName].salesDates.add(dateKey);
+      }
     } else {
       // Track unknown salesperson
       if (!metrics.unknownSalespeople.includes(part)) {
@@ -339,12 +336,14 @@ function processNewSale(salespersonInput, metrics, aliasMap) {
 /**
  * Processes a single used car sale.
  * Handles split sales by dividing credit (0.5 each for "John/Jane").
- * 
+ * Tracks sales dates per salesperson.
+ *
  * @param {string} salespersonInput - Raw salesperson input from sheet
  * @param {Object} metrics - Metrics accumulator object
  * @param {Object} aliasMap - Alias to full name mapping
+ * @param {string} dateKey - Date key for tracking unique sales days
  */
-function processUsedSale(salespersonInput, metrics, aliasMap) {
+function processUsedSale(salespersonInput, metrics, aliasMap, dateKey) {
   const parts = salespersonInput.split("/").map(s => s.trim());
   const increment = parts.length > 1 ? 0.5 : 1;
 
@@ -356,10 +355,19 @@ function processUsedSale(salespersonInput, metrics, aliasMap) {
 
     if (fullName) {
       if (!metrics.salespersonAccumulator[fullName]) {
-        metrics.salespersonAccumulator[fullName] = { newCount: 0, usedCount: 0 };
+        metrics.salespersonAccumulator[fullName] = {
+          newCount: 0,
+          usedCount: 0,
+          salesDates: new Set()
+        };
       }
       metrics.salespersonAccumulator[fullName].usedCount += increment;
       metrics.totalUsed += increment;
+      
+      // Track unique sales date for this salesperson
+      if (dateKey) {
+        metrics.salespersonAccumulator[fullName].salesDates.add(dateKey);
+      }
     } else {
       // Track unknown salesperson
       if (!metrics.unknownSalespeople.includes(part)) {
@@ -391,6 +399,12 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
   const salespersonMetrics = [];
   Object.entries(processedData.salespersonAccumulator).forEach(([fullName, counts]) => {
     const totalSales = counts.newCount + counts.usedCount;
+    
+    // Calculate per-salesperson metrics
+    const salesDays = counts.salesDates ? counts.salesDates.size : 0;
+    const newPerDay = salesDays > 0 ? (counts.newCount / salesDays) : 0;
+    const usedPerDay = salesDays > 0 ? (counts.usedCount / salesDays) : 0;
+    
     salespersonMetrics.push({
       fullName: fullName,
       displayCode: displayCodeMap[fullName] || fullName,
@@ -398,6 +412,9 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
       usedSales: counts.usedCount,
       totalSales: totalSales,
       percentOfTeam: totalDelivered > 0 ? (totalSales / totalDelivered * 100) : 0,
+      salesDays: salesDays,
+      newPerDay: Math.round(newPerDay * 100) / 100, // Round to 2 decimals
+      usedPerDay: Math.round(usedPerDay * 100) / 100, // Round to 2 decimals
       rank: 0 // Will be set after sorting
     });
   });
@@ -416,8 +433,7 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
     totals: {
       delivered: totalDelivered,
       newDelivered: processedData.totalNew,
-      usedDelivered: processedData.totalUsed,
-      salesDays: processedData.salesDays || 0
+      usedDelivered: processedData.totalUsed
     },
     salespersonMetrics: salespersonMetrics,
     dataQuality: {
@@ -431,8 +447,8 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
 
 /**
  * Builds summary section data array for MONTHLY sheet.
- * Creates rows 1-9 with headers and totals.
- * 
+ * Creates rows 1-7 with headers and totals.
+ *
  * @param {Object} analyticsData - Formatted analytics data
  * @returns {Array<Array>} 2D array for summary section
  */
@@ -440,37 +456,23 @@ function buildSummarySection(analyticsData) {
   const now = new Date();
   const dateStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} ${now.toLocaleTimeString()}`;
 
-  // Get salesDays from totals (default to 0 if not present)
-  const salesDays = analyticsData.totals.salesDays || 0;
-  
-  // Calculate per-day averages, handling division by zero
-  const newPerDay = salesDays > 0 ? (analyticsData.totals.newDelivered / salesDays) : "N/A";
-  const usedPerDay = salesDays > 0 ? (analyticsData.totals.usedDelivered / salesDays) : "N/A";
-  
-  // Format averages to 2 decimal places if numeric
-  const newPerDayFormatted = typeof newPerDay === 'number' ? Math.round(newPerDay * 100) / 100 : newPerDay;
-  const usedPerDayFormatted = typeof usedPerDay === 'number' ? Math.round(usedPerDay * 100) / 100 : usedPerDay;
-
   return [
-    ["MONTHLY ANALYTICS", "", "", "", "", "", "", ""],  // Row 1 (will merge)
-    ["Metric", "Value", "", "", "", "", "", ""],        // Row 2
-    ["Total Delivered", analyticsData.totals.delivered, "", "", "", "", "", ""],  // Row 3
-    ["New Delivered", analyticsData.totals.newDelivered, "", "", "", "", "", ""],  // Row 4
-    ["Used Delivered", analyticsData.totals.usedDelivered, "", "", "", "", "", ""],  // Row 5
-    ["Number of Sales Days", salesDays, "", "", "", "", "", ""],  // Row 6
-    ["New Sales per Day", newPerDayFormatted, "", "", "", "", "", ""],  // Row 7
-    ["Used Sales per Day", usedPerDayFormatted, "", "", "", "", "", ""],  // Row 8
-    ["Last Updated", dateStr, "", "", "", "", "", ""],  // Row 9
-    ["", "", "", "", "", "", "", ""],                   // Row 10 (separator)
-    ["Salesperson", "New", "Used", "Total", "% of Team", "", "", "Rank"], // Row 11
-    ["", "", "", "", "", "", "", ""]                    // Row 12 (separator)
+    ["MONTHLY ANALYTICS", "", "", "", "", "", "", "", ""],  // Row 1 (will merge)
+    ["Metric", "Value", "", "", "", "", "", "", ""],        // Row 2
+    ["Total Delivered", analyticsData.totals.delivered, "", "", "", "", "", "", ""],  // Row 3
+    ["New Delivered", analyticsData.totals.newDelivered, "", "", "", "", "", "", ""],  // Row 4
+    ["Used Delivered", analyticsData.totals.usedDelivered, "", "", "", "", "", "", ""],  // Row 5
+    ["Last Updated", dateStr, "", "", "", "", "", "", ""],  // Row 6
+    ["", "", "", "", "", "", "", "", ""],                   // Row 7 (separator)
+    ["Salesperson", "New", "Used", "Total", "% of Team", "Sales Days", "New/Day", "Used/Day", "Rank"], // Row 8
+    ["", "", "", "", "", "", "", "", ""]                    // Row 9 (separator)
   ];
 }
 
 /**
  * Builds salesperson data array for MONTHLY sheet.
  * Creates rows starting at row 10 with individual metrics.
- * 
+ *
  * @param {Object} analyticsData - Formatted analytics data
  * @returns {Array<Array>} 2D array for salesperson section
  */
@@ -481,15 +483,16 @@ function buildSalespersonSection(analyticsData) {
     person.usedSales,
     person.totalSales,
     Math.round(person.percentOfTeam * 10) / 10, // Round to 1 decimal
-    "", // Reserved
-    "", // Reserved
+    person.salesDays,
+    person.newPerDay,
+    person.usedPerDay,
     person.rank
   ]);
 }
 
 /**
- * Applies formatting to summary section (rows 1-9).
- * 
+ * Applies formatting to summary section (rows 1-7).
+ *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - MONTHLY sheet
  */
 function formatSummarySection(sheet) {
@@ -509,13 +512,13 @@ function formatSummarySection(sheet) {
       .setBackground("#E8F0FE")
       .setHorizontalAlignment("center");
 
-    // Format data rows (3-9)
-    sheet.getRange(3, ANALYTICS_START_COL, 7, 2)
+    // Format data rows (3-6)
+    sheet.getRange(3, ANALYTICS_START_COL, 4, 2)
       .setFontFamily("Calibri")
       .setFontSize(10);
 
-    // Format salesperson header row (row 11)
-    sheet.getRange(11, ANALYTICS_START_COL, 1, ANALYTICS_COL_COUNT)
+    // Format salesperson header row (row 8)
+    sheet.getRange(8, ANALYTICS_START_COL, 1, ANALYTICS_COL_COUNT)
       .setFontWeight("bold")
       .setBackground("#E8F0FE")
       .setHorizontalAlignment("center");
@@ -527,7 +530,7 @@ function formatSummarySection(sheet) {
 
 /**
  * Applies formatting to salesperson data section.
- * 
+ *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - MONTHLY sheet
  * @param {number} rowCount - Number of salesperson rows
  */
@@ -548,6 +551,14 @@ function formatSalespersonSection(sheet, rowCount) {
 
     sheet.getRange(10, ANALYTICS_START_COL + 4, rowCount, 1) // Column W (percentage)
       .setNumberFormat("0.0\"%\"");
+    
+    // Columns X (Sales Days) - integer format
+    sheet.getRange(10, ANALYTICS_START_COL + 5, rowCount, 1)
+      .setNumberFormat("0");
+    
+    // Columns Y-Z (New/Day, Used/Day) - 2 decimal places
+    sheet.getRange(10, ANALYTICS_START_COL + 6, rowCount, 2)
+      .setNumberFormat("0.00");
 
   } catch (e) {
     Logger.log('Error formatting salesperson section: ' + e);
