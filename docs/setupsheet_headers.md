@@ -9,9 +9,9 @@ Headers:
 
 Headers:
     [Newcar sales= A:G] #, CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
-    *blank*
+    [H] *blank*
     [Usedcar sales= I:N] CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
-    *blank*
+    [O] *blank*
     [Leaderboard= P:R] MTD SALES, 3mo. AVERAGE
 
 Column width:
@@ -45,9 +45,9 @@ Font Size:
 
 Headers:
     [A:G] #, CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
-    *blank*
+    [H] *blank*
     [I:N] CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
-    *blank*
+    [O] *blank*
     [P:R] MTD SALES, 3mo. AVERAGE
     [S:X] MONTHLY ANALYTICS (merged cells)
 Column width:
