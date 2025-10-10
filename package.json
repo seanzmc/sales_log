@@ -1,0 +1,42 @@
+{
+  "name": "sales-log-pro",
+  "version": "8.0.0",
+  "description": "Professional automotive dealership sales tracking and analytics system for Google Sheets",
+  "private": true,
+  "author": {
+    "name": "Sales Log Pro",
+    "email": "support@saleslogpro.com"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/sales-log-pro.git"
+  },
+  "keywords": [
+    "google-apps-script",
+    "sales-tracking",
+    "automotive",
+    "dealership",
+    "analytics",
+    "google-sheets",
+    "crm",
+    "sales-management",
+    "business-tools",
+    "commercial-template"
+  ],
+  "scripts": {
+    "deploy": "clasp push",
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "logs": "clasp logs",
+    "deploy:production": "clasp push && clasp deploy"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.0"
+  }
+}

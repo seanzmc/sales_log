@@ -1,5 +1,11 @@
 depricated/*
 docs/*
+examples/*
+config/*
 .gitignore
 .github/*
 README.md
+*.md
+LICENSE
+CHANGELOG.md
+package.json

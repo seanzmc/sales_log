@@ -1,0 +1,18 @@
+# Sample Deposit Tracking Data for Sales Log Pro DEPOSITS Sheet
+# This file demonstrates the format for tracking customer deposits
+# Used to prevent duplicate stock number entry in TODAY sheet
+# All fields help track orders from deposit to delivery
+# Format: DATE, NEW/USED, YEAR, MAKE, MODEL, ORDER #, STOCK #, SALESPERSON, BDC, CUSTOMER, DIRECTOR, PHONE #, EST DELIVERY DATE, NOTES
+DATE,NEW/USED,YEAR,MAKE,MODEL,ORDER #,STOCK #,SALESPERSON,BDC,CUSTOMER,DIRECTOR,PHONE #,EST DELIVERY DATE,NOTES
+10/01/2024,NEW,2025,Toyota,Camry XLE,ORD-2024-1001,N24-1215,MC,Sarah Chen,Robert Thompson,Mike Wilson,555-0101,10/15/2024,Customer requested silver exterior
+10/02/2024,NEW,2025,Honda,Accord Sport,ORD-2024-1002,N24-1216,SJ,David Lee,Jennifer Martinez,Lisa Anderson,555-0102,10/18/2024,Trade-in pending appraisal
+10/03/2024,USED,2023,Ford,F-150 XLT,ORD-2024-1003,U24-3311,RW,Amanda White,Maria Garcia,Emily Davis,555-0103,10/12/2024,Financing approved
+10/04/2024,NEW,2025,Toyota,RAV4 Hybrid,ORD-2024-1004,N24-1217,JM,Robert Clark,Patricia Johnson,Sarah Thompson,555-0104,10/22/2024,Special order - limited color
+10/05/2024,NEW,2025,Honda,CR-V EX-L,ORD-2024-1005,N24-1218,DA,Jennifer Hall,Mark Wilson,David Martinez,555-0105,10/20/2024,
+10/07/2024,USED,2022,Chevrolet,Silverado 1500,ORD-2024-1006,U24-3312,ET,Michael Davis,Susan Harris,Jennifer Brown,555-0106,10/14/2024,Needs detailing before delivery
+10/08/2024,NEW,2025,Toyota,Highlander,ORD-2024-1007,N24-1219,JB,Lisa Garcia,Kevin Smith,Christopher Lee,555-0107,10/25/2024,Customer out of state
+10/09/2024,NEW,2025,Honda,Pilot Elite,ORD-2024-1008,N24-1220,LG,Sarah Johnson,Nancy Taylor,Amanda Rodriguez,555-0108,10/28/2024,VIN ordered - 6-8 weeks
+10/10/2024,USED,2023,Toyota,Tacoma TRD,ORD-2024-1009,U24-3313,CD,Amanda White,Thomas Lewis,Robert Williams,555-0109,10/16/2024,Accessories being installed
+10/11/2024,NEW,2025,Honda,Accord Hybrid,ORD-2024-1010,N24-1221,AR,David Lee,Michelle Young,Lisa Garcia,555-0110,10/24/2024,Split sale with Emily
+10/12/2024,USED,2022,Ford,Explorer XLT,ORD-2024-1011,U24-3314,MC,Robert Clark,Jennifer King,Michael Chen,555-0111,10/19/2024,Trade-in from auction
+10/14/2024,NEW,2025,Toyota,Corolla LE,ORD-2024-1012,N24-1222,SJ,Jennifer Hall,Robert Hall,Sarah Johnson,555-0112,10/30/2024,First-time buyer program
