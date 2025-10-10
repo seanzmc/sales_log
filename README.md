@@ -12,13 +12,13 @@ Transform your dealership's sales operations with **Sales Log Pro** — a produc
 
 **Sales Log Pro** is the complete sales management solution that pays for itself from day one by eliminating errors, saving hours of manual work, and providing instant visibility into your team's performance.
 
-✅ **Zero Learning Curve** — Works within your existing Google Sheets environment  
-✅ **10-Minute Setup** — One-click wizard creates everything automatically  
-✅ **No Code Editing** — User-friendly Settings UI for all configuration  
-✅ **Real-Time Analytics** — Live dashboards with automated reporting  
-✅ **Error Prevention** — Built-in validation catches mistakes instantly  
-✅ **Production-Ready** — Enterprise-grade locking prevents data corruption  
-✅ **Automated Month-End** — Archive and rollover in seconds, not hours  
+✅ **Zero Learning Curve** — Works within your existing Google Sheets environment
+✅ **10-Minute Setup** — One-click wizard creates everything automatically
+✅ **No Code Editing** — User-friendly Settings UI for all configuration
+✅ **Real-Time Analytics** — Live dashboards with automated reporting
+✅ **Error Prevention** — Built-in validation catches mistakes instantly
+✅ **Production-Ready** — Enterprise-grade locking prevents data corruption
+✅ **Automated Month-End** — Archive and rollover in seconds, not hours
 
 ---
 
@@ -157,8 +157,8 @@ sales-log-pro/
 
 ## 📋 Version Information
 
-**Current Version:** 8.0.0  
-**Release Date:** October 2025  
+**Current Version:** 8.0.0
+**Release Date:** October 2025
 **Status:** Production-Ready
 
 ### What's New in 8.0.0
@@ -179,7 +179,7 @@ sales-log-pro/
 
 **Sales Log Pro** — Professional Automotive Sales Management System
 
-Copyright © 2025 Sean McGuire. All rights reserved.
+Copyright © 2025 This is Sean LLC. All rights reserved.
 
 ### Acknowledgments
 
