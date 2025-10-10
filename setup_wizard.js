@@ -44,6 +44,15 @@ function runSetupWizard() {
 
 /**
  * Checks for and creates the TODAY sheet if missing.
+ * Per setupsheet_headers.md:
+ * - Headers: [A:G] #, CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+ *           [H] blank separator
+ *           [I:N] CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+ *           [O] blank separator
+ *           [P:R] MTD SALES, 3mo. AVERAGE
+ * - Font: Calibri, sizes: A:N=18pt, F&M=10pt, P:R=14pt
+ * - Column widths as specified in documentation
+ *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
  */
@@ -62,9 +71,18 @@ function checkAndCreateTodaySheet(ss, results) {
     sheet = ss.insertSheet(sheetName);
     Logger.log("Creating " + sheetName + " sheet...");
     
-    // Set up headers (Row 1)
+    // Set up headers (Row 1) - per setupsheet_headers.md
+    // New car sales [A:G], separator [H], Used car sales [I:N], separator [O], Leaderboard [P:R]
     const headers = [
-      ["Seq", "", "FI", "", "Stock", "Trade", "SP", "", "", "FI", "", "Stock", "Trade", "SP", "", "Salesperson", "MTD", "Avg"]
+      [
+        "#", "CUSTOMER", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // A:F (note: G is SALES PERSON)
+        "", // G (was listed as part of A:G in doc, but this is the continuation)
+        "", // H - separator
+        "CUSTOMER", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // I:M (note: N is SALES PERSON)
+        "", // N (continuation)
+        "", // O - separator
+        "MTD SALES", "", "3mo. AVERAGE" // P, Q, R
+      ]
     ];
     sheet.getRange(1, 1, 1, 18).setValues(headers);
     
@@ -74,14 +92,42 @@ function checkAndCreateTodaySheet(ss, results) {
       .setHorizontalAlignment("center")
       .setBackground("#E0E0E0");
     
+    // Set font to Calibri for entire sheet
+    sheet.getRange("A:R").setFontFamily("Calibri");
+    
+    // Set font sizes per documentation
+    // A:N = 18pt
+    sheet.getRange("A:N").setFontSize(18);
+    // F (SALES PERSON for new cars) = 10pt
+    sheet.getRange("F:F").setFontSize(10);
+    // M (SALES PERSON for used cars) = 10pt
+    sheet.getRange("M:M").setFontSize(10);
+    // P:R (Leaderboard) = 14pt
+    sheet.getRange("P:R").setFontSize(14);
+    
     // Set number formats for MTD and Avg columns
-    sheet.getRange("Q:Q").setNumberFormat("0.#");
+    sheet.getRange("P:P").setNumberFormat("0.#");
     sheet.getRange("R:R").setNumberFormat("0.#");
     
-    // Set column widths for better display
-    sheet.setColumnWidth(1, 40);  // Seq column
-    sheet.setColumnWidth(8, 20);  // Separator column
-    sheet.setColumnWidth(15, 20); // Separator column
+    // Set column widths per documentation
+    sheet.setColumnWidth(1, 30);   // A: #
+    sheet.setColumnWidth(2, 165);  // B: CUSTOMER
+    sheet.setColumnWidth(3, 35);   // C: MODEL
+    sheet.setColumnWidth(4, 150);  // D: STOCK #
+    sheet.setColumnWidth(5, 125);  // E: TRADE STK#
+    sheet.setColumnWidth(6, 60);   // F: SALES PERSON
+    sheet.setColumnWidth(7, 150);  // G: (continuation of new car sales)
+    sheet.setColumnWidth(8, 5);    // H: separator
+    sheet.setColumnWidth(9, 165);  // I: CUSTOMER (used)
+    sheet.setColumnWidth(10, 35);  // J: MODEL (used)
+    sheet.setColumnWidth(11, 150); // K: STOCK # (used)
+    sheet.setColumnWidth(12, 125); // L: TRADE STK# (used)
+    sheet.setColumnWidth(13, 60);  // M: SALES PERSON (used)
+    sheet.setColumnWidth(14, 150); // N: (continuation of used car sales)
+    sheet.setColumnWidth(15, 5);   // O: separator
+    sheet.setColumnWidth(16, 170); // P: MTD SALES
+    sheet.setColumnWidth(17, 50);  // Q: (middle column)
+    sheet.setColumnWidth(18, 80);  // R: 3mo. AVERAGE
     
     // Apply conditional formatting rules
     applyTodayConditionalFormatting(sheet);
@@ -98,6 +144,11 @@ function checkAndCreateTodaySheet(ss, results) {
 
 /**
  * Applies conditional formatting rules to the TODAY sheet.
+ * Updated for new column layout:
+ * - New car STOCK # is now column D (was E)
+ * - Used car STOCK # is now column K (was L)
+ * - DEPOSITS STOCK # is column G
+ *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The TODAY sheet
  */
 function applyTodayConditionalFormatting(sheet) {
@@ -118,11 +169,12 @@ function applyTodayConditionalFormatting(sheet) {
       Logger.log("Using default colors for CF: " + configError);
     }
     
-    // Rule 1: Duplicate Stock Numbers (New Cars) - B2:G101
-    const newCarRange = sheet.getRange("B2:G101");
+    // Rule 1: Duplicate Stock Numbers (New Cars) - A2:G101
+    // Stock # is now in column D (was E)
+    const newCarRange = sheet.getRange("A2:G101");
     rules.push(
       SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied("=COUNTIF($E$2:$E$101,$E2)>1")
+        .whenFormulaSatisfied("=COUNTIF($D$2:$D$101,$D2)>1")
         .setBackground(duplicateFillColor)
         .setFontColor(duplicateTextColor)
         .setRanges([newCarRange])
@@ -130,20 +182,22 @@ function applyTodayConditionalFormatting(sheet) {
     );
     
     // Rule 2: Duplicate Stock Numbers (Used Cars) - I2:N101
+    // Stock # is now in column K (was L)
     const usedCarRange = sheet.getRange("I2:N101");
     rules.push(
       SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied("=COUNTIF($L$2:$L$101,$L2)>1")
+        .whenFormulaSatisfied("=COUNTIF($K$2:$K$101,$K2)>1")
         .setBackground(duplicateFillColor)
         .setFontColor(duplicateTextColor)
         .setRanges([usedCarRange])
         .build()
     );
     
-    // Rule 3: Stock in Deposits (New Cars) - B2:G101
+    // Rule 3: Stock in Deposits (New Cars) - A2:G101
+    // Check if new car stock (column D) exists in DEPOSITS!G:G (STOCK # column)
     rules.push(
       SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$E2)>0')
+        .whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$D2)>0')
         .setBackground(duplicateFillColor)
         .setFontColor(duplicateTextColor)
         .setRanges([newCarRange])
@@ -151,9 +205,10 @@ function applyTodayConditionalFormatting(sheet) {
     );
     
     // Rule 4: Stock in Deposits (Used Cars) - I2:N101
+    // Check if used car stock (column K) exists in DEPOSITS!G:G (STOCK # column)
     rules.push(
       SpreadsheetApp.newConditionalFormatRule()
-        .whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$L2)>0')
+        .whenFormulaSatisfied('=COUNTIF(INDIRECT("DEPOSITS!G:G"),$K2)>0')
         .setBackground(duplicateFillColor)
         .setFontColor(duplicateTextColor)
         .setRanges([usedCarRange])
@@ -170,6 +225,16 @@ function applyTodayConditionalFormatting(sheet) {
 
 /**
  * Checks for and creates the MONTHLY sheet if missing.
+ * Per setupsheet_headers.md:
+ * - Headers: [A:G] #, CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+ *           [H] blank separator
+ *           [I:N] CUSTOMER, MODEL, STOCK #, TRADE STK#, SALES PERSON
+ *           [O] blank separator
+ *           [P:R] MTD SALES, 3mo. AVERAGE
+ *           [S:X] MONTHLY ANALYTICS (merged cells)
+ * - Font: Calibri, 10pt
+ * - Column widths as specified in documentation
+ *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
  */
@@ -188,20 +253,61 @@ function checkAndCreateMonthlySheet(ss, results) {
     sheet = ss.insertSheet(sheetName);
     Logger.log("Creating " + sheetName + " sheet...");
     
-    // Set up headers (Row 1)
+    // Set up headers (Row 1) - per setupsheet_headers.md
+    // New car sales [A:G], separator [H], Used car sales [I:N], separator [O], Leaderboard [P:R], Analytics [S:X]
     const headers = [
-      ["Seq", "", "FI", "", "Stock", "Trade", "SP", "", "", "FI", "", "Stock", "Trade", "SP"]
+      [
+        "#", "CUSTOMER", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", "", // A:G
+        "", // H - separator
+        "CUSTOMER", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", "", // I:N
+        "", // O - separator
+        "MTD SALES", "", "3mo. AVERAGE", // P:R
+        "MONTHLY ANALYTICS", "", "", "", "", "" // S:X (will be merged)
+      ]
     ];
-    sheet.getRange(1, 1, 1, 14).setValues(headers);
+    sheet.getRange(1, 1, 1, 24).setValues(headers);
+    
+    // Merge cells for MONTHLY ANALYTICS header (S1:X1)
+    sheet.getRange("S1:X1").merge();
     
     // Format header row
-    sheet.getRange(1, 1, 1, 14)
+    sheet.getRange(1, 1, 1, 24)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
       .setBackground("#E0E0E0");
     
-    // Apply borders to first 51 rows
-    sheet.getRange(1, 1, 51, 14)
+    // Set font to Calibri, 10pt for entire sheet
+    sheet.getRange("A:X").setFontFamily("Calibri");
+    sheet.getRange("A:X").setFontSize(10);
+    
+    // Set column widths per documentation
+    sheet.setColumnWidth(1, 45);   // A: #
+    sheet.setColumnWidth(2, 115);  // B: CUSTOMER
+    sheet.setColumnWidth(3, 45);   // C: MODEL
+    sheet.setColumnWidth(4, 100);  // D: STOCK #
+    sheet.setColumnWidth(5, 70);   // E: TRADE STK#
+    sheet.setColumnWidth(6, 90);   // F: SALES PERSON
+    sheet.setColumnWidth(7, 125);  // G: (continuation)
+    sheet.setColumnWidth(8, 5);    // H: separator
+    sheet.setColumnWidth(9, 115);  // I: CUSTOMER (used)
+    sheet.setColumnWidth(10, 45);  // J: MODEL (used)
+    sheet.setColumnWidth(11, 100); // K: STOCK # (used)
+    sheet.setColumnWidth(12, 70);  // L: TRADE STK# (used)
+    sheet.setColumnWidth(13, 90);  // M: SALES PERSON (used)
+    sheet.setColumnWidth(14, 125); // N: (continuation)
+    sheet.setColumnWidth(15, 5);   // O: separator
+    sheet.setColumnWidth(16, 160); // P: MTD SALES
+    sheet.setColumnWidth(17, 50);  // Q: (middle)
+    sheet.setColumnWidth(18, 60);  // R: 3mo. AVERAGE
+    sheet.setColumnWidth(19, 180); // S: MONTHLY ANALYTICS
+    sheet.setColumnWidth(20, 140); // T: analytics column
+    sheet.setColumnWidth(21, 120); // U: analytics column
+    sheet.setColumnWidth(22, 100); // V: analytics column
+    sheet.setColumnWidth(23, 100); // W: analytics column
+    sheet.setColumnWidth(24, 100); // X: analytics column
+    
+    // Apply borders to first 51 rows for main data area
+    sheet.getRange(1, 1, 51, 24)
       .setBorder(
         true, true, true, true, true, true,
         "#000000", SpreadsheetApp.BorderStyle.SOLID
@@ -219,6 +325,11 @@ function checkAndCreateMonthlySheet(ss, results) {
 
 /**
  * Checks for and creates the SALESPEOPLE sheet if missing.
+ * Per setupsheet_headers.md:
+ * - Headers: [A:C] FULL NAME, ALIASES, DISPLAY CODE
+ * - Column widths: All 150
+ * - Font: Calibri, 10pt (default)
+ *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
  */
@@ -237,9 +348,9 @@ function checkAndCreateSalespeopleSheet(ss, results) {
     sheet = ss.insertSheet(sheetName);
     Logger.log("Creating " + sheetName + " sheet...");
     
-    // Set up headers (Row 1)
+    // Set up headers (Row 1) - per setupsheet_headers.md (uppercase)
     const headers = [
-      ["Full Name", "Aliases", "Preferred Display Code"]
+      ["FULL NAME", "ALIASES", "DISPLAY CODE"]
     ];
     sheet.getRange(1, 1, 1, 3).setValues(headers);
     
@@ -249,6 +360,10 @@ function checkAndCreateSalespeopleSheet(ss, results) {
       .setHorizontalAlignment("center")
       .setBackground("#E0E0E0");
     
+    // Set font to Calibri, 10pt for entire sheet
+    sheet.getRange("A:C").setFontFamily("Calibri");
+    sheet.getRange("A:C").setFontSize(10);
+    
     // Add example data to help users understand the format
     const exampleData = [
       ["John Smith", "JS, Johnny", "JS"],
@@ -257,10 +372,10 @@ function checkAndCreateSalespeopleSheet(ss, results) {
     ];
     sheet.getRange(2, 1, 3, 3).setValues(exampleData);
     
-    // Set column widths for better display
-    sheet.setColumnWidth(1, 150); // Full Name
-    sheet.setColumnWidth(2, 200); // Aliases
-    sheet.setColumnWidth(3, 180); // Preferred Display Code
+    // Set column widths per documentation (all 150)
+    sheet.setColumnWidth(1, 150); // FULL NAME
+    sheet.setColumnWidth(2, 150); // ALIASES
+    sheet.setColumnWidth(3, 150); // DISPLAY CODE
     
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");
@@ -274,6 +389,13 @@ function checkAndCreateSalespeopleSheet(ss, results) {
 
 /**
  * Checks for and creates the DEPOSITS sheet if missing.
+ * Per setupsheet_headers.md:
+ * - Headers: [A:N] DATE, NEW/USED, YEAR, MAKE, MODEL, ORDER #, STOCK #,
+ *                  SALESPERSON, BDC, CUSTOMER, DIRECTOR, PHONE #, EST DELIVERY DATE, NOTES
+ * - Complete restructure from 7 to 14 columns
+ * - Font: Calibri, 10pt (default)
+ * - STOCK # column (G) is critical for TODAY sheet conditional formatting
+ *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
  */
@@ -292,26 +414,41 @@ function checkAndCreateDepositsSheet(ss, results) {
     sheet = ss.insertSheet(sheetName);
     Logger.log("Creating " + sheetName + " sheet...");
     
-    // Set up headers (Row 1)
+    // Set up headers (Row 1) - per setupsheet_headers.md
+    // Complete restructure: 7 columns -> 14 columns (A:N)
     const headers = [
-      ["Date", "Customer", "Amount", "Type", "Notes", "Salesperson", "Stock Number"]
+      [
+        "DATE", "NEW/USED", "YEAR", "MAKE", "MODEL", "ORDER #", "STOCK #",
+        "SALESPERSON", "BDC", "CUSTOMER", "DIRECTOR", "PHONE #", "EST DELIVERY DATE", "NOTES"
+      ]
     ];
-    sheet.getRange(1, 1, 1, 7).setValues(headers);
+    sheet.getRange(1, 1, 1, 14).setValues(headers);
     
     // Format header row
-    sheet.getRange(1, 1, 1, 7)
+    sheet.getRange(1, 1, 1, 14)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
       .setBackground("#E0E0E0");
     
+    // Set font to Calibri, 10pt for entire sheet
+    sheet.getRange("A:N").setFontFamily("Calibri");
+    sheet.getRange("A:N").setFontSize(10);
+    
     // Set column widths for better display
-    sheet.setColumnWidth(1, 100);  // Date
-    sheet.setColumnWidth(2, 150);  // Customer
-    sheet.setColumnWidth(3, 100);  // Amount
-    sheet.setColumnWidth(4, 100);  // Type
-    sheet.setColumnWidth(5, 200);  // Notes
-    sheet.setColumnWidth(6, 120);  // Salesperson
-    sheet.setColumnWidth(7, 120);  // Stock Number (critical for TODAY sheet CF)
+    sheet.setColumnWidth(1, 100);  // A: DATE
+    sheet.setColumnWidth(2, 80);   // B: NEW/USED
+    sheet.setColumnWidth(3, 60);   // C: YEAR
+    sheet.setColumnWidth(4, 120);  // D: MAKE
+    sheet.setColumnWidth(5, 120);  // E: MODEL
+    sheet.setColumnWidth(6, 100);  // F: ORDER #
+    sheet.setColumnWidth(7, 120);  // G: STOCK # (critical for TODAY sheet CF)
+    sheet.setColumnWidth(8, 120);  // H: SALESPERSON
+    sheet.setColumnWidth(9, 100);  // I: BDC
+    sheet.setColumnWidth(10, 150); // J: CUSTOMER
+    sheet.setColumnWidth(11, 120); // K: DIRECTOR
+    sheet.setColumnWidth(12, 120); // L: PHONE #
+    sheet.setColumnWidth(13, 120); // M: EST DELIVERY DATE
+    sheet.setColumnWidth(14, 200); // N: NOTES
     
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");
