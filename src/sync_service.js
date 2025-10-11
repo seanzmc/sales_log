@@ -1308,6 +1308,188 @@ function classifyError(error) {
 }
 
 // ============================================================================
+// SHEET → PROPERTIES SYNC (FOR SIDEBAR INITIALIZATION)
+// ============================================================================
+
+/**
+ * Reads all salespeople from SALESPEOPLE sheet
+ * Used when sidebar opens to get current sheet state
+ *
+ * @returns {Array} Array of salesperson objects from sheet
+ */
+function readSalespeopleFromSheet() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(SALESPEOPLE_SHEET_NAME);
+    
+    if (!sheet) {
+      Logger.log('[Sync] SALESPEOPLE sheet not found');
+      return [];
+    }
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      Logger.log('[Sync] No data rows in SALESPEOPLE sheet');
+      return []; // No data rows (only header or empty)
+    }
+    
+    // Read all data rows (skip header row 1)
+    const data = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+    
+    const salespeople = [];
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      const fullName = String(row[COL_FULLNAME] || '').trim();
+      const aliases = String(row[COL_ALIASES] || '').trim();
+      const displayCode = String(row[COL_DISPLAYCODE] || '').trim();
+      
+      // Skip completely empty rows
+      if (!fullName && !aliases && !displayCode) {
+        continue;
+      }
+      
+      // Skip rows without required fields
+      if (!fullName || !displayCode) {
+        Logger.log('[Sync] Skipping invalid row ' + (i + 2) + ': missing required fields');
+        continue;
+      }
+      
+      salespeople.push({
+        fullName: fullName,
+        aliases: aliases,
+        displayCode: displayCode.toUpperCase() // Normalize to uppercase
+      });
+    }
+    
+    Logger.log('[Sync] Read ' + salespeople.length + ' salespeople from SALESPEOPLE sheet');
+    return salespeople;
+    
+  } catch (error) {
+    Logger.log('[Sync] Error in readSalespeopleFromSheet: ' + error.toString());
+    return [];
+  }
+}
+
+/**
+ * Syncs SALESPEOPLE sheet data to Properties Service
+ * Called when sidebar opens to ensure Properties matches sheet
+ *
+ * @param {Array} sheetSalespeople - Salespeople from sheet
+ * @returns {Object} Result with success status
+ */
+function syncFromSheetToProperties(sheetSalespeople) {
+  const lock = LockService.getScriptLock();
+  
+  try {
+    // Wait up to 30 seconds for lock
+    if (!lock.tryLock(30000)) {
+      Logger.log('[Sync] Could not acquire lock for sheet→Properties sync');
+      return {
+        success: false,
+        error: 'Could not acquire lock'
+      };
+    }
+    
+    // Get current config
+    const config = getConfiguration();
+    
+    // Update salespeople
+    config.salespeople = sheetSalespeople;
+    
+    // Save to Properties using updateConfiguration for proper validation
+    updateConfiguration({ salespeople: sheetSalespeople });
+    
+    Logger.log('[Sync] Synced ' + sheetSalespeople.length + ' salespeople from sheet to Properties');
+    
+    // Update sync metadata for all salespeople
+    sheetSalespeople.forEach(sp => {
+      updateSyncMetadata(sp.fullName, 'sheet');
+    });
+    
+    // Invalidate caches
+    invalidateAllCaches();
+    
+    return {
+      success: true,
+      count: sheetSalespeople.length
+    };
+    
+  } catch (error) {
+    Logger.log('[Sync] Error in syncFromSheetToProperties: ' + error.toString());
+    return {
+      success: false,
+      error: error.message
+    };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Checks if sheet data differs from Properties data
+ * Deep comparison to determine if sync is needed
+ *
+ * @param {Array} sheetData - Data from sheet
+ * @param {Array} propsData - Data from Properties
+ * @returns {boolean} True if sync is needed
+ */
+function needsSync(sheetData, propsData) {
+  try {
+    // If no Properties data, sync is needed
+    if (!propsData || propsData.length === 0) {
+      return sheetData && sheetData.length > 0;
+    }
+    
+    // If no sheet data but Properties has data, don't sync
+    // (Properties is source of truth for deletions via sidebar)
+    if (!sheetData || sheetData.length === 0) {
+      return false;
+    }
+    
+    // If different lengths, sync is needed
+    if (sheetData.length !== propsData.length) {
+      Logger.log('[Sync] Length mismatch - Sheet: ' + sheetData.length + ', Properties: ' + propsData.length);
+      return true;
+    }
+    
+    // Deep comparison of each salesperson
+    for (let i = 0; i < sheetData.length; i++) {
+      const sheet = sheetData[i];
+      const props = propsData[i];
+      
+      if (!props) {
+        Logger.log('[Sync] Missing Properties entry at index ' + i);
+        return true;
+      }
+      
+      // Compare each field
+      if (sheet.fullName !== props.fullName) {
+        Logger.log('[Sync] fullName mismatch at index ' + i + ': "' + sheet.fullName + '" vs "' + props.fullName + '"');
+        return true;
+      }
+      
+      if (sheet.aliases !== props.aliases) {
+        Logger.log('[Sync] aliases mismatch for "' + sheet.fullName + '": "' + sheet.aliases + '" vs "' + props.aliases + '"');
+        return true;
+      }
+      
+      if (sheet.displayCode !== props.displayCode) {
+        Logger.log('[Sync] displayCode mismatch for "' + sheet.fullName + '": "' + sheet.displayCode + '" vs "' + props.displayCode + '"');
+        return true;
+      }
+    }
+    
+    // No differences found
+    return false;
+    
+  } catch (error) {
+    Logger.log('[Sync] Error in needsSync: ' + error.toString());
+    // On error, don't sync to avoid data corruption
+    return false;
+  }
+}
+
+// ============================================================================
 // LOGGING AND MONITORING
 // ============================================================================
 

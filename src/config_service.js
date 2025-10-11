@@ -1042,6 +1042,60 @@ function importConfiguration(json) {
 }
 
 // ============================================================================
+// SIDEBAR INITIALIZATION WITH SHEET SYNC
+// ============================================================================
+
+/**
+ * Gets configuration for sidebar, ensuring sheet data is synced first
+ * This is the main entry point when sidebar opens
+ * Reads from SALESPEOPLE sheet and syncs to Properties if needed
+ *
+ * @returns {Object} Configuration object with sheet data loaded
+ */
+function getConfigurationForSidebar() {
+  try {
+    Logger.log('[Config] Getting configuration for sidebar...');
+    
+    // Step 1: Read from SALESPEOPLE sheet
+    const sheetData = readSalespeopleFromSheet();
+    Logger.log('[Config] Read ' + sheetData.length + ' salespeople from sheet');
+    
+    // Step 2: Get current Properties config
+    let config = getConfiguration();
+    const propsData = config.salespeople || [];
+    Logger.log('[Config] Current Properties has ' + propsData.length + ' salespeople');
+    
+    // Step 3: Check if sync is needed
+    if (needsSync(sheetData, propsData)) {
+      Logger.log('[Config] Sync needed - sheet differs from Properties');
+      
+      // Step 4: Sync sheet data to Properties
+      const syncResult = syncFromSheetToProperties(sheetData);
+      
+      if (syncResult.success) {
+        Logger.log('[Config] Successfully synced ' + syncResult.count + ' salespeople from sheet to Properties');
+        
+        // Re-read config after sync
+        config = getConfiguration();
+      } else {
+        Logger.log('[Config] Sync failed: ' + syncResult.error);
+        // Continue with current config even if sync fails
+      }
+    } else {
+      Logger.log('[Config] No sync needed - sheet and Properties match');
+    }
+    
+    // Step 5: Return config (now guaranteed to match sheet or represent best state)
+    return config;
+    
+  } catch (error) {
+    Logger.log('[Config] Error in getConfigurationForSidebar: ' + error.toString());
+    // Fall back to regular getConfiguration
+    return getConfiguration();
+  }
+}
+
+// ============================================================================
 // SCRIPTLET INTEGRATION FUNCTIONS
 // ============================================================================
 

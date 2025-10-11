@@ -288,14 +288,15 @@
     <!-- Inject server-side data before loading client script -->
     <script>
       // Server-injected configuration data (evaluated server-side, then included)
-      window.__SIDEBAR_INITIAL_CONFIG__ = '<?!= prepareInitialState(getConfiguration()) ?>';
+      // Uses getConfigurationForSidebar() which reads from SALESPEOPLE sheet and syncs to Properties
+      window.__SIDEBAR_INITIAL_CONFIG__ = '<?!= prepareInitialState(getConfigurationForSidebar()) ?>';
       window.__SIDEBAR_FEATURE_FLAGS__ = {
-        hasSalespeople: <?!= prepareFeatureFlags(getConfiguration()).hasSalespeople ? 'true' : 'false' ?>,
-        hasCustomColors: <?!= prepareFeatureFlags(getConfiguration()).hasCustomColors ? 'true' : 'false' ?>,
-        skipSundays: <?!= prepareFeatureFlags(getConfiguration()).skipSundays ? 'true' : 'false' ?>,
-        mondayLogsSaturday: <?!= prepareFeatureFlags(getConfiguration()).mondayLogsSaturday ? 'true' : 'false' ?>
+        hasSalespeople: <?!= prepareFeatureFlags(getConfigurationForSidebar()).hasSalespeople ? 'true' : 'false' ?>,
+        hasCustomColors: <?!= prepareFeatureFlags(getConfigurationForSidebar()).hasCustomColors ? 'true' : 'false' ?>,
+        skipSundays: <?!= prepareFeatureFlags(getConfigurationForSidebar()).skipSundays ? 'true' : 'false' ?>,
+        mondayLogsSaturday: <?!= prepareFeatureFlags(getConfigurationForSidebar()).mondayLogsSaturday ? 'true' : 'false' ?>
       };
-      console.log('[DEBUG] Server data injected successfully');
+      console.log('[DEBUG] Server data injected successfully (loaded from sheet)');
     </script>
 
     <?!= include('sidebar_js') ?>
