@@ -42,9 +42,6 @@ function runSetupWizard() {
       }
     }
 
-    // Prompt for salesperson setup (optional)
-    promptForSalespersonSetup(ss);
-
     // Check and create each required sheet
     checkAndCreateTodaySheet(ss, results);
     checkAndCreateMonthlySheet(ss, results);
@@ -53,6 +50,13 @@ function runSetupWizard() {
 
     // Show summary dialog
     showSetupSummary(results);
+
+    // Automatically open configuration sidebar for salesperson setup
+    try {
+      openConfigurationSidebar();
+    } catch (e) {
+      Logger.log('Error opening configuration sidebar: ' + e);
+    }
 
     Logger.log("Setup wizard completed successfully.");
 
@@ -129,48 +133,9 @@ function promptForCustomization(ss) {
       );
     }
 
-    // Step 3: UsedCar background color
-    let usedCarBgColor = '#234070'; // Default (changed to match available options)
-    let usedCarTextColor = '#FFFFFF';
-
-    const usedCarColorResponse = ui.prompt(
-      'Used Car Header Color',
-      'Choose background color for Used Car headers:\n1 = Blue (#234070)\n2 = Red (#B71C1C)\n3 = Dark Green (#1B5E20)\n4 = Dark Yellow (#F9A825)\n\nEnter 1-4 or leave blank for Blue (default)',
-      ui.ButtonSet.OK_CANCEL
-    );
-
-    if (usedCarColorResponse.getSelectedButton() === ui.Button.OK) {
-      const choice = usedCarColorResponse.getResponseText().trim();
-
-      // Map user choice to hex color
-      switch (choice) {
-        case '1':
-          usedCarBgColor = '#234070';
-          break;
-        case '2':
-          usedCarBgColor = '#B71C1C';
-          break;
-        case '3':
-          usedCarBgColor = '#1B5E20';
-          break;
-        case '4':
-          usedCarBgColor = '#F9A825';
-          break;
-        default:
-          // Blank or invalid - use default
-          usedCarBgColor = '#234070';
-      }
-
-      // Calculate WCAG compliant text color
-      usedCarTextColor = getWcagCompliantTextColor(usedCarBgColor);
-
-      // Show confirmation
-      ui.alert(
-        'Confirm Used Car Colors',
-        'Used Car headers will use:\n• Background: ' + usedCarBgColor + '\n• Text: ' + usedCarTextColor,
-        ui.ButtonSet.OK
-      );
-    }
+    // Step 3: UsedCar fixed color (no user prompt)
+    const usedCarBgColor = '#424242';
+    const usedCarTextColor = '#FFFFFF';
 
     // Step 4: Font selection
     let headerFont = 'Calibri'; // Default
@@ -225,55 +190,6 @@ function promptForCustomization(ss) {
     Logger.log('Error in promptForCustomization: ' + e.toString());
     // Return null to use defaults
     return null;
-  }
-}
-
-/**
- * Prompts user for salesperson setup during the setup wizard.
- * Shows an informational dialog about adding sales team members.
- * The actual SALESPEOPLE sheet creation is handled by checkAndCreateSalespeopleSheet().
- *
- * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
- * @returns {boolean} True if user wants to proceed with salesperson setup, false otherwise
- */
-function promptForSalespersonSetup(ss) {
-  const ui = SpreadsheetApp.getUi();
-
-  try {
-    // Step 1: Ask if user wants to add sales team now
-    const response = ui.alert(
-      'Salesperson Setup',
-      'Would you like to add your sales team now?\n\n' +
-      'You can add salespeople names, nicknames, and initials. ' +
-      'This step is optional - you can configure your sales team later through the Settings menu.',
-      ui.ButtonSet.YES_NO
-    );
-
-    if (response === ui.Button.YES) {
-      // Step 2: Show informational prompt about what to do next
-      ui.alert(
-        'Salesperson Setup',
-        'After setup completes, a SALESPEOPLE sheet will be created with example data. ' +
-        'You can edit this sheet directly to add your team members.\n\n' +
-        'Each row should contain:\n' +
-        '• Full Name (e.g., \'John Smith\')\n' +
-        '• Nicknames (e.g., \'JS, Johnny\')\n' +
-        '• Initials (e.g., \'JS\')\n\n' +
-        'Click OK to continue with setup.',
-        ui.ButtonSet.OK
-      );
-
-      Logger.log('User chose to set up salespeople');
-      return true;
-    }
-
-    Logger.log('User skipped salesperson setup');
-    return false;
-
-  } catch (e) {
-    Logger.log('Error in promptForSalespersonSetup: ' + e.toString());
-    // Continue with setup even if prompt fails
-    return false;
   }
 }
 
@@ -366,6 +282,12 @@ function checkAndCreateTodaySheet(ss, results) {
     // Set font to configured font for entire sheet
     sheet.getRange("A:R").setFontFamily(headerFont);
 
+    // Set text wrapping for specific columns
+    sheet.getRange("F:F").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // NewCar TRADE STK#
+    sheet.getRange("M:M").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // UsedCar TRADE STK#
+    sheet.getRange("Q:Q").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // MTD SALES
+    sheet.getRange("R:R").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // 3mo. AVERAGE
+
     // Set font sizes per documentation
     // A:N = 18pt
     sheet.getRange("A:N").setFontSize(18);
@@ -379,6 +301,24 @@ function checkAndCreateTodaySheet(ss, results) {
     // Set number formats for MTD and Avg columns
     sheet.getRange("P:P").setNumberFormat("0.#");
     sheet.getRange("R:R").setNumberFormat("0.#");
+
+    // Add incremental count in column A (A2:A51)
+    const countData = [];
+    for (let i = 1; i <= 50; i++) {
+      countData.push([i]);
+    }
+    sheet.getRange(2, 1, 50, 1).setValues(countData);
+
+    // Add borders to main data range and leaderboard
+    sheet.getRange("A1:N51").setBorder(
+      true, true, true, true, true, true,
+      "black", SpreadsheetApp.BorderStyle.SOLID
+    );
+
+    sheet.getRange("P1:R51").setBorder(
+      true, true, true, true, true, true,
+      "black", SpreadsheetApp.BorderStyle.SOLID
+    );
 
     // Set column widths per documentation
     sheet.setColumnWidth(1, 30);   // A: #

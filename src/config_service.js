@@ -33,7 +33,7 @@ const DEFAULT_CONFIG = {
     },
     headerNewCarBgColor: "#234070",
     headerNewCarTextColor: "#FFFFFF",
-    headerUsedCarBgColor: "#234070",
+    headerUsedCarBgColor: "#424242",
     headerUsedCarTextColor: "#FFFFFF",
     headerLeaderboardBgColor: "#434343",
     headerLeaderboardTextColor: "#FFFFFF",
