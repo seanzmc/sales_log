@@ -492,7 +492,7 @@ function checkAndCreateMonthlySheet(ss, results) {
         "", // H - separator
         "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // I:N
         "", // O - separator
-        "SALESPERSON", "SALES", "3mo. AVERAGE", // P:R
+        "SALESPERSON", "SALES", "3mo. AVG", // P:R
         "MONTHLY ANALYTICS", "", "", "", "", "" // S:X (will be merged)
       ]
     ];

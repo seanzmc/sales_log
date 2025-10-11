@@ -313,7 +313,12 @@ function addSalesperson(data) {
     salespeople.push(sanitized);
     
     // Update configuration
-    return updateConfiguration({ salespeople: salespeople });
+    const result = updateConfiguration({ salespeople: salespeople });
+    
+    // Update sync metadata
+    updateSyncMetadata(sanitized.fullName, 'sidebar');
+    
+    return result;
     
   } catch (e) {
     Logger.log('Error in addSalesperson: ' + e.toString());
@@ -371,7 +376,12 @@ function updateSalesperson(fullName, data) {
     salespeople[index] = sanitized;
     
     // Update configuration
-    return updateConfiguration({ salespeople: salespeople });
+    const result = updateConfiguration({ salespeople: salespeople });
+    
+    // Update sync metadata
+    updateSyncMetadata(sanitized.fullName, 'sidebar');
+    
+    return result;
     
   } catch (e) {
     Logger.log('Error in updateSalesperson: ' + e.toString());
@@ -397,6 +407,18 @@ function deleteSalesperson(fullName) {
     
     if (filtered.length === salespeople.length) {
       throw new Error('Salesperson "' + fullName + '" not found');
+    }
+    
+    // Clean up sync metadata for deleted salesperson
+    try {
+      const metadata = getSyncMetadataFromProperties();
+      if (metadata[fullName]) {
+        delete metadata[fullName];
+        saveSyncMetadata(metadata);
+      }
+    } catch (e) {
+      Logger.log('Warning: Could not clean up sync metadata: ' + e.toString());
+      // Don't throw - metadata cleanup failure shouldn't break deletion
     }
     
     // Update configuration
@@ -714,6 +736,73 @@ function validateConfiguration(config) {
   }
   
   return errors;
+}
+
+// ============================================================================
+// SYNC METADATA MANAGEMENT
+// ============================================================================
+
+/**
+ * Gets sync metadata from Properties Service
+ * Used to track salesperson modifications for bidirectional sync
+ *
+ * @returns {Object} Sync metadata structure
+ */
+function getSyncMetadataFromProperties() {
+  try {
+    const props = PropertiesService.getDocumentProperties();
+    const metadataJson = props.getProperty('SALES_LOG_SYNC_META');
+    
+    if (metadataJson) {
+      return JSON.parse(metadataJson);
+    } else {
+      return {}; // Empty metadata
+    }
+  } catch (e) {
+    Logger.log('Error reading sync metadata: ' + e.toString());
+    return {};
+  }
+}
+
+/**
+ * Saves sync metadata to Properties Service
+ *
+ * @param {Object} metadata - Sync metadata to save
+ */
+function saveSyncMetadata(metadata) {
+  try {
+    const props = PropertiesService.getDocumentProperties();
+    props.setProperty('SALES_LOG_SYNC_META', JSON.stringify(metadata));
+  } catch (e) {
+    Logger.log('Error saving sync metadata: ' + e.toString());
+    throw e;
+  }
+}
+
+/**
+ * Updates sync metadata for a salesperson
+ * Tracks modifications for conflict detection
+ *
+ * @param {string} fullName - Salesperson full name
+ * @param {string} source - 'sheet' or 'sidebar'
+ */
+function updateSyncMetadata(fullName, source) {
+  try {
+    const metadata = getSyncMetadataFromProperties();
+    
+    metadata[fullName] = {
+      lastModified: new Date().toISOString(),
+      modifiedBy: Session.getActiveUser().getEmail(),
+      source: source,
+      version: (metadata[fullName] && metadata[fullName].version) ? metadata[fullName].version + 1 : 1
+    };
+    
+    saveSyncMetadata(metadata);
+    Logger.log('Updated sync metadata for ' + fullName + ' (source: ' + source + ')');
+  } catch (e) {
+    Logger.log('Error updating sync metadata: ' + e.toString());
+    // Don't throw - metadata tracking failure shouldn't break CRUD operations
+  }
 }
 
 // ============================================================================
