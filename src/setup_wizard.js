@@ -279,6 +279,41 @@ function checkAndCreateTodaySheet(ss, results) {
       .setFontColor(leaderboardText)
       .setFontFamily(headerFont);
 
+    // Populate leaderboard with salespeople from SALESPEOPLE sheet
+    try {
+      const salesSheet = ss.getSheetByName("SALESPEOPLE");
+      if (salesSheet) {
+        const lastRow = salesSheet.getLastRow();
+        if (lastRow > 1) {
+          // Get FULL NAMEs from column A, starting from row 2
+          const fullNames = salesSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+          
+          // Prepare data for leaderboard (up to 27 rows)
+          const leaderboardData = [];
+          for (let i = 0; i < 27; i++) {
+            if (i < fullNames.length && fullNames[i][0]) {
+              // Add salesperson name with 0 for MTD and 3mo. AVERAGE
+              leaderboardData.push([fullNames[i][0], 0, 0]);
+            } else {
+              // Fill remaining rows with empty data
+              leaderboardData.push(["", 0, 0]);
+            }
+          }
+          
+          // Write to leaderboard range P2:R28
+          sheet.getRange("P2:R28").setValues(leaderboardData);
+          Logger.log("Leaderboard populated with " + Math.min(fullNames.length, 27) + " salespeople.");
+        } else {
+          Logger.log("SALESPEOPLE sheet exists but has no data rows. Leaderboard left empty.");
+        }
+      } else {
+        Logger.log("SALESPEOPLE sheet not found. Leaderboard will be populated when SALESPEOPLE sheet is created.");
+      }
+    } catch (e) {
+      Logger.log("Could not populate leaderboard from SALESPEOPLE sheet: " + e.toString());
+      // Continue with setup even if leaderboard population fails
+    }
+
     // Set font to configured font for entire sheet
     sheet.getRange("A:R").setFontFamily(headerFont);
 
@@ -342,6 +377,9 @@ function checkAndCreateTodaySheet(ss, results) {
 
     // Apply conditional formatting rules
     applyTodayConditionalFormatting(sheet);
+
+    // Auto-resize columns A through R (1-18) to optimize column widths
+    sheet.autoResizeColumns(1, 18);
 
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");
@@ -560,6 +598,9 @@ function checkAndCreateMonthlySheet(ss, results) {
     sheet.setColumnWidth(22, 100); // V: analytics column
     sheet.setColumnWidth(23, 100); // W: analytics column
     sheet.setColumnWidth(24, 100); // X: analytics column
+
+    // Auto-resize columns A through X (1-24) to optimize column widths
+    sheet.autoResizeColumns(1, 24);
 
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");

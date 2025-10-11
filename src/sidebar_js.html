@@ -330,6 +330,25 @@ window.clearAddForm = function() {
   hideValidation('displaycode-validation');
 };
 
+window.updateLeaderboard = function() {
+  if (!confirm('Update the leaderboard with current sales team members?\n\nThis will:\n• Update the NAME column with all current salespeople\n• Preserve existing MTD SALES and 3-month AVERAGE data\n• Clear rows for removed salespeople')) {
+    return;
+  }
+
+  showLoading(true);
+
+  google.script.run
+    .withSuccessHandler(function(result) {
+      showToast('Leaderboard updated successfully! ' + result.count + ' salesperson(s) synced.', 'success');
+      showLoading(false);
+    })
+    .withFailureHandler(function(error) {
+      showToast('Error updating leaderboard: ' + error.message, 'error');
+      showLoading(false);
+    })
+    .updateLeaderboard();
+};
+
 // ========================================================================
 // VISUAL SETTINGS
 // ========================================================================

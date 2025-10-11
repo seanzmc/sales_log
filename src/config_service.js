@@ -430,6 +430,83 @@ function deleteSalesperson(fullName) {
   }
 }
 
+/**
+ * Updates the leaderboard on the TODAY sheet with current salespeople
+ * Syncs salesperson names from SALESPEOPLE sheet to leaderboard (P2:R28)
+ * Preserves existing MTD SALES and 3-month AVERAGE data
+ *
+ * @returns {Object} Result object with success status and count
+ * @throws {Error} If update operation fails
+ */
+function updateLeaderboard() {
+  try {
+    Logger.log('Starting leaderboard update...');
+    
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Get SALESPEOPLE sheet
+    const salesSheet = ss.getSheetByName('SALESPEOPLE');
+    if (!salesSheet) {
+      throw new Error('SALESPEOPLE sheet not found');
+    }
+    
+    // Get TODAY sheet
+    const todaySheet = ss.getSheetByName('TODAY');
+    if (!todaySheet) {
+      throw new Error('TODAY sheet not found');
+    }
+    
+    // Read all salespeople full names from column A (starting at row 2)
+    const lastRow = salesSheet.getLastRow();
+    let salespeople = [];
+    
+    if (lastRow > 1) {
+      const salespeopleData = salesSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      salespeople = salespeopleData
+        .map(row => String(row[0]).trim())
+        .filter(name => name); // Remove empty names
+    }
+    
+    Logger.log('Found ' + salespeople.length + ' salespeople in SALESPEOPLE sheet');
+    
+    // Get the leaderboard range (P2:R28)
+    const leaderboardRange = todaySheet.getRange('P2:R28');
+    const leaderboardData = leaderboardRange.getValues();
+    
+    // Create new leaderboard data
+    const newLeaderboardData = [];
+    
+    for (let i = 0; i < 27; i++) { // 27 rows (2-28)
+      if (i < salespeople.length) {
+        // Add salesperson with preserved MTD and 3-month average
+        newLeaderboardData.push([
+          salespeople[i],                    // Column P: NAME
+          leaderboardData[i][1] || '',       // Column Q: MTD SALES (preserve existing)
+          leaderboardData[i][2] || ''        // Column R: 3mo. AVERAGE (preserve existing)
+        ]);
+      } else {
+        // Clear rows where there's no salesperson
+        newLeaderboardData.push(['', '', '']);
+      }
+    }
+    
+    // Write updated leaderboard data back to sheet
+    leaderboardRange.setValues(newLeaderboardData);
+    
+    Logger.log('Leaderboard updated successfully with ' + salespeople.length + ' salespeople');
+    
+    return {
+      success: true,
+      count: salespeople.length,
+      message: 'Leaderboard updated successfully'
+    };
+    
+  } catch (e) {
+    Logger.log('Error in updateLeaderboard: ' + e.toString());
+    throw new Error('Failed to update leaderboard: ' + e.message);
+  }
+}
+
 // ============================================================================
 // VALIDATION FUNCTIONS
 // ============================================================================
