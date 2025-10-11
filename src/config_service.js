@@ -30,7 +30,14 @@ const DEFAULT_CONFIG = {
       green: 10,
       yellow: 8,
       red: 0
-    }
+    },
+    headerNewCarBgColor: "#234070",
+    headerNewCarTextColor: "#FFFFFF",
+    headerUsedCarBgColor: "#424242",
+    headerUsedCarTextColor: "#FFFFFF",
+    headerLeaderboardBgColor: "#434343",
+    headerLeaderboardTextColor: "#FFFFFF",
+    headerFont: "Calibri"
   },
   dates: {
     skipSundays: true,

@@ -27,12 +27,23 @@ function runSetupWizard() {
     // Prompt for customization
     const customizationSettings = promptForCustomization(ss);
     if (customizationSettings) {
-      // Store in properties for use by sheet creation functions
+      // Store in properties for use by sheet creation functions (temporary)
       PropertiesService.getDocumentProperties().setProperty(
         'SETUP_CUSTOMIZATION',
         JSON.stringify(customizationSettings)
       );
+      
+      // Also save to permanent configuration
+      try {
+        const updates = { visual: customizationSettings };
+        updateConfiguration(updates);
+      } catch (e) {
+        Logger.log('Error saving customization to configuration: ' + e);
+      }
     }
+    
+    // Prompt for salesperson setup (optional)
+    promptForSalespersonSetup(ss);
     
     // Check and create each required sheet
     checkAndCreateTodaySheet(ss, results);
@@ -227,6 +238,55 @@ function promptForCustomization(ss) {
   } catch (e) {
     Logger.log('Error in promptForCustomization: ' + e.toString());
     // Return null to use defaults
+/**
+ * Prompts user for salesperson setup during the setup wizard.
+ * Shows an informational dialog about adding sales team members.
+ * The actual SALESPEOPLE sheet creation is handled by checkAndCreateSalespeopleSheet().
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
+ * @returns {boolean} True if user wants to proceed with salesperson setup, false otherwise
+ */
+function promptForSalespersonSetup(ss) {
+  const ui = SpreadsheetApp.getUi();
+  
+  try {
+    // Step 1: Ask if user wants to add sales team now
+    const response = ui.alert(
+      'Salesperson Setup',
+      'Would you like to add your sales team now?\n\n' +
+      'You can add salespeople names, nicknames, and initials. ' +
+      'This step is optional - you can configure your sales team later through the Settings menu.',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (response === ui.Button.YES) {
+      // Step 2: Show informational prompt about what to do next
+      ui.alert(
+        'Salesperson Setup',
+        'After setup completes, a SALESPEOPLE sheet will be created with example data. ' +
+        'You can edit this sheet directly to add your team members.\n\n' +
+        'Each row should contain:\n' +
+        '• Full Name (e.g., \'John Smith\')\n' +
+        '• Nicknames (e.g., \'JS, Johnny\')\n' +
+        '• Initials (e.g., \'JS\')\n\n' +
+        'Click OK to continue with setup.',
+        ui.ButtonSet.OK
+      );
+      
+      Logger.log('User chose to set up salespeople');
+      return true;
+    }
+    
+    Logger.log('User skipped salesperson setup');
+    return false;
+    
+  } catch (e) {
+    Logger.log('Error in promptForSalespersonSetup: ' + e.toString());
+    // Continue with setup even if prompt fails
+    return false;
+  }
+}
+
     return null;
   }
 }
@@ -260,6 +320,26 @@ function checkAndCreateTodaySheet(ss, results) {
     sheet = ss.insertSheet(sheetName);
     Logger.log("Creating " + sheetName + " sheet...");
     
+    // Get customization settings if they exist
+    const customizationJson = PropertiesService.getDocumentProperties().getProperty('SETUP_CUSTOMIZATION');
+    let settings = null;
+    if (customizationJson) {
+      try {
+        settings = JSON.parse(customizationJson);
+      } catch (e) {
+        Logger.log('Error parsing customization settings: ' + e);
+      }
+    }
+    
+    // Set defaults if no customization
+    const newCarBg = settings?.headerNewCarBgColor || "#234070";
+    const newCarText = settings?.headerNewCarTextColor || "#FFFFFF";
+    const usedCarBg = settings?.headerUsedCarBgColor || "#424242";
+    const usedCarText = settings?.headerUsedCarTextColor || "#FFFFFF";
+    const leaderboardBg = settings?.headerLeaderboardBgColor || "#434343";
+    const leaderboardText = settings?.headerLeaderboardTextColor || "#FFFFFF";
+    const headerFont = settings?.headerFont || "Calibri";
+    
     // Set up headers (Row 1) - per setupsheet_headers.md
     // New car sales [A:G], separator [H], Used car sales [I:N], separator [O], Leaderboard [P:R]
     const headers = [
@@ -273,14 +353,32 @@ function checkAndCreateTodaySheet(ss, results) {
     ];
     sheet.getRange(1, 1, 1, 18).setValues(headers);
     
-    // Format header row
-    sheet.getRange(1, 1, 1, 18)
+    // Format NewCar headers (A:G)
+    sheet.getRange(1, 1, 1, 7)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
-      .setBackground("#E0E0E0");
+      .setBackground(newCarBg)
+      .setFontColor(newCarText)
+      .setFontFamily(headerFont);
     
-    // Set font to Calibri for entire sheet
-    sheet.getRange("A:R").setFontFamily("Calibri");
+    // Format UsedCar headers (I:N)
+    sheet.getRange(1, 9, 1, 6)
+      .setFontWeight("bold")
+      .setHorizontalAlignment("center")
+      .setBackground(usedCarBg)
+      .setFontColor(usedCarText)
+      .setFontFamily(headerFont);
+    
+    // Format Leaderboard headers (P:R)
+    sheet.getRange(1, 16, 1, 3)
+      .setFontWeight("bold")
+      .setHorizontalAlignment("center")
+      .setBackground(leaderboardBg)
+      .setFontColor(leaderboardText)
+      .setFontFamily(headerFont);
+    
+    // Set font to configured font for entire sheet
+    sheet.getRange("A:R").setFontFamily(headerFont);
     
     // Set font sizes per documentation
     // A:N = 18pt
@@ -440,6 +538,26 @@ function checkAndCreateMonthlySheet(ss, results) {
     sheet = ss.insertSheet(sheetName);
     Logger.log("Creating " + sheetName + " sheet...");
     
+    // Get customization settings if they exist
+    const customizationJson = PropertiesService.getDocumentProperties().getProperty('SETUP_CUSTOMIZATION');
+    let settings = null;
+    if (customizationJson) {
+      try {
+        settings = JSON.parse(customizationJson);
+      } catch (e) {
+        Logger.log('Error parsing customization settings: ' + e);
+      }
+    }
+    
+    // Set defaults if no customization
+    const newCarBg = settings?.headerNewCarBgColor || "#234070";
+    const newCarText = settings?.headerNewCarTextColor || "#FFFFFF";
+    const usedCarBg = settings?.headerUsedCarBgColor || "#424242";
+    const usedCarText = settings?.headerUsedCarTextColor || "#FFFFFF";
+    const leaderboardBg = settings?.headerLeaderboardBgColor || "#434343";
+    const leaderboardText = settings?.headerLeaderboardTextColor || "#FFFFFF";
+    const headerFont = settings?.headerFont || "Calibri";
+    
     // Set up headers (Row 1) - per setupsheet_headers.md
     // New car sales [A:G], separator [H], Used car sales [I:N], separator [O], Leaderboard [P:R], Analytics [S:X]
     const headers = [
@@ -457,14 +575,38 @@ function checkAndCreateMonthlySheet(ss, results) {
     // Merge cells for MONTHLY ANALYTICS header (S1:X1)
     sheet.getRange("S1:X1").merge();
     
-    // Format header row
-    sheet.getRange(1, 1, 1, 24)
+    // Format NewCar headers (A:G)
+    sheet.getRange(1, 1, 1, 7)
+      .setFontWeight("bold")
+      .setHorizontalAlignment("center")
+      .setBackground(newCarBg)
+      .setFontColor(newCarText)
+      .setFontFamily(headerFont);
+    
+    // Format UsedCar headers (I:N)
+    sheet.getRange(1, 9, 1, 6)
+      .setFontWeight("bold")
+      .setHorizontalAlignment("center")
+      .setBackground(usedCarBg)
+      .setFontColor(usedCarText)
+      .setFontFamily(headerFont);
+    
+    // Format Leaderboard headers (P:R)
+    sheet.getRange(1, 16, 1, 3)
+      .setFontWeight("bold")
+      .setHorizontalAlignment("center")
+      .setBackground(leaderboardBg)
+      .setFontColor(leaderboardText)
+      .setFontFamily(headerFont);
+    
+    // Format MONTHLY ANALYTICS header (S:X) - keep existing gray formatting
+    sheet.getRange(1, 19, 1, 6)
       .setFontWeight("bold")
       .setHorizontalAlignment("center")
       .setBackground("#E0E0E0");
     
-    // Set font to Calibri, 10pt for entire sheet
-    sheet.getRange("A:X").setFontFamily("Calibri");
+    // Set font to configured font, 10pt for entire sheet
+    sheet.getRange("A:X").setFontFamily(headerFont);
     sheet.getRange("A:X").setFontSize(10);
     
     // Set column widths per documentation
