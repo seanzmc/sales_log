@@ -140,13 +140,26 @@ function updateColorPreview(inputId, color) {
 // ========================================================================
 
 function setupEventListeners() {
-        // Auto-generate display code from name
+        // Auto-generate display code and aliases from name
         document.getElementById('new-fullname').addEventListener('input', debounce(function (e) {
           const fullName = e.target.value.trim();
           if (fullName) {
             const parts = fullName.split(' ');
+            
+            // Auto-generate display code (initials)
             const code = parts.map(p => p.charAt(0).toUpperCase()).join('').substring(0, 4);
             document.getElementById('new-displaycode').value = code;
+            
+            // Auto-generate aliases: "FirstName, FirstName LastInitial"
+            if (parts.length >= 2) {
+              const firstName = parts[0];
+              const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+              const aliases = firstName + ', ' + firstName + ' ' + lastInitial;
+              document.getElementById('new-aliases').value = aliases;
+            } else if (parts.length === 1) {
+              // Single name, just use the name
+              document.getElementById('new-aliases').value = parts[0];
+            }
           }
         }, 300));
 

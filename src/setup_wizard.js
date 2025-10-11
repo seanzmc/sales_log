@@ -327,17 +327,17 @@ function checkAndCreateTodaySheet(ss, results) {
     sheet.setColumnWidth(4, 150);  // D: MODEL
     sheet.setColumnWidth(5, 125);  // E: STOCK #
     sheet.setColumnWidth(6, 60);   // F: TRADE STK#
-    sheet.setColumnWidth(7, 150);  // G: SALES PERSON
+    sheet.setColumnWidth(7, 195);  // G: SALES PERSON
     sheet.setColumnWidth(8, 5);    // H: separator
     sheet.setColumnWidth(9, 165);  // I: CUSTOMER (used)
     sheet.setColumnWidth(10, 35);  // J: FI (used)
     sheet.setColumnWidth(11, 150); // K: MODEL (used)
     sheet.setColumnWidth(12, 125); // L: STOCK # (used)
     sheet.setColumnWidth(13, 60);  // M: TRADE STK# (used)
-    sheet.setColumnWidth(14, 150); // N: SALES PERSON (used)
+    sheet.setColumnWidth(14, 195); // N: SALES PERSON (used)
     sheet.setColumnWidth(15, 5);   // O: separator
     sheet.setColumnWidth(16, 170); // P: MTD SALES
-    sheet.setColumnWidth(17, 50);  // Q: (middle column)
+    sheet.setColumnWidth(17, 70);  // Q: (middle column)
     sheet.setColumnWidth(18, 80);  // R: 3mo. AVERAGE
 
     // Apply conditional formatting rules
