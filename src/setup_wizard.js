@@ -90,100 +90,86 @@ function promptForCustomization(ss) {
     let newCarBgColor = '#234070'; // Default
     let newCarTextColor = '#FFFFFF';
     
-    while (true) {
-      const newCarColorResponse = ui.prompt(
-        'New Car Header Color',
-        'Enter background color for New Car headers (A:G) in hex format (e.g., #234070)\n\nLeave blank to use default (#234070)',
-        ui.ButtonSet.OK_CANCEL
-      );
+    const newCarColorResponse = ui.prompt(
+      'New Car Header Color',
+      'Choose background color for New Car headers:\n1 = Blue (#234070)\n2 = Red (#B71C1C)\n3 = Dark Green (#1B5E20)\n4 = Dark Yellow (#F9A825)\n\nEnter 1-4 or leave blank for Blue (default)',
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (newCarColorResponse.getSelectedButton() === ui.Button.OK) {
+      const choice = newCarColorResponse.getResponseText().trim();
       
-      if (newCarColorResponse.getSelectedButton() === ui.Button.CANCEL) {
-        // Use default
-        break;
-      }
-      
-      const inputColor = newCarColorResponse.getResponseText().trim();
-      
-      if (!inputColor) {
-        // Blank - use default
-        break;
-      }
-      
-      // Validate hex format
-      if (!validateColor(inputColor)) {
-        ui.alert(
-          'Invalid Color Format',
-          'Please enter a valid hex color (e.g., #234070 or #FF5733)',
-          ui.ButtonSet.OK
-        );
-        continue; // Re-prompt
+      // Map user choice to hex color
+      switch (choice) {
+        case '1':
+          newCarBgColor = '#234070';
+          break;
+        case '2':
+          newCarBgColor = '#B71C1C';
+          break;
+        case '3':
+          newCarBgColor = '#1B5E20';
+          break;
+        case '4':
+          newCarBgColor = '#F9A825';
+          break;
+        default:
+          // Blank or invalid - use default
+          newCarBgColor = '#234070';
       }
       
       // Calculate WCAG compliant text color
-      newCarBgColor = inputColor;
-      newCarTextColor = getWcagCompliantTextColor(inputColor);
+      newCarTextColor = getWcagCompliantTextColor(newCarBgColor);
       
       // Show confirmation
-      const confirmResponse = ui.alert(
+      ui.alert(
         'Confirm New Car Colors',
-        'New Car headers will use:\n• Background: ' + newCarBgColor + '\n• Text: ' + newCarTextColor + '\n\nContinue?',
-        ui.ButtonSet.YES_NO
+        'New Car headers will use:\n• Background: ' + newCarBgColor + '\n• Text: ' + newCarTextColor,
+        ui.ButtonSet.OK
       );
-      
-      if (confirmResponse === ui.Button.YES) {
-        break;
-      }
-      // If NO, loop back to re-prompt
     }
     
     // Step 3: UsedCar background color
-    let usedCarBgColor = '#424242'; // Default
+    let usedCarBgColor = '#234070'; // Default (changed to match available options)
     let usedCarTextColor = '#FFFFFF';
     
-    while (true) {
-      const usedCarColorResponse = ui.prompt(
-        'Used Car Header Color',
-        'Enter background color for Used Car headers (I:N) in hex format (e.g., #424242)\n\nLeave blank to use default (#424242)',
-        ui.ButtonSet.OK_CANCEL
-      );
+    const usedCarColorResponse = ui.prompt(
+      'Used Car Header Color',
+      'Choose background color for Used Car headers:\n1 = Blue (#234070)\n2 = Red (#B71C1C)\n3 = Dark Green (#1B5E20)\n4 = Dark Yellow (#F9A825)\n\nEnter 1-4 or leave blank for Blue (default)',
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (usedCarColorResponse.getSelectedButton() === ui.Button.OK) {
+      const choice = usedCarColorResponse.getResponseText().trim();
       
-      if (usedCarColorResponse.getSelectedButton() === ui.Button.CANCEL) {
-        // Use default
-        break;
-      }
-      
-      const inputColor = usedCarColorResponse.getResponseText().trim();
-      
-      if (!inputColor) {
-        // Blank - use default
-        break;
-      }
-      
-      // Validate hex format
-      if (!validateColor(inputColor)) {
-        ui.alert(
-          'Invalid Color Format',
-          'Please enter a valid hex color (e.g., #424242 or #FF5733)',
-          ui.ButtonSet.OK
-        );
-        continue; // Re-prompt
+      // Map user choice to hex color
+      switch (choice) {
+        case '1':
+          usedCarBgColor = '#234070';
+          break;
+        case '2':
+          usedCarBgColor = '#B71C1C';
+          break;
+        case '3':
+          usedCarBgColor = '#1B5E20';
+          break;
+        case '4':
+          usedCarBgColor = '#F9A825';
+          break;
+        default:
+          // Blank or invalid - use default
+          usedCarBgColor = '#234070';
       }
       
       // Calculate WCAG compliant text color
-      usedCarBgColor = inputColor;
-      usedCarTextColor = getWcagCompliantTextColor(inputColor);
+      usedCarTextColor = getWcagCompliantTextColor(usedCarBgColor);
       
       // Show confirmation
-      const confirmResponse = ui.alert(
+      ui.alert(
         'Confirm Used Car Colors',
-        'Used Car headers will use:\n• Background: ' + usedCarBgColor + '\n• Text: ' + usedCarTextColor + '\n\nContinue?',
-        ui.ButtonSet.YES_NO
+        'Used Car headers will use:\n• Background: ' + usedCarBgColor + '\n• Text: ' + usedCarTextColor,
+        ui.ButtonSet.OK
       );
-      
-      if (confirmResponse === ui.Button.YES) {
-        break;
-      }
-      // If NO, loop back to re-prompt
     }
     
     // Step 4: Font selection
@@ -238,6 +224,10 @@ function promptForCustomization(ss) {
   } catch (e) {
     Logger.log('Error in promptForCustomization: ' + e.toString());
     // Return null to use defaults
+    return null;
+  }
+}
+
 /**
  * Prompts user for salesperson setup during the setup wizard.
  * Shows an informational dialog about adding sales team members.
@@ -284,10 +274,6 @@ function promptForSalespersonSetup(ss) {
     Logger.log('Error in promptForSalespersonSetup: ' + e.toString());
     // Continue with setup even if prompt fails
     return false;
-  }
-}
-
-    return null;
   }
 }
 
