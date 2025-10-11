@@ -24,6 +24,16 @@ function runSetupWizard() {
       errors: []
     };
     
+    // Prompt for customization
+    const customizationSettings = promptForCustomization(ss);
+    if (customizationSettings) {
+      // Store in properties for use by sheet creation functions
+      PropertiesService.getDocumentProperties().setProperty(
+        'SETUP_CUSTOMIZATION',
+        JSON.stringify(customizationSettings)
+      );
+    }
+    
     // Check and create each required sheet
     checkAndCreateTodaySheet(ss, results);
     checkAndCreateMonthlySheet(ss, results);
@@ -39,6 +49,185 @@ function runSetupWizard() {
     Logger.log("Error in runSetupWizard: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
     const ui = SpreadsheetApp.getUi();
     ui.alert("Setup Error", "An error occurred during setup:\n\n" + e.message, ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * Prompts user for customization settings through a sequence of modal dialogs.
+ * Allows configuration of header colors and fonts for the setup wizard.
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
+ * @returns {Object|null} Customization settings object or null if user skips
+ */
+function promptForCustomization(ss) {
+  const ui = SpreadsheetApp.getUi();
+  
+  try {
+    // Step 1: Ask if user wants to customize
+    const customizeResponse = ui.alert(
+      'Customize Sheet Formatting',
+      'Would you like to customize header colors and fonts?\n\n(You can skip and use default formatting)',
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (customizeResponse !== ui.Button.YES) {
+      Logger.log('User chose to skip customization');
+      return null;
+    }
+    
+    // Step 2: NewCar background color
+    let newCarBgColor = '#234070'; // Default
+    let newCarTextColor = '#FFFFFF';
+    
+    while (true) {
+      const newCarColorResponse = ui.prompt(
+        'New Car Header Color',
+        'Enter background color for New Car headers (A:G) in hex format (e.g., #234070)\n\nLeave blank to use default (#234070)',
+        ui.ButtonSet.OK_CANCEL
+      );
+      
+      if (newCarColorResponse.getSelectedButton() === ui.Button.CANCEL) {
+        // Use default
+        break;
+      }
+      
+      const inputColor = newCarColorResponse.getResponseText().trim();
+      
+      if (!inputColor) {
+        // Blank - use default
+        break;
+      }
+      
+      // Validate hex format
+      if (!validateColor(inputColor)) {
+        ui.alert(
+          'Invalid Color Format',
+          'Please enter a valid hex color (e.g., #234070 or #FF5733)',
+          ui.ButtonSet.OK
+        );
+        continue; // Re-prompt
+      }
+      
+      // Calculate WCAG compliant text color
+      newCarBgColor = inputColor;
+      newCarTextColor = getWcagCompliantTextColor(inputColor);
+      
+      // Show confirmation
+      const confirmResponse = ui.alert(
+        'Confirm New Car Colors',
+        'New Car headers will use:\n• Background: ' + newCarBgColor + '\n• Text: ' + newCarTextColor + '\n\nContinue?',
+        ui.ButtonSet.YES_NO
+      );
+      
+      if (confirmResponse === ui.Button.YES) {
+        break;
+      }
+      // If NO, loop back to re-prompt
+    }
+    
+    // Step 3: UsedCar background color
+    let usedCarBgColor = '#424242'; // Default
+    let usedCarTextColor = '#FFFFFF';
+    
+    while (true) {
+      const usedCarColorResponse = ui.prompt(
+        'Used Car Header Color',
+        'Enter background color for Used Car headers (I:N) in hex format (e.g., #424242)\n\nLeave blank to use default (#424242)',
+        ui.ButtonSet.OK_CANCEL
+      );
+      
+      if (usedCarColorResponse.getSelectedButton() === ui.Button.CANCEL) {
+        // Use default
+        break;
+      }
+      
+      const inputColor = usedCarColorResponse.getResponseText().trim();
+      
+      if (!inputColor) {
+        // Blank - use default
+        break;
+      }
+      
+      // Validate hex format
+      if (!validateColor(inputColor)) {
+        ui.alert(
+          'Invalid Color Format',
+          'Please enter a valid hex color (e.g., #424242 or #FF5733)',
+          ui.ButtonSet.OK
+        );
+        continue; // Re-prompt
+      }
+      
+      // Calculate WCAG compliant text color
+      usedCarBgColor = inputColor;
+      usedCarTextColor = getWcagCompliantTextColor(inputColor);
+      
+      // Show confirmation
+      const confirmResponse = ui.alert(
+        'Confirm Used Car Colors',
+        'Used Car headers will use:\n• Background: ' + usedCarBgColor + '\n• Text: ' + usedCarTextColor + '\n\nContinue?',
+        ui.ButtonSet.YES_NO
+      );
+      
+      if (confirmResponse === ui.Button.YES) {
+        break;
+      }
+      // If NO, loop back to re-prompt
+    }
+    
+    // Step 4: Font selection
+    let headerFont = 'Calibri'; // Default
+    
+    const fontResponse = ui.prompt(
+      'Font Selection',
+      'Choose font style:\n1 = Calibri (default)\n2 = Arial\n3 = Times New Roman\n4 = Courier New\n\nEnter 1-4 or leave blank for default',
+      ui.ButtonSet.OK_CANCEL
+    );
+    
+    if (fontResponse.getSelectedButton() === ui.Button.OK) {
+      const fontChoice = fontResponse.getResponseText().trim();
+      
+      switch (fontChoice) {
+        case '1':
+          headerFont = 'Calibri';
+          break;
+        case '2':
+          headerFont = 'Arial';
+          break;
+        case '3':
+          headerFont = 'Times New Roman';
+          break;
+        case '4':
+          headerFont = 'Courier New';
+          break;
+        default:
+          // Invalid or blank - use default (Calibri)
+          headerFont = 'Calibri';
+      }
+    }
+    
+    // Step 5: Leaderboard color (always default - no prompt)
+    const leaderboardBgColor = '#434343';
+    const leaderboardTextColor = '#FFFFFF';
+    
+    // Return customization settings object
+    const settings = {
+      headerNewCarBgColor: newCarBgColor,
+      headerNewCarTextColor: newCarTextColor,
+      headerUsedCarBgColor: usedCarBgColor,
+      headerUsedCarTextColor: usedCarTextColor,
+      headerLeaderboardBgColor: leaderboardBgColor,
+      headerLeaderboardTextColor: leaderboardTextColor,
+      headerFont: headerFont
+    };
+    
+    Logger.log('Customization settings collected: ' + JSON.stringify(settings));
+    return settings;
+    
+  } catch (e) {
+    Logger.log('Error in promptForCustomization: ' + e.toString());
+    // Return null to use defaults
+    return null;
   }
 }
 

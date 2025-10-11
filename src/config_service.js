@@ -463,7 +463,7 @@ function validateSalesperson(data) {
 
 /**
  * Validates a hex color code
- * 
+ *
  * @param {string} colorHex - Color in hex format (e.g., "#FF0000")
  * @returns {boolean} True if valid, false otherwise
  */
@@ -472,6 +472,119 @@ function validateColor(colorHex) {
     return false;
   }
   return /^#[0-9A-F]{6}$/i.test(colorHex);
+}
+
+// ============================================================================
+// WCAG CONTRAST CALCULATION UTILITIES
+// ============================================================================
+
+/**
+ * Converts a hex color code to RGB components
+ *
+ * @param {string} hex - Color in hex format (e.g., "#FF5733" or "FF5733")
+ * @returns {Object|null} RGB object {r, g, b} with values 0-255, or null if invalid
+ */
+function hexToRgb(hex) {
+  if (!hex || typeof hex !== 'string') {
+    return null;
+  }
+  
+  // Remove # if present
+  hex = hex.replace(/^#/, '');
+  
+  // Validate hex format (6 characters, 0-9 A-F)
+  if (!/^[0-9A-F]{6}$/i.test(hex)) {
+    return null;
+  }
+  
+  // Parse hex values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  return { r: r, g: g, b: b };
+}
+
+/**
+ * Calculates the relative luminance of an RGB color according to WCAG 2.0 formula
+ * Uses sRGB to linear RGB conversion before applying the luminance formula
+ *
+ * @param {number} r - Red component (0-255)
+ * @param {number} g - Green component (0-255)
+ * @param {number} b - Blue component (0-255)
+ * @returns {number} Relative luminance value (0-1)
+ */
+function getLuminance(r, g, b) {
+  // Convert 0-255 to 0-1 range
+  const rsRGB = r / 255;
+  const gsRGB = g / 255;
+  const bsRGB = b / 255;
+  
+  // Convert sRGB to linear RGB
+  const rLinear = rsRGB <= 0.03928 ? rsRGB / 12.92 : Math.pow((rsRGB + 0.055) / 1.055, 2.4);
+  const gLinear = gsRGB <= 0.03928 ? gsRGB / 12.92 : Math.pow((gsRGB + 0.055) / 1.055, 2.4);
+  const bLinear = bsRGB <= 0.03928 ? bsRGB / 12.92 : Math.pow((bsRGB + 0.055) / 1.055, 2.4);
+  
+  // Calculate relative luminance using WCAG formula
+  const luminance = 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+  
+  return luminance;
+}
+
+/**
+ * Calculates the contrast ratio between two colors according to WCAG 2.0 formula
+ *
+ * @param {string} color1Hex - First color in hex format (e.g., "#FF5733")
+ * @param {string} color2Hex - Second color in hex format (e.g., "#FFFFFF")
+ * @returns {number|null} Contrast ratio (1-21), or null if invalid colors
+ */
+function calculateContrastRatio(color1Hex, color2Hex) {
+  // Validate and convert colors to RGB
+  const rgb1 = hexToRgb(color1Hex);
+  const rgb2 = hexToRgb(color2Hex);
+  
+  if (!rgb1 || !rgb2) {
+    return null;
+  }
+  
+  // Calculate luminance for both colors
+  const lum1 = getLuminance(rgb1.r, rgb1.g, rgb1.b);
+  const lum2 = getLuminance(rgb2.r, rgb2.g, rgb2.b);
+  
+  // WCAG formula: (L1 + 0.05) / (L2 + 0.05) where L1 is the lighter color
+  const lighter = Math.max(lum1, lum2);
+  const darker = Math.min(lum1, lum2);
+  
+  const contrastRatio = (lighter + 0.05) / (darker + 0.05);
+  
+  return contrastRatio;
+}
+
+/**
+ * Determines whether black or white text provides better contrast for a given background color
+ * Returns the text color that meets or exceeds WCAG AA standards (4.5:1 ratio)
+ * If both meet the standard, returns the one with better contrast
+ *
+ * @param {string} bgColorHex - Background color in hex format (e.g., "#FF5733")
+ * @returns {string|null} "#000000" (black) or "#FFFFFF" (white), or null if invalid input
+ */
+function getWcagCompliantTextColor(bgColorHex) {
+  // Validate background color
+  if (!validateColor(bgColorHex)) {
+    return null;
+  }
+  
+  // Calculate contrast ratios for black and white text
+  const contrastWithBlack = calculateContrastRatio(bgColorHex, "#000000");
+  const contrastWithWhite = calculateContrastRatio(bgColorHex, "#FFFFFF");
+  
+  if (contrastWithBlack === null || contrastWithWhite === null) {
+    return null;
+  }
+  
+  // Return the color with better contrast
+  // (both black and white should work for most colors, but we pick the better one)
+  return contrastWithBlack > contrastWithWhite ? "#000000" : "#FFFFFF";
 }
 
 /**

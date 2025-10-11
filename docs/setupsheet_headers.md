@@ -98,9 +98,3 @@ Column width:
     B: 150
     C: 150
 
-## Font for all sheets
-
-Font:
-    Calibri
-Font Size:
-    10 pt unless otherwise specified
