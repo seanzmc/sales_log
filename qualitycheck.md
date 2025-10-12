@@ -24,7 +24,7 @@ I've analyzed all 6 files (6,909 total lines) focusing on error handling, robust
 
 ---
 
-### 3. **Swallowed Cache Invalidation Errors** - [`sync_service.js:590`](src/sync_service.js:590)
+### 3. **Swallowed Cache Invalidation Errors** - FIXED [`sync_service.js:590`](src/sync_service.js:590)
 
 **Problem:** [`invalidateAllCaches()`](src/sync_service.js:573) catches and logs cache errors but doesn't throw. Users could see stale data after config changes.
 

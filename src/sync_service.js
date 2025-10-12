@@ -1127,6 +1127,21 @@ function createBackup(fullName) {
     const backupKey = 'backup_' + fullName + '_' + Date.now();
     cache.put(backupKey, JSON.stringify(backup), 3600); // 1 hour TTL
     
+    // Store backup key in sync metadata for reliable retrieval
+    try {
+      const metadata = getSyncMetadataFromProperties();
+      if (!metadata[fullName]) {
+        metadata[fullName] = {};
+      }
+      metadata[fullName].lastBackupKey = backupKey;
+      metadata[fullName].lastBackupTime = backup.timestamp;
+      saveSyncMetadata(metadata);
+      Logger.log('[Sync] Stored backup key in metadata for ' + fullName);
+    } catch (metadataError) {
+      Logger.log('[Sync] Warning: Could not store backup key in metadata: ' + metadataError.toString());
+      // Continue - backup is still in cache, just not referenced in metadata
+    }
+    
     Logger.log('[Sync] Created backup for ' + fullName + ': ' + backupKey);
     
     return backupKey;
@@ -1145,25 +1160,45 @@ function createBackup(fullName) {
 function restoreFromBackup(fullName) {
   try {
     const cache = CacheService.getScriptCache();
-    
-    // Try to find most recent backup
-    // Since we can't list keys, we'll try recent timestamps
-    const now = Date.now();
-    const lookbackMs = 3600000; // 1 hour
-    
     let backup = null;
     let backupKey = null;
     
-    // Try to find backup from last hour (check every 5 seconds)
-    for (let i = 0; i < lookbackMs / 5000; i++) {
-      const timestamp = now - (i * 5000);
-      const key = 'backup_' + fullName + '_' + timestamp;
-      const cached = cache.get(key);
+    // Try to retrieve backup key from metadata (reliable method)
+    try {
+      const metadata = getSyncMetadataFromProperties();
+      if (metadata[fullName] && metadata[fullName].lastBackupKey) {
+        backupKey = metadata[fullName].lastBackupKey;
+        const cached = cache.get(backupKey);
+        
+        if (cached) {
+          backup = JSON.parse(cached);
+          Logger.log('[Sync] Retrieved backup from metadata-stored key: ' + backupKey);
+        } else {
+          Logger.log('[Sync] Backup key found in metadata but cache expired: ' + backupKey);
+        }
+      }
+    } catch (metadataError) {
+      Logger.log('[Sync] Could not retrieve backup key from metadata: ' + metadataError.toString());
+    }
+    
+    // Fallback: Try timestamp guessing (for backward compatibility with old backups)
+    if (!backup) {
+      Logger.log('[Sync] Attempting fallback timestamp guessing for backup');
+      const now = Date.now();
+      const lookbackMs = 3600000; // 1 hour
       
-      if (cached) {
-        backup = JSON.parse(cached);
-        backupKey = key;
-        break;
+      // Try to find backup from last hour (check every 5 seconds)
+      for (let i = 0; i < lookbackMs / 5000; i++) {
+        const timestamp = now - (i * 5000);
+        const key = 'backup_' + fullName + '_' + timestamp;
+        const cached = cache.get(key);
+        
+        if (cached) {
+          backup = JSON.parse(cached);
+          backupKey = key;
+          Logger.log('[Sync] Found backup via timestamp guessing: ' + backupKey);
+          break;
+        }
       }
     }
     
