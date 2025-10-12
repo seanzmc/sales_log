@@ -488,7 +488,11 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
 // NEW FUNCTION: To accurately find the last row within a specific range of columns.
 /**
  * Finds the last row containing data within a specific range of columns, ignoring content outside this range.
+ * Uses a memory-efficient chunked approach to avoid loading all rows into memory.
  * This is more reliable than getLastRow() when extraneous data exists in other columns.
+ *
+ * OPTIMIZATION: Reads data in chunks from bottom-up instead of loading all rows at once.
+ * This prevents memory exhaustion on sheets with thousands of empty rows.
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet object to inspect.
  * @param {number} startCol The 1-based index of the starting column for the check (e.g., 1 for A).
@@ -496,14 +500,44 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
  * @returns {number} The row number of the last row with data in the specified columns. Returns 0 if the sheet is empty.
  */
 function findLastRowInCols(sheet, startCol, endCol) {
-  const values = sheet.getRange(1, startCol, sheet.getMaxRows(), endCol - startCol + 1).getValues();
-  for (let i = values.length - 1; i >= 0; i--) {
-    // Check if any cell in the current row has content
-    if (values[i].some(cell => cell.toString().trim() !== '')) {
-      return i + 1; // Return the 1-based row number
-    }
+  // Use getLastRow() as upper bound instead of getMaxRows() to avoid reading 10,000+ empty rows
+  const lastRowHint = sheet.getLastRow();
+  
+  // If sheet appears empty, return 0 immediately
+  if (lastRowHint === 0) {
+    return 0;
   }
-  return 0; // No data found in the specified columns
+  
+  // Read data in chunks from bottom to top for memory efficiency
+  const CHUNK_SIZE = 100; // Process 100 rows at a time
+  const numCols = endCol - startCol + 1;
+  
+  // Start from the last row and work backwards in chunks
+  let currentRow = lastRowHint;
+  
+  while (currentRow > 0) {
+    // Calculate chunk boundaries
+    const chunkStart = Math.max(1, currentRow - CHUNK_SIZE + 1);
+    const chunkSize = currentRow - chunkStart + 1;
+    
+    // Read only this chunk of data
+    const chunkValues = sheet.getRange(chunkStart, startCol, chunkSize, numCols).getValues();
+    
+    // Search backwards through the chunk for data
+    for (let i = chunkValues.length - 1; i >= 0; i--) {
+      // Check if any cell in the current row has content
+      if (chunkValues[i].some(cell => cell !== '' && cell !== null && cell !== undefined)) {
+        // Found data! Return the 1-based row number
+        return chunkStart + i;
+      }
+    }
+    
+    // Move to the next chunk (going backwards)
+    currentRow = chunkStart - 1;
+  }
+  
+  // No data found in the specified columns
+  return 0;
 }
 
 
