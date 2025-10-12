@@ -379,7 +379,7 @@ function checkAndCreateTodaySheet(ss, results) {
     applyTodayConditionalFormatting(sheet);
 
     // Auto-resize columns A through R (1-18) to optimize column widths
-    sheet.autoResizeColumns(1, 18);
+    // sheet.autoResizeColumns(1, 18);
 
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");
@@ -601,7 +601,7 @@ function checkAndCreateMonthlySheet(ss, results) {
     sheet.setColumnWidth(24, 100); // X: analytics column
 
     // Auto-resize columns A through X (1-24) to optimize column widths
-    sheet.autoResizeColumns(1, 24);
+   // sheet.autoResizeColumns(1, 24);
 
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");
