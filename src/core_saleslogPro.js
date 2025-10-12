@@ -541,9 +541,47 @@ function findLastRowInCols(sheet, startCol, endCol) {
 }
 
 
+/**
+ * Creates a timeout manager for tracking execution time
+ * @param {number} thresholdMinutes - Threshold in minutes (default: 5.0)
+ * @returns {Object} Manager with checkTime() and getElapsed() methods
+ */
+function createTimeoutManager(thresholdMinutes = 5.0) {
+  const startTime = Date.now();
+  const thresholdMs = thresholdMinutes * 60 * 1000;
+  
+  return {
+    /**
+     * Checks if threshold has been exceeded
+     * @param {string} operation - Description of current operation for logging
+     * @returns {boolean} true if OK to continue, false if threshold exceeded
+     */
+    checkTime: function(operation) {
+      const elapsed = Date.now() - startTime;
+      if (elapsed > thresholdMs) {
+        Logger.log(`⏱️ Timeout threshold (${thresholdMinutes}m) exceeded after ${(elapsed/1000).toFixed(1)}s during: ${operation}`);
+        return false;
+      }
+      Logger.log(`✓ Time check OK: ${(elapsed/1000).toFixed(1)}s elapsed at: ${operation}`);
+      return true;
+    },
+    
+    /**
+     * Gets elapsed time in seconds
+     * @returns {number} Seconds elapsed since creation
+     */
+    getElapsed: function() {
+      return (Date.now() - startTime) / 1000;
+    }
+  };
+}
+
 // Main flows
 function processDaily() {
   withScriptLock(() => {
+    const timer = createTimeoutManager(5.0); // 5-minute threshold, 1-min safety margin
+    let analyticsSkipped = false;
+    
     // Check if Sundays should be skipped based on configuration
     const today = new Date();
     const skipSundays = shouldSkipSundays();
@@ -583,6 +621,15 @@ function processDaily() {
         showCustomAlert("Process Complete", "No sales activity found on the TODAY sheet to log to monthly.");
         sheets.today.getRange(RANGES.dailyClear).setBackground(null).setFontColor(null); // Reset font color here too
         return;
+      }
+
+      // CHECKPOINT 1: Before MONTHLY operations (critical)
+      if (!timer.checkTime("Before MONTHLY write")) {
+        alertError(
+          "Processing time too close to limit. Please retry when system load is lower.",
+          "Timeout Prevention"
+        );
+        return; // Exit before any changes
       }
 
       // Modify Column A
@@ -648,6 +695,37 @@ function processDaily() {
       sheets.today.getRange(RANGES.avg).setNumberFormat("0.#");
       reapplyCF();
 
+      // --- Clean Up TODAY Sheet ---
+      const dailyClearRange = sheets.today.getRange(RANGES.dailyClear);
+      dailyClearRange.clearContent();
+      dailyClearRange.setBackground(null);
+      dailyClearRange.setFontColor(null); // *** NEW: Reset font color to default ***
+      
+      // CHECKPOINT 2: Before optional analytics (after critical operations)
+      if (!timer.checkTime("Before analytics calculation")) {
+        Logger.log("⚠️ Skipping analytics due to time constraints");
+        analyticsSkipped = true;
+      } else {
+        // Try analytics
+        try {
+          Logger.log("Calculating monthly analytics...");
+          invalidateAnalyticsCache();
+          const analyticsData = calculateMonthlyAnalytics();
+          if (analyticsData) {
+            writeAnalyticsToMonthly(analyticsData, sheets.monthly);
+            Logger.log("✓ Monthly analytics calculation successful");
+          }
+        } catch (analyticsError) {
+          Logger.log("Analytics calculation failed (non-critical): " + analyticsError.toString());
+          analyticsSkipped = true;
+        }
+      }
+      
+      // Log execution time
+      const elapsed = timer.getElapsed();
+      Logger.log(`✓ processDaily completed in ${elapsed.toFixed(1)}s`);
+
+      // Construct summary message
       const { newCount, usedCount, tradeCount } = summarizeRows(rowsToLogToMonthly);
       const repLines = Object.entries(countsByFullName)
         .filter(([, c]) => c > 0)
@@ -662,28 +740,15 @@ function processDaily() {
       if (unknownInputs.length > 0) {
         summaryMsg += `\n\nUNKNOWN SALESPEOPLE INPUTS: ${[...new Set(unknownInputs)].join(", ")}\n(Check spelling or add to 'SALESPEOPLE' sheet.)`;
       }
-      showCustomAlert(summaryTitle, summaryMsg);
 
-      // --- Clean Up TODAY Sheet ---
-      const dailyClearRange = sheets.today.getRange(RANGES.dailyClear);
-      dailyClearRange.clearContent();
-      dailyClearRange.setBackground(null);
-      dailyClearRange.setFontColor(null); // *** NEW: Reset font color to default ***
-      
-      // --- Calculate and Write Monthly Analytics ---
-      try {
-        Logger.log("Calculating monthly analytics...");
-        invalidateAnalyticsCache(); // Clear cache since new data added
-        const analyticsData = calculateMonthlyAnalytics();
-        if (analyticsData) {
-          writeAnalyticsToMonthly(analyticsData, sheets.monthly);
-          Logger.log("Analytics updated: " +
-            analyticsData.totals.delivered + " total units delivered this month");
-        }
-      } catch (analyticsError) {
-        // Non-critical error - log but don't fail processDaily
-        Logger.log("Analytics calculation failed (non-critical): " + analyticsError.toString());
+      // Enhance summary message if analytics was skipped
+      if (analyticsSkipped) {
+        summaryMsg += "\n\n⚠️ Analytics calculation was skipped due to time constraints. " +
+                      "Use 'Sales Tools > Refresh Analytics' to update analytics when ready.";
       }
+      
+      // NOW show the complete message to user
+      showCustomAlert(summaryTitle, summaryMsg);
       
       Logger.log("Daily processing complete.");
     } catch (e) {
