@@ -18,12 +18,13 @@ const SS = SpreadsheetApp.getActive();
 const RANGES = {
   dailyData: "A2:N51", // Range on TODAY sheet for daily input
   dailyClear: "B2:N51", // Range on TODAY sheet to clear after processing (excludes Col A)
-  leaderboard: "P2:R28", // Range on TODAY sheet for the leaderboard (Name, MTD, Avg) - UPDATED
-  mtd: "Q2:Q28", // MTD column on TODAY leaderboard - UPDATED
-  avg: "R2:R28", // Average column on TODAY leaderboard - UPDATED
-  // Ranges for new CF rules on TODAY sheet
   todayNewCarDataRange: "B2:G101", // For rules 1 & 3
   todayUsedCarDataRange: "I2:N101", // For rules 2 & 4
+  
+  // Dynamic ranges computed based on salesperson count
+  get leaderboard() { return getDynamicLeaderboardRanges().leaderboard; },
+  get mtd() { return getDynamicLeaderboardRanges().mtd; },
+  get avg() { return getDynamicLeaderboardRanges().avg; }
 };
 
 // Default color constants (used as fallbacks if configuration not available)
@@ -239,6 +240,48 @@ function getSalespersonMaps() {
   const mapsToCache = { aliasMap, displayCodeMap };
   CACHE.put(CACHE_KEY_NAME_MAP, JSON.stringify(mapsToCache), 300); // Cache for 5 minutes
   return mapsToCache;
+}
+
+/**
+ * Gets the count of active salespeople from SALESPEOPLE sheet
+ * @returns {number} Count of salespeople (0 if sheet empty/missing)
+ */
+function getActiveSalespersonCount() {
+  try {
+    const sheets = getSheets();
+    const salesSheet = sheets.sales;
+    const lastRow = salesSheet.getLastRow();
+    const count = Math.max(0, lastRow - 1); // Header is row 1
+    
+    if (count > 200) {
+      Logger.log(`Warning: Unusually high salesperson count: ${count}. Capping at 200.`);
+      return 200; // Performance cap
+    }
+    
+    return count;
+  } catch (e) {
+    Logger.log('Error getting salesperson count: ' + e);
+    return 0;
+  }
+}
+
+/**
+ * Generates dynamic range objects based on current salesperson count
+ * @returns {Object} Range definitions with A1 notation strings
+ */
+function getDynamicLeaderboardRanges() {
+  const count = getActiveSalespersonCount();
+  const rowCount = Math.min(Math.max(1, count), 200);
+  const endRow = rowCount + 1; // +1 because start row is 2
+  
+  return {
+    leaderboard: `P2:R${endRow}`,
+    mtd: `Q2:Q${endRow}`,
+    avg: `R2:R${endRow}`,
+    leaderboardStartRow: 2,
+    leaderboardEndRow: endRow,
+    leaderboardRowCount: rowCount
+  };
 }
 
 // Basic utilities
@@ -1055,14 +1098,14 @@ function rolloverMonth() {
           const prevSheet = SS.getSheetByName(prevArchiveName);
           if (prevSheet) {
             try {
-              const lastRowInArchive = prevSheet.getLastRow();
-              if (lastRowInArchive > 1) {
-                const prevLbVals = prevSheet.getRange("P2:R" + lastRowInArchive).getValues();
-                const personRow = prevLbVals.find((row) => row[0] === currentFullName);
-                if (personRow && typeof personRow[1] === "number") {
-                  totalSales += personRow[1];
-                  months++;
-                }
+              const archiveLastRow = prevSheet.getLastRow();
+              const archiveEndRow = Math.max(2, archiveLastRow);
+              const prevLbRange = `P2:R${archiveEndRow}`;
+              const prevLbVals = prevSheet.getRange(prevLbRange).getValues();
+              const personRow = prevLbVals.find((row) => row[0] === currentFullName);
+              if (personRow && typeof personRow[1] === "number") {
+                totalSales += personRow[1];
+                months++;
               }
             } catch (e) {
               Logger.log(`Error reading archive ${prevArchiveName}: ${e}`);

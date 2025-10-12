@@ -484,14 +484,19 @@ function updateLeaderboard() {
     
     Logger.log('Found ' + salespeople.length + ' salespeople in SALESPEOPLE sheet');
     
-    // Get the leaderboard range (P2:R28)
-    const leaderboardRange = todaySheet.getRange('P2:R28');
+    // Calculate dynamic range based on actual salesperson count
+    const salespersonCount = Math.min(Math.max(1, salespeople.length), 200);
+    const endRow = salespersonCount + 1; // +1 because start row is 2
+    const leaderboardRangeA1 = `P2:R${endRow}`;
+    
+    // Get the dynamic leaderboard range
+    const leaderboardRange = todaySheet.getRange(leaderboardRangeA1);
     const leaderboardData = leaderboardRange.getValues();
     
     // Create new leaderboard data
     const newLeaderboardData = [];
     
-    for (let i = 0; i < 27; i++) { // 27 rows (2-28)
+    for (let i = 0; i < salespersonCount; i++) {
       if (i < salespeople.length) {
         // Add salesperson with preserved MTD and 3-month average
         newLeaderboardData.push([
@@ -500,7 +505,7 @@ function updateLeaderboard() {
           leaderboardData[i][2] || ''        // Column R: 3mo. AVERAGE (preserve existing)
         ]);
       } else {
-        // Clear rows where there's no salesperson
+        // Fill remaining rows with empty data (should not happen with correct count)
         newLeaderboardData.push(['', '', '']);
       }
     }

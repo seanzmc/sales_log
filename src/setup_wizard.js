@@ -287,22 +287,32 @@ function checkAndCreateTodaySheet(ss, results) {
         if (lastRow > 1) {
           // Get FULL NAMEs from column A, starting from row 2
           const fullNames = salesSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+          
+          // Filter to get only non-empty names
+          const validNames = fullNames
+            .map(row => String(row[0]).trim())
+            .filter(name => name);
 
-          // Prepare data for leaderboard (up to 27 rows)
+          // Calculate dynamic range based on actual salesperson count
+          const salespersonCount = Math.min(Math.max(1, validNames.length), 200);
+          const endRow = salespersonCount + 1; // +1 because start row is 2
+          const leaderboardRangeA1 = `P2:R${endRow}`;
+          
+          // Prepare data for leaderboard (only for actual salespeople)
           const leaderboardData = [];
-          for (let i = 0; i < 27; i++) {
-            if (i < fullNames.length && fullNames[i][0]) {
+          for (let i = 0; i < salespersonCount; i++) {
+            if (i < validNames.length) {
               // Add salesperson name with 0 for MTD and 3mo. AVERAGE
-              leaderboardData.push([fullNames[i][0], 0, 0]);
+              leaderboardData.push([validNames[i], 0, 0]);
             } else {
-              // Fill remaining rows with empty data
+              // Should not happen with correct count, but safety fallback
               leaderboardData.push(["", 0, 0]);
             }
           }
 
-          // Write to leaderboard range P2:R28
-          sheet.getRange("P2:R28").setValues(leaderboardData);
-          Logger.log("Leaderboard populated with " + Math.min(fullNames.length, 27) + " salespeople.");
+          // Write to dynamic leaderboard range
+          sheet.getRange(leaderboardRangeA1).setValues(leaderboardData);
+          Logger.log("Leaderboard populated with " + validNames.length + " salespeople.");
         } else {
           Logger.log("SALESPEOPLE sheet exists but has no data rows. Leaderboard left empty.");
         }
