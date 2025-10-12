@@ -14,6 +14,21 @@ const CONFIG_CACHE_KEY = 'config_cache';
 const CONFIG_CACHE_TTL = 600; // 10 minutes in seconds
 
 /**
+ * Safely gets the current user's email address
+ * Falls back to 'system@automated' for service accounts/add-ons where Session.getActiveUser() is unavailable
+ *
+ * @returns {string} User email or 'system@automated'
+ */
+function getSafeUserEmail() {
+  try {
+    return Session.getActiveUser().getEmail();
+  } catch (e) {
+    Logger.log('Session.getActiveUser() unavailable (service account/add-on context): ' + e.toString());
+    return 'system@automated';
+  }
+}
+
+/**
  * Default configuration based on 7.9.8.js hardcoded constants
  * This serves as the fallback and migration source
  */
@@ -45,7 +60,7 @@ const DEFAULT_CONFIG = {
     archiveFormat: "M/YY" // Options: "M/YY", "MM/YY", "MMM/YY"
   },
   lastModified: new Date().toISOString(),
-  modifiedBy: Session.getActiveUser().getEmail()
+  modifiedBy: getSafeUserEmail()
 };
 
 // ============================================================================
@@ -186,7 +201,7 @@ function updateConfiguration(updates) {
     
     // Update metadata
     updatedConfig.lastModified = new Date().toISOString();
-    updatedConfig.modifiedBy = Session.getActiveUser().getEmail();
+    updatedConfig.modifiedBy = getSafeUserEmail();
     updatedConfig.version = String(parseInt(updatedConfig.version || "1") + 1);
     
     // Validate the complete configuration
@@ -241,7 +256,7 @@ function resetToDefaults() {
     const defaultConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
     defaultConfig.salespeople = salespeople;
     defaultConfig.lastModified = new Date().toISOString();
-    defaultConfig.modifiedBy = Session.getActiveUser().getEmail();
+    defaultConfig.modifiedBy = getSafeUserEmail();
     
     // Save using updateConfiguration for proper locking
     return updateConfiguration(defaultConfig);
@@ -869,7 +884,7 @@ function updateSyncMetadata(fullName, source) {
     
     metadata[fullName] = {
       lastModified: new Date().toISOString(),
-      modifiedBy: Session.getActiveUser().getEmail(),
+      modifiedBy: getSafeUserEmail(),
       source: source,
       version: (metadata[fullName] && metadata[fullName].version) ? metadata[fullName].version + 1 : 1
     };
@@ -939,7 +954,7 @@ function migrateToConfigUI() {
     
     // Set metadata
     config.lastModified = new Date().toISOString();
-    config.modifiedBy = Session.getActiveUser().getEmail();
+    config.modifiedBy = getSafeUserEmail();
     config.version = "1";
     
     // Save to Properties Service

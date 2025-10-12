@@ -135,7 +135,7 @@ function onEditSalespeopleSheet(e) {
       row: row,
       success: true,
       hasConflict: result.conflictResolution ? true : false,
-      user: Session.getActiveUser().getEmail()
+      user: getSafeUserEmail()
     });
     
     Logger.log('[Sync] Row ' + row + ' synced successfully to Properties');
@@ -612,7 +612,7 @@ function updateSyncMetadata(fullName, source) {
     // Create or update entry for this salesperson
     metadata[fullName] = {
       lastModified: new Date().toISOString(),
-      modifiedBy: Session.getActiveUser().getEmail(),
+      modifiedBy: getSafeUserEmail(),
       source: source,
       version: (metadata[fullName] && metadata[fullName].version) ? metadata[fullName].version + 1 : 1
     };
@@ -1119,7 +1119,7 @@ function createBackup(fullName) {
       timestamp: new Date().toISOString(),
       fullName: fullName,
       data: JSON.parse(JSON.stringify(salesperson)), // Deep copy
-      user: Session.getActiveUser().getEmail()
+      user: getSafeUserEmail()
     };
     
     // Store in Script Cache with 1-hour TTL
