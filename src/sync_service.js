@@ -588,8 +588,10 @@ function invalidateAllCaches() {
     Logger.log('[Sync] All caches invalidated');
     
   } catch (error) {
-    Logger.log('[Sync] Error invalidating caches: ' + error.toString());
-    // Don't throw - cache invalidation failure shouldn't break sync
+    Logger.log('[Sync] CRITICAL: Error invalidating caches: ' + error.toString());
+    // IMPORTANT: Throw error - callers must know cache invalidation failed
+    // to prevent stale data from being used after config changes
+    throw new Error('Cache invalidation failed: ' + error.message);
   }
 }
 

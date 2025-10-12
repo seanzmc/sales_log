@@ -4,7 +4,7 @@ I've analyzed all 6 files (6,909 total lines) focusing on error handling, robust
 
 ## 🔴 CRITICAL ISSUES (Could Cause Hangs, Data Loss, or Bugs)
 
-### 1. **Memory Exhaustion Risk** - [`core_saleslogPro.js:499`](src/core_saleslogPro.js:499)
+### 1. **Memory Exhaustion Risk** - FIXED [`core_saleslogPro.js:499`](src/core_saleslogPro.js:499)
 
 **Problem:** [`findLastRowInCols()`](src/core_saleslogPro.js:498) loads ALL sheet rows into memory via `getMaxRows()`, potentially reading 10,000+ empty rows.
 
@@ -14,7 +14,7 @@ I've analyzed all 6 files (6,909 total lines) focusing on error handling, robust
 
 ---
 
-### 2. **No Timeout Protection** - [`core_saleslogPro.js:511`](src/core_saleslogPro.js:511)
+### 2. **No Timeout Protection** - FIXED [`core_saleslogPro.js:511`](src/core_saleslogPro.js:511)
 
 **Problem:** [`processDaily()`](src/core_saleslogPro.js:511) has no execution time tracking. With font color copying, formatting, and analytics, could exceed 6-minute limit.
 
@@ -197,9 +197,9 @@ Document: what was changed, why, and what was tested.
 ```markdown
 # Working Prompt
 
-Fix critical issue #1 from !qualitycheck.md:
+Fix critical issue # from @qual:
 
-1. Read !qualitycheck.md to understand the issue details
+1. Read @qual to understand the issue details
 2. Use codebase_search to find related implementations
 3. Read affected file(s) and verify the issue exists
 4. Implement the suggested fix (or propose better alternative)
