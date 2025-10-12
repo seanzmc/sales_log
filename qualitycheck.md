@@ -171,4 +171,41 @@ I've analyzed all 6 files (6,909 total lines) focusing on error handling, robust
 
 **Prompt to fix critical issues:**
 
-`Conduct a comprehensive analysis following these steps: First, thoroughly evaluate whether the described problem is legitimate and valid by examining its symptoms, root causes, and actual impact on system functionality. Second, if the problem is confirmed to exist, critically assess whether the proposed fix appropriately addresses the root cause, considering potential side effects, implementation complexity, and alignment with best practices. Third, if the fix is determined to be appropriate, implement it with precision while documenting all changes made. Fourth, systematically identify and evaluate all dependent components, related modules, interconnected systems, and downstream processes that could be affected by this modification. Fifth, proactively adapt, update, and test all identified areas to ensure complete compatibility, maintain system integrity, prevent regression issues, and verify that the implementation functions correctly across all affected domains. Provide detailed documentation of your analysis, decision-making rationale, implementation steps, affected areas, and verification results. [Problem]`
+```markdown
+# Test Prompt 1
+
+Fix critical issue [#N] from @qualitycheck.md:7-13
+
+1. Use codebase_search to find related implementations of the problem area
+2. Read the affected file(s) and understand the current implementation
+3. Verify the issue exists as described
+4. Implement the suggested fix from @qualitycheck.md (or propose a better one if found)
+5. Search for all code that calls or depends on the modified function
+6. Update dependent code to maintain compatibility
+7. Verify the fix by checking:
+    - The original problem symptoms are resolved
+    - No new errors are introduced
+    - Dependent code still functions correctly
+
+Document: what was changed, why, and what was tested.
+
+[Problem: Issue #N - Title]
+```
+
+---
+
+```markdown
+# Working Prompt
+
+Fix critical issue #1 from !qualitycheck.md:
+
+1. Read !qualitycheck.md to understand the issue details
+2. Use codebase_search to find related implementations
+3. Read affected file(s) and verify the issue exists
+4. Implement the suggested fix (or propose better alternative)
+5. Search for all code that calls/depends on the modified function
+6. Update dependent code for compatibility
+7. Verify the fix resolves the original problem without introducing new issues
+
+Document: what was changed, why, and what was tested.
+```
