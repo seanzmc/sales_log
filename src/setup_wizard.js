@@ -316,6 +316,8 @@ function checkAndCreateTodaySheet(ss, results) {
 
     // Set font to configured font for entire sheet
     sheet.getRange("A:R").setFontFamily(headerFont);
+    sheet.getRange("A:R").setFontWeight("bold");
+
 
     // Set text wrapping for specific columns
     sheet.getRange("F:F").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // NewCar TRADE STK#
