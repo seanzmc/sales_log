@@ -246,11 +246,11 @@ function checkAndCreateTodaySheet(ss, results) {
     // New car sales [A:G], separator [H], Used car sales [I:N], separator [O], Leaderboard [P:R]
     const headers = [
       [
-        "#", "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // A:G
+        "#", "CUSTOMER", "FI", "NEW MODEL", "STOCK #", "TRADE STK#", "SALESPERSON", // A:G
         "", // H - separator
-        "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // I:N
+        "CUSTOMER", "FI", "USED MODEL", "STOCK #", "TRADE STK#", "SALESPERSON", // I:N
         "", // O - separator
-        "SALESPERSON", "MTD SALES", "3mo. AVERAGE" // P, Q, R
+        "LEADERBOARD", "MTD SALES", "3mo. AVG" // P, Q, R
       ]
     ];
     sheet.getRange(1, 1, 1, 18).setValues(headers);
@@ -346,12 +346,19 @@ function checkAndCreateTodaySheet(ss, results) {
     }
     sheet.getRange(2, 1, 50, 1).setValues(countData);
 
-    // Add borders to main data range and leaderboard
-    sheet.getRange("A1:N51").setBorder(
+    // Add borders to NEW data range
+    sheet.getRange("A1:G51").setBorder(
       true, true, true, true, true, true,
       "black", SpreadsheetApp.BorderStyle.SOLID
     );
 
+    // Add borders to USED data range
+    sheet.getRange("I1:N51").setBorder(
+      true, true, true, true, true, true,
+      "black", SpreadsheetApp.BorderStyle.SOLID
+    );
+
+    // Add borders to LEADERBOARD data range
     sheet.getRange("P1:R51").setBorder(
       true, true, true, true, true, true,
       "black", SpreadsheetApp.BorderStyle.SOLID
