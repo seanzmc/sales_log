@@ -287,7 +287,7 @@ function checkAndCreateTodaySheet(ss, results) {
         if (lastRow > 1) {
           // Get FULL NAMEs from column A, starting from row 2
           const fullNames = salesSheet.getRange(2, 1, lastRow - 1, 1).getValues();
-          
+
           // Prepare data for leaderboard (up to 27 rows)
           const leaderboardData = [];
           for (let i = 0; i < 27; i++) {
@@ -299,7 +299,7 @@ function checkAndCreateTodaySheet(ss, results) {
               leaderboardData.push(["", 0, 0]);
             }
           }
-          
+
           // Write to leaderboard range P2:R28
           sheet.getRange("P2:R28").setValues(leaderboardData);
           Logger.log("Leaderboard populated with " + Math.min(fullNames.length, 27) + " salespeople.");
@@ -572,6 +572,7 @@ function checkAndCreateMonthlySheet(ss, results) {
     // Set font to configured font, 10pt for entire sheet
     sheet.getRange("A:X").setFontFamily(headerFont);
     sheet.getRange("A:X").setFontSize(10);
+    sheet.getRange("A:X").setFontWeight("bold");
 
     // Set column widths per documentation
     sheet.setColumnWidth(1, 45);   // A: #
