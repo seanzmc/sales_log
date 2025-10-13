@@ -38,7 +38,7 @@ function runSetupWizard() {
         const updates = { visual: customizationSettings };
         updateConfiguration(updates);
       } catch (e) {
-        Logger.log('Error saving customization to configuration: ' + e);
+        logWarning('runSetupWizard', 'Error saving customization to configuration', { error: e.toString() });
       }
     }
 
@@ -55,13 +55,13 @@ function runSetupWizard() {
     try {
       openConfigurationSidebar();
     } catch (e) {
-      Logger.log('Error opening configuration sidebar: ' + e);
+      logWarning('runSetupWizard', 'Error opening configuration sidebar', { error: e.toString() });
     }
 
     Logger.log("Setup wizard completed successfully.");
 
   } catch (e) {
-    Logger.log("Error in runSetupWizard: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+    logError('runSetupWizard', e);
     const ui = SpreadsheetApp.getUi();
     ui.alert("Setup Error", "An error occurred during setup:\n\n" + e.message, ui.ButtonSet.OK);
   }
@@ -187,7 +187,7 @@ function promptForCustomization(ss) {
     return settings;
 
   } catch (e) {
-    Logger.log('Error in promptForCustomization: ' + e.toString());
+    logWarning('promptForCustomization', 'Error prompting user for customization', { error: e.toString() });
     // Return null to use defaults
     return null;
   }
@@ -229,7 +229,7 @@ function checkAndCreateTodaySheet(ss, results) {
       try {
         settings = JSON.parse(customizationJson);
       } catch (e) {
-        Logger.log('Error parsing customization settings: ' + e);
+        logWarning('checkAndCreateTodaySheet', 'Error parsing customization settings', { error: e.toString() });
       }
     }
 
@@ -320,7 +320,7 @@ function checkAndCreateTodaySheet(ss, results) {
         Logger.log("SALESPEOPLE sheet not found. Leaderboard will be populated when SALESPEOPLE sheet is created.");
       }
     } catch (e) {
-      Logger.log("Could not populate leaderboard from SALESPEOPLE sheet: " + e.toString());
+      logWarning('checkAndCreateTodaySheet', 'Could not populate leaderboard from SALESPEOPLE sheet', { error: e.toString() });
       // Continue with setup even if leaderboard population fails
     }
 
@@ -406,7 +406,7 @@ function checkAndCreateTodaySheet(ss, results) {
   } catch (e) {
     const error = sheetName + ": " + e.message;
     results.errors.push(error);
-    Logger.log("Error creating " + sheetName + " sheet: " + e.toString());
+    logError('checkAndCreateTodaySheet', e, { sheetName });
   }
 }
 
@@ -434,7 +434,7 @@ function applyTodayConditionalFormatting(sheet) {
         duplicateTextColor = config.duplicateStockTextColor || duplicateTextColor;
       }
     } catch (configError) {
-      Logger.log("Using default colors for CF: " + configError);
+      logWarning('applyTodayConditionalFormatting', 'Using default colors for CF', { error: configError.toString() });
     }
 
     // Rule 1: Duplicate Stock Numbers (New Cars) - A2:G101
@@ -487,7 +487,7 @@ function applyTodayConditionalFormatting(sheet) {
     Logger.log("Conditional formatting applied to TODAY sheet.");
 
   } catch (e) {
-    Logger.log("Error applying conditional formatting to TODAY: " + e.toString());
+    logError('applyTodayConditionalFormatting', e);
   }
 }
 
@@ -528,7 +528,7 @@ function checkAndCreateMonthlySheet(ss, results) {
       try {
         settings = JSON.parse(customizationJson);
       } catch (e) {
-        Logger.log('Error parsing customization settings: ' + e);
+        logWarning('checkAndCreateMonthlySheet', 'Error parsing customization settings', { error: e.toString() });
       }
     }
 
@@ -628,7 +628,7 @@ function checkAndCreateMonthlySheet(ss, results) {
   } catch (e) {
     const error = sheetName + ": " + e.message;
     results.errors.push(error);
-    Logger.log("Error creating " + sheetName + " sheet: " + e.toString());
+    logError('checkAndCreateMonthlySheet', e, { sheetName });
   }
 }
 
@@ -692,7 +692,7 @@ function checkAndCreateSalespeopleSheet(ss, results) {
   } catch (e) {
     const error = sheetName + ": " + e.message;
     results.errors.push(error);
-    Logger.log("Error creating " + sheetName + " sheet: " + e.toString());
+    logError('checkAndCreateSalespeopleSheet', e, { sheetName });
   }
 }
 
@@ -765,7 +765,7 @@ function checkAndCreateDepositsSheet(ss, results) {
   } catch (e) {
     const error = sheetName + ": " + e.message;
     results.errors.push(error);
-    Logger.log("Error creating " + sheetName + " sheet: " + e.toString());
+    logError('checkAndCreateDepositsSheet', e, { sheetName });
   }
 }
 

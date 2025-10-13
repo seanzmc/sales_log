@@ -46,7 +46,7 @@ function calculateMonthlyAnalytics() {
       try {
         return JSON.parse(cached);
       } catch (e) {
-        Logger.log('Analytics cache parse error: ' + e);
+        logWarning('calculateMonthlyAnalytics', 'Analytics cache parse error', { error: e.toString() });
       }
     }
 
@@ -58,7 +58,7 @@ function calculateMonthlyAnalytics() {
     const maxCols = monthlySheet.getMaxColumns();
     if (maxCols < 26) {
       const msg = 'MONTHLY sheet needs at least 26 columns (A-Z) for analytics. Current: ' + maxCols;
-      Logger.log('Analytics error: ' + msg);
+      logError('calculateMonthlyAnalytics', msg, { maxCols, required: 26 });
       return null;
     }
 
@@ -84,7 +84,7 @@ function calculateMonthlyAnalytics() {
     // Validate before returning
     const validationErrors = validateAnalyticsData(analyticsData);
     if (validationErrors.length > 0) {
-      Logger.log('Analytics validation warnings: ' + validationErrors.join('; '));
+      logWarning('calculateMonthlyAnalytics', 'Analytics validation warnings', { errors: validationErrors });
     }
 
     // Cache the result
@@ -93,7 +93,7 @@ function calculateMonthlyAnalytics() {
     return analyticsData;
 
   } catch (e) {
-    Logger.log('Error in calculateMonthlyAnalytics: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('calculateMonthlyAnalytics', e);
     return null;
   }
 }
@@ -158,7 +158,7 @@ function writeAnalyticsToMonthly(analyticsData, monthlySheet) {
     Logger.log('Analytics written to MONTHLY sheet columns S-X');
 
   } catch (e) {
-    Logger.log('Analytics write error: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('writeAnalyticsToMonthly', e);
     throw e;
   }
 }
@@ -178,7 +178,7 @@ function getMonthlyAnalyticsSummary() {
       try {
         return JSON.parse(cached);
       } catch (e) {
-        Logger.log('Cache parse error in getMonthlyAnalyticsSummary: ' + e);
+        logWarning('getMonthlyAnalyticsSummary', 'Cache parse error', { error: e.toString() });
       }
     }
 
@@ -214,7 +214,7 @@ function getMonthlyAnalyticsSummary() {
     };
 
   } catch (e) {
-    Logger.log('Error in getMonthlyAnalyticsSummary: ' + e.toString());
+    logError('getMonthlyAnalyticsSummary', e);
     return null;
   }
 }
@@ -288,7 +288,7 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
       }
 
     } catch (e) {
-      Logger.log(`Analytics: Error processing row ${index + 2}: ${e}`);
+      logWarning('processMonthlyDataForAnalytics', 'Error processing row', { row: index + 2, error: e.toString() });
     }
   });
 
@@ -523,7 +523,7 @@ function formatSummarySection(sheet) {
       .setFontSize(10);
 
   } catch (e) {
-    Logger.log('Error formatting summary section: ' + e);
+    logWarning('formatSummarySection', 'Error formatting summary section', { error: e.toString() });
   }
 }
 
@@ -553,7 +553,7 @@ function formatSalespersonSection(sheet, rowCount) {
       .setNumberFormat("0.0\"%\"");
 
   } catch (e) {
-    Logger.log('Error formatting salesperson section: ' + e);
+    logWarning('formatSalespersonSection', 'Error formatting salesperson section', { error: e.toString() });
   }
 }
 
@@ -690,7 +690,7 @@ function refreshAnalyticsManually() {
       ui.alert("Analytics Error", "No analytics data was generated.", ui.ButtonSet.OK);
     }
   } catch (e) {
-    Logger.log("Manual analytics refresh error: " + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('refreshAnalyticsManually', e);
     alertError("Failed to refresh analytics: " + e.message, "Analytics Error");
   }
 }

@@ -8,6 +8,9 @@
  * Resets font color on TODAY clear range and carries over font colors to MONTHLY.
  */
 
+// Import error logging utility
+// Note: In Apps Script, all files are automatically available in global scope
+
 // Module-scope constants & caches
 const CACHE = CacheService.getScriptCache();
 const CACHE_KEY_NAME_MAP = "salespersonMaps"; // Updated cache key name
@@ -63,7 +66,7 @@ function getVisualConfig() {
       colorConfig = JSON.parse(cached);
       return colorConfig;
     } catch (e) {
-      Logger.log('Error parsing cached visual config: ' + e);
+      logError('getVisualConfig', e, { operation: 'parse_cache' });
     }
   }
   
@@ -77,7 +80,7 @@ function getVisualConfig() {
       return colorConfig;
     }
   } catch (e) {
-    Logger.log('Error loading visual config from Properties Service: ' + e);
+    logError('getVisualConfig', e, { operation: 'load_from_properties' });
   }
   
   // Fallback to defaults
@@ -125,14 +128,14 @@ function invalidateVisualConfigCache() {
  */
 function getSheets() {
   if (!SS) {
-    Logger.log("Error: SpreadsheetApp.getActive() returned null. Cannot get sheets.");
+    logError('getSheets', 'SpreadsheetApp.getActive() returned null', { issue: 'script_not_bound' });
     throw new Error("SpreadsheetApp.getActive() returned null. Script might not be properly bound or accessed.");
   }
   const today = SS.getSheetByName("TODAY");
   const monthly = SS.getSheetByName("MONTHLY");
   const sales = SS.getSheetByName("SALESPEOPLE");
   if (!today || !monthly || !sales) {
-    Logger.log("Error: Required sheets missing. Ensure 'TODAY', 'MONTHLY', and 'SALESPEOPLE' sheets exist.");
+    logError('getSheets', 'Required sheets missing', { today: !!today, monthly: !!monthly, sales: !!sales });
     throw new Error("Required sheets missing. Ensure 'TODAY', 'MONTHLY', and 'SALESPEOPLE' sheets exist.");
   }
   return { today, monthly, sales };
@@ -198,10 +201,10 @@ function getSalespersonMaps() {
       if (parsedCache && typeof parsedCache.aliasMap === "object" && typeof parsedCache.displayCodeMap === "object") {
         return parsedCache;
       } else {
-        Logger.log("Cached salesperson map has invalid structure. Rebuilding.");
+        logWarning('getSalespersonMaps', 'Cached salesperson map has invalid structure. Rebuilding.');
       }
     } catch (e) {
-      Logger.log("Cache parse error for getSalespersonMaps: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+      logError('getSalespersonMaps', e, { operation: 'parse_cache' });
     }
   }
 
@@ -260,7 +263,7 @@ function getActiveSalespersonCount() {
     
     return count;
   } catch (e) {
-    Logger.log('Error getting salesperson count: ' + e);
+    logError('getActiveSalespersonCount', e);
     return 0;
   }
 }
@@ -352,7 +355,7 @@ function showCustomAlert(title, msg) {
   try {
     SpreadsheetApp.getUi().alert(title, msg, SpreadsheetApp.getUi().ButtonSet.OK);
   } catch (e) {
-    Logger.log(`Alert not shown (UI not avail): ${title}: ${msg}. Error: ${e}`);
+    logWarning('showCustomAlert', 'UI not available for alert', { title, message: msg });
   }
 }
 function alertError(msg, title = "Error") {
@@ -433,6 +436,153 @@ function summarizeRows(rows) {
 }
 
 /**
+ * Processes a single car section (New or Used) and applies appropriate formatting.
+ * Helper function to reduce nesting complexity in applyMonthlyRowFormatting().
+ *
+ * @param {any[]} rowData The row data array
+ * @param {string[]} originalBackgroundRow The original background colors for this section
+ * @param {number} fiIndex Column index for FI flag (e.g., 2 for New, 9 for Used)
+ * @param {number} salespersonIndex Column index for salesperson (e.g., 6 for New, 13 for Used)
+ * @param {number} dataStartIndex Start index for section data slice (e.g., 1 for New, 8 for Used)
+ * @param {number} dataEndIndex End index for section data slice (e.g., 7 for New, 14 for Used)
+ * @param {{[alias: string]: string}} aliasMap Maps standardized alias to Full Name
+ * @param {string} nonDeliveredColor Color for non-delivered deals
+ * @param {string} nonDeliveredColorUpper Uppercase version for comparison
+ * @param {string} salespersonErrorColor Color for salesperson errors
+ * @param {string} salespersonErrorColorUpper Uppercase version for comparison
+ * @returns {{backgroundRow: string[], hasSalespersonError: boolean}}
+ */
+function processCarSection(
+  rowData,
+  originalBackgroundRow,
+  fiIndex,
+  salespersonIndex,
+  dataStartIndex,
+  dataEndIndex,
+  aliasMap,
+  nonDeliveredColor,
+  nonDeliveredColorUpper,
+  salespersonErrorColor,
+  salespersonErrorColorUpper
+) {
+  const sectionBgRow = [...originalBackgroundRow];
+  let hasSalespersonError = false;
+  
+  // Extract section data
+  const fiFlag = rowData.length > fiIndex ? String(rowData[fiIndex] || "").trim().toUpperCase() : "";
+  const salespersonInput = rowData.length > salespersonIndex ? String(rowData[salespersonIndex] || "").trim() : "";
+  const isDelivered = /^[A-Z]$/.test(fiFlag);
+  const hasData = rowData.length > dataStartIndex &&
+                  rowData.slice(dataStartIndex, dataEndIndex).some((cell) => cell && String(cell).trim() !== "");
+  
+  if (hasData && !isDelivered) {
+    // Non-delivered deal with data: highlight entire section (except trade column at index 4)
+    applyNonDeliveredHighlight(sectionBgRow, nonDeliveredColor);
+  } else if (isDelivered) {
+    // Delivered deal: clear non-delivered highlights and check salesperson
+    clearNonDeliveredHighlight(sectionBgRow, originalBackgroundRow, nonDeliveredColorUpper);
+    hasSalespersonError = checkSalespersonError(
+      salespersonInput,
+      sectionBgRow,
+      originalBackgroundRow,
+      aliasMap,
+      salespersonErrorColor,
+      salespersonErrorColorUpper
+    );
+  } else {
+    // No data or empty: clear all formatting
+    clearAllHighlights(sectionBgRow, originalBackgroundRow, nonDeliveredColorUpper, salespersonErrorColorUpper);
+  }
+  
+  return { backgroundRow: sectionBgRow, hasSalespersonError };
+}
+
+/**
+ * Applies non-delivered deal highlighting to a section (excluding trade column).
+ *
+ * @param {string[]} sectionBgRow Background row to modify
+ * @param {string} nonDeliveredColor Color to apply
+ */
+function applyNonDeliveredHighlight(sectionBgRow, nonDeliveredColor) {
+  for (let k = 0; k < 6; k++) {
+    if (k !== 4) { // Skip trade column (index 4)
+      sectionBgRow[k] = nonDeliveredColor;
+    }
+  }
+}
+
+/**
+ * Clears non-delivered highlights from a section (excluding trade column).
+ *
+ * @param {string[]} sectionBgRow Background row to modify
+ * @param {string[]} originalBackgroundRow Original backgrounds for comparison
+ * @param {string} nonDeliveredColorUpper Uppercase color for comparison
+ */
+function clearNonDeliveredHighlight(sectionBgRow, originalBackgroundRow, nonDeliveredColorUpper) {
+  for (let k = 0; k < 6; k++) {
+    if (k !== 4 && originalBackgroundRow[k] && originalBackgroundRow[k].toUpperCase() === nonDeliveredColorUpper) {
+      sectionBgRow[k] = null;
+    }
+  }
+}
+
+/**
+ * Checks for salesperson errors and applies appropriate formatting.
+ *
+ * @param {string} salespersonInput Salesperson name/code from cell
+ * @param {string[]} sectionBgRow Background row to modify
+ * @param {string[]} originalBackgroundRow Original backgrounds for comparison
+ * @param {{[alias: string]: string}} aliasMap Alias to full name mapping
+ * @param {string} salespersonErrorColor Color for errors
+ * @param {string} salespersonErrorColorUpper Uppercase version for comparison
+ * @returns {boolean} True if salesperson error found
+ */
+function checkSalespersonError(
+  salespersonInput,
+  sectionBgRow,
+  originalBackgroundRow,
+  aliasMap,
+  salespersonErrorColor,
+  salespersonErrorColorUpper
+) {
+  if (!salespersonInput) {
+    return false;
+  }
+  
+  const salespersonParts = salespersonInput.split("/").map((s) => s.trim().toUpperCase());
+  const hasError = salespersonParts.some((part) => part && !aliasMap[part]);
+  
+  if (hasError) {
+    sectionBgRow[5] = salespersonErrorColor; // Salesperson column is at index 5
+    return true;
+  } else if (originalBackgroundRow[5] && originalBackgroundRow[5].toUpperCase() === salespersonErrorColorUpper) {
+    sectionBgRow[5] = null; // Clear previous error highlight
+  }
+  
+  return false;
+}
+
+/**
+ * Clears all formatting highlights from a section.
+ *
+ * @param {string[]} sectionBgRow Background row to modify
+ * @param {string[]} originalBackgroundRow Original backgrounds for comparison
+ * @param {string} nonDeliveredColorUpper Uppercase color for comparison
+ * @param {string} salespersonErrorColorUpper Uppercase color for comparison
+ */
+function clearAllHighlights(sectionBgRow, originalBackgroundRow, nonDeliveredColorUpper, salespersonErrorColorUpper) {
+  for (let k = 0; k < 6; k++) {
+    if (k !== 4 && originalBackgroundRow[k] && originalBackgroundRow[k].toUpperCase() === nonDeliveredColorUpper) {
+      sectionBgRow[k] = null;
+    }
+  }
+  
+  if (originalBackgroundRow[5] && originalBackgroundRow[5].toUpperCase() === salespersonErrorColorUpper) {
+    sectionBgRow[5] = null;
+  }
+}
+
+/**
  * Applies formatting to rows in the 'MONTHLY' sheet.
  * Highlights non-delivered deals and salesperson code errors.
  *
@@ -466,58 +616,43 @@ function applyMonthlyRowFormatting(sheet, rowsData, startSheetRow, aliasMap) {
     const rowData = rowsData[i];
     const currentRowInSheet = startSheetRow + i;
 
-    const newSectionBgRow = [...originalBackgroundsNew[i]];
-    const usedSectionBgRow = [...originalBackgroundsUsed[i]];
-
-    // --- Process New Car Section ---
-    const newFiFlag = rowData.length > 2 ? String(rowData[2] || "").trim().toUpperCase() : "";
-    const newSalespersonInput = rowData.length > 6 ? String(rowData[6] || "").trim() : "";
-    const isNewActuallyDeliveredByFI = /^[A-Z]$/.test(newFiFlag);
-    const newSectionHasAnyData = rowData.length > 1 && rowData.slice(1, 7).some((cell) => cell && String(cell).trim() !== "");
-
-    if (newSectionHasAnyData && !isNewActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4) { newSectionBgRow[k] = NON_DELIVERED_COLOR; } }
-    } else if (isNewActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { newSectionBgRow[k] = null; } }
-      if (newSalespersonInput) {
-        const newSalespersonParts = newSalespersonInput.split("/").map((s) => s.trim().toUpperCase());
-        if (newSalespersonParts.some((part) => part && !aliasMap[part])) {
-          newSectionBgRow[5] = SALESPERSON_ERROR_COLOR;
-          if (!salespersonErrorSheetRows.includes(currentRowInSheet)) { salespersonErrorSheetRows.push(currentRowInSheet); }
-        } else if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) {
-          newSectionBgRow[5] = null;
-        }
-      }
-    } else {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsNew[i][k] && originalBackgroundsNew[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { newSectionBgRow[k] = null; } }
-      if (originalBackgroundsNew[i][5] && originalBackgroundsNew[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) { newSectionBgRow[5] = null; }
+    // Process New Car Section (columns B-G, indices 1-6)
+    const newResult = processCarSection(
+      rowData,
+      originalBackgroundsNew[i],
+      2,  // FI column index
+      6,  // Salesperson column index
+      1,  // Data start index
+      7,  // Data end index
+      aliasMap,
+      NON_DELIVERED_COLOR,
+      NON_DELIVERED_COLOR_UPPER,
+      SALESPERSON_ERROR_COLOR,
+      SALESPERSON_ERROR_COLOR_UPPER
+    );
+    backgroundsNewSection.push(newResult.backgroundRow);
+    if (newResult.hasSalespersonError && !salespersonErrorSheetRows.includes(currentRowInSheet)) {
+      salespersonErrorSheetRows.push(currentRowInSheet);
     }
-    backgroundsNewSection.push(newSectionBgRow);
 
-    // --- Process Used Car Section ---
-    const usedFiFlag = rowData.length > 9 ? String(rowData[9] || "").trim().toUpperCase() : "";
-    const usedSalespersonInput = rowData.length > 13 ? String(rowData[13] || "").trim() : "";
-    const isUsedActuallyDeliveredByFI = /^[A-Z]$/.test(usedFiFlag);
-    const usedSectionHasAnyData = rowData.length > 8 && rowData.slice(8, 14).some((cell) => cell && String(cell).trim() !== "");
-
-    if (usedSectionHasAnyData && !isUsedActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4) { usedSectionBgRow[k] = NON_DELIVERED_COLOR; } }
-    } else if (isUsedActuallyDeliveredByFI) {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
-      if (usedSalespersonInput) {
-        const usedSalespersonParts = usedSalespersonInput.split("/").map((s) => s.trim().toUpperCase());
-        if (usedSalespersonParts.some((part) => part && !aliasMap[part])) {
-          usedSectionBgRow[5] = SALESPERSON_ERROR_COLOR;
-          if (!salespersonErrorSheetRows.includes(currentRowInSheet)) { salespersonErrorSheetRows.push(currentRowInSheet); }
-        } else if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) {
-          usedSectionBgRow[5] = null;
-        }
-      }
-    } else {
-      for (let k = 0; k < 6; k++) { if (k !== 4 && originalBackgroundsUsed[i][k] && originalBackgroundsUsed[i][k].toUpperCase() === NON_DELIVERED_COLOR_UPPER) { usedSectionBgRow[k] = null; } }
-      if (originalBackgroundsUsed[i][5] && originalBackgroundsUsed[i][5].toUpperCase() === SALESPERSON_ERROR_COLOR_UPPER) { usedSectionBgRow[5] = null; }
+    // Process Used Car Section (columns I-N, indices 8-13)
+    const usedResult = processCarSection(
+      rowData,
+      originalBackgroundsUsed[i],
+      9,  // FI column index
+      13, // Salesperson column index
+      8,  // Data start index
+      14, // Data end index
+      aliasMap,
+      NON_DELIVERED_COLOR,
+      NON_DELIVERED_COLOR_UPPER,
+      SALESPERSON_ERROR_COLOR,
+      SALESPERSON_ERROR_COLOR_UPPER
+    );
+    backgroundsUsedSection.push(usedResult.backgroundRow);
+    if (usedResult.hasSalespersonError && !salespersonErrorSheetRows.includes(currentRowInSheet)) {
+      salespersonErrorSheetRows.push(currentRowInSheet);
     }
-    backgroundsUsedSection.push(usedSectionBgRow);
   }
 
   // Apply all backgrounds at once
@@ -791,7 +926,7 @@ function checkAndRecoverIncompleteOperations() {
         }
       } catch (uiError) {
         // UI not available - log and continue
-        Logger.log('UI not available for recovery prompt: ' + uiError);
+        logWarning('checkAndRecoverIncompleteOperations', 'UI not available for recovery prompt', { error: uiError.toString() });
       }
     } else {
       // Other phases - just clear stale checkpoint
@@ -799,7 +934,7 @@ function checkAndRecoverIncompleteOperations() {
       clearOperationCheckpoint();
     }
   } catch (e) {
-    Logger.log('Error in checkAndRecoverIncompleteOperations: ' + e.toString());
+    logError('checkAndRecoverIncompleteOperations', e);
   }
 }
 
@@ -836,7 +971,7 @@ function recoverAnalyticsForCheckpoint(checkpoint) {
       return false;
     }
   } catch (e) {
-    Logger.log('Error in recoverAnalyticsForCheckpoint: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('recoverAnalyticsForCheckpoint', e, { dateProcessed: checkpoint.dateProcessed });
     updateCheckpoint('ANALYTICS_FAILED', {
       error: e.toString(),
       recoveryAttempts: (checkpoint.recoveryAttempts || 0) + 1
@@ -1011,7 +1146,7 @@ function processDaily() {
             analyticsSkipped = true;
           }
         } catch (analyticsError) {
-          Logger.log("Analytics calculation failed (non-critical): " + analyticsError.toString());
+          logWarning('processDaily', 'Analytics calculation failed (non-critical)', { error: analyticsError.toString() });
           updateCheckpoint('ANALYTICS_FAILED', {
             reason: 'exception',
             error: analyticsError.toString()
@@ -1051,7 +1186,7 @@ function processDaily() {
       
       Logger.log("Daily processing complete.");
     } catch (e) {
-      Logger.log("Error in processDaily: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+      logError('processDaily', e);
       alertError("Error during daily processing: " + e.toString(), "Processing Failed");
     }
   });
@@ -1135,7 +1270,7 @@ function reapplyCF() {
         allMtdAreZero = false;
       }
     } catch (e) {
-      Logger.log("Error reading MTD values for CF logic: " + e.toString() + ". Defaulting to standard pace rules.");
+      logWarning('reapplyCF', 'Error reading MTD values for CF logic. Defaulting to standard pace rules.', { error: e.toString() });
       allMtdAreZero = false;
     }
 
@@ -1168,7 +1303,7 @@ function reapplyCF() {
     setCFRulesSheet(todaySheet, newRules);
     toastInfo("Conditional formatting updated for Leaderboard and Data Entry.", "CF Updated");
   } catch (e) {
-    Logger.log("Error reapplying CF: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+    logError('reapplyCF', e);
     alertError("Error reapplying CF: " + e.toString(), "CF Error");
   }
 }
@@ -1258,7 +1393,7 @@ function recalcMtdFromMonthly() {
 
       toastInfo(`MTD recalculated. Found ${totalSalespersonErrors} salesperson code errors in 'MONTHLY'. Non-delivered deals also highlighted.`, "Recalc & Format Complete");
     } catch (e) {
-      Logger.log("Error in recalcMtdFromMonthly: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+      logError('recalcMtdFromMonthly', e);
       alertError("Error during MTD recalculation: " + e.toString(), "Recalc Failed");
     }
   });
@@ -1311,7 +1446,7 @@ function rolloverMonth() {
         SpreadsheetApp.flush();
         toastInfo(`"MONTHLY" archived as "${archiveSheetName}".`, "Working (2/5)");
       } catch (e) {
-        Logger.log(`Error renaming archive: ${e}`);
+        logError('rolloverMonth', e, { operation: 'rename_archive', archiveName: archiveSheetName });
         alertError(`Error renaming archive: ${e}. Try deleting partial archive.`);
         try {
           SS.deleteSheet(archiveSheet);
@@ -1370,7 +1505,7 @@ function rolloverMonth() {
                 months++;
               }
             } catch (e) {
-              Logger.log(`Error reading archive ${prevArchiveName}: ${e}`);
+              logWarning('rolloverMonth', 'Error reading archive for average calculation', { archiveName: prevArchiveName, error: e.toString() });
             }
           }
           cursorDate.setMonth(cursorDate.getMonth() - 1);
@@ -1383,7 +1518,7 @@ function rolloverMonth() {
       SpreadsheetApp.flush();
       ui.alert("Month Rollover Complete!", `"${archiveSheetName}" created. "MONTHLY" & MTD reset. Averages updated.`, ui.ButtonSet.OK);
     } catch (e) {
-      Logger.log("Error in rolloverMonth: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+      logError('rolloverMonth', e);
       alertError("Error during month rollover: " + e.toString(), "Rollover Failed");
     }
   });
@@ -1414,7 +1549,7 @@ function openConfigurationSidebar() {
     
     SpreadsheetApp.getUi().showSidebar(html);
   } catch (e) {
-    Logger.log('Error opening configuration sidebar: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('openConfigurationSidebar', e);
     alertError('Failed to open settings: ' + e.message, 'Configuration Error');
   }
 }
@@ -1430,7 +1565,7 @@ function onOpen() {
     try {
       migrateToConfigUI();
     } catch (migrationError) {
-      Logger.log('Migration check failed (non-critical): ' + migrationError);
+      logWarning('onOpen', 'Migration check failed (non-critical)', { error: migrationError.toString() });
       // Continue with menu creation even if migration fails
     }
     
@@ -1438,7 +1573,7 @@ function onOpen() {
     try {
       checkAndRecoverIncompleteOperations();
     } catch (recoveryError) {
-      Logger.log('Recovery check failed (non-critical): ' + recoveryError);
+      logWarning('onOpen', 'Recovery check failed (non-critical)', { error: recoveryError.toString() });
       // Continue with menu creation even if recovery check fails
     }
     
@@ -1458,6 +1593,6 @@ function onOpen() {
       .addItem("⚙️ Settings", "openConfigurationSidebar")
       .addToUi();
   } catch (e) {
-    Logger.log("Failed to create menu in onOpen: " + e.toString() + (e.stack ? "\nStack: " + e.stack : ""));
+    logError('onOpen', e, { operation: 'create_menu' });
   }
 }

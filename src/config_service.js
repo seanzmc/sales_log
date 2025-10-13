@@ -78,7 +78,7 @@ function getDateSettings() {
     const config = getConfiguration();
     return config.dates || DEFAULT_CONFIG.dates;
   } catch (e) {
-    Logger.log('Error getting date settings: ' + e);
+    logError('getDateSettings', e);
     return DEFAULT_CONFIG.dates;
   }
 }
@@ -93,7 +93,7 @@ function shouldSkipSundays() {
     const dateSettings = getDateSettings();
     return dateSettings.skipSundays !== false; // Default to true if not set
   } catch (e) {
-    Logger.log('Error checking skipSundays: ' + e);
+    logWarning('shouldSkipSundays', 'Error checking skipSundays', { error: e.toString() });
     return true; // Default to skipping Sundays on error
   }
 }
@@ -108,7 +108,7 @@ function shouldMondayLogSaturday() {
     const dateSettings = getDateSettings();
     return dateSettings.mondayLogsSaturday !== false; // Default to true if not set
   } catch (e) {
-    Logger.log('Error checking mondayLogsSaturday: ' + e);
+    logWarning('shouldMondayLogSaturday', 'Error checking mondayLogsSaturday', { error: e.toString() });
     return true; // Default to true on error
   }
 }
@@ -147,7 +147,7 @@ function getConfiguration() {
       try {
         return JSON.parse(cached);
       } catch (e) {
-        Logger.log('Cache parse error in getConfiguration: ' + e);
+        logWarning('getConfiguration', 'Cache parse error', { error: e.toString() });
       }
     }
 
@@ -171,7 +171,7 @@ function getConfiguration() {
       return JSON.parse(JSON.stringify(DEFAULT_CONFIG)); // Deep copy
     }
   } catch (e) {
-    Logger.log('Error in getConfiguration: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('getConfiguration', e);
     // Return defaults on error
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
@@ -233,7 +233,7 @@ function updateConfiguration(updates) {
     return updatedConfig;
     
   } catch (e) {
-    Logger.log('Error in updateConfiguration: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('updateConfiguration', e);
     throw e;
   } finally {
     lock.releaseLock();
@@ -262,7 +262,7 @@ function resetToDefaults() {
     return updateConfiguration(defaultConfig);
     
   } catch (e) {
-    Logger.log('Error in resetToDefaults: ' + e.toString());
+    logError('resetToDefaults', e);
     throw new Error('Failed to reset configuration: ' + e.message);
   }
 }
@@ -281,7 +281,7 @@ function getSalespeople() {
     const config = getConfiguration();
     return config.salespeople || [];
   } catch (e) {
-    Logger.log('Error in getSalespeople: ' + e);
+    logError('getSalespeople', e);
     return [];
   }
 }
@@ -336,7 +336,7 @@ function addSalesperson(data) {
     return result;
     
   } catch (e) {
-    Logger.log('Error in addSalesperson: ' + e.toString());
+    logError('addSalesperson', e, { fullName: data?.fullName });
     throw e;
   }
 }
@@ -399,7 +399,7 @@ function updateSalesperson(fullName, data) {
     return result;
     
   } catch (e) {
-    Logger.log('Error in updateSalesperson: ' + e.toString());
+    logError('updateSalesperson', e, { fullName, newFullName: data?.fullName });
     throw e;
   }
 }
@@ -440,7 +440,7 @@ function deleteSalesperson(fullName) {
     return updateConfiguration({ salespeople: filtered });
     
   } catch (e) {
-    Logger.log('Error in deleteSalesperson: ' + e.toString());
+    logError('deleteSalesperson', e, { fullName });
     throw e;
   }
 }
@@ -522,7 +522,7 @@ function updateLeaderboard() {
     };
     
   } catch (e) {
-    Logger.log('Error in updateLeaderboard: ' + e.toString());
+    logError('updateLeaderboard', e);
     throw new Error('Failed to update leaderboard: ' + e.message);
   }
 }
@@ -532,60 +532,10 @@ function updateLeaderboard() {
 // ============================================================================
 
 /**
- * Validates salesperson data structure and content
- * Server-side validation is mandatory for security
- * 
- * @param {Object} data - Salesperson data to validate
- * @returns {Array<string>} Array of error messages (empty if valid)
+ * NOTE: validateSalesperson() is now provided by validation_rules.js
+ * This ensures consistency across config_service.js and sync_service.js
+ * The function is available globally in Google Apps Script
  */
-function validateSalesperson(data) {
-  const errors = [];
-  
-  if (!data) {
-    errors.push('Salesperson data is required');
-    return errors;
-  }
-  
-  // Validate fullName
-  if (!data.fullName || typeof data.fullName !== 'string') {
-    errors.push('Full name is required');
-  } else {
-    const fullName = data.fullName.trim();
-    if (fullName.length < 2) {
-      errors.push('Full name must be at least 2 characters');
-    }
-    if (fullName.length > 100) {
-      errors.push('Full name must be less than 100 characters');
-    }
-    if (!/^[A-Za-z\s\-']+$/.test(fullName)) {
-      errors.push('Full name can only contain letters, spaces, hyphens, and apostrophes');
-    }
-  }
-  
-  // Validate aliases (optional but must be valid if provided)
-  if (data.aliases !== undefined && data.aliases !== null && data.aliases !== '') {
-    const aliases = String(data.aliases).trim();
-    if (aliases.length > 200) {
-      errors.push('Aliases must be less than 200 characters');
-    }
-    // Aliases can contain letters, numbers, spaces, commas
-    if (!/^[A-Za-z0-9\s,\-']+$/.test(aliases)) {
-      errors.push('Aliases can only contain letters, numbers, spaces, commas, hyphens, and apostrophes');
-    }
-  }
-  
-  // Validate displayCode
-  if (!data.displayCode || typeof data.displayCode !== 'string') {
-    errors.push('Display code is required');
-  } else {
-    const displayCode = data.displayCode.trim();
-    if (!/^[A-Za-z0-9]{2,4}$/.test(displayCode)) {
-      errors.push('Display code must be 2-4 alphanumeric characters');
-    }
-  }
-  
-  return errors;
-}
 
 /**
  * Validates a hex color code
@@ -757,7 +707,7 @@ function checkAliasConflict(aliasesStr, excludeFullName) {
     
     return null; // No conflicts
   } catch (e) {
-    Logger.log('Error in checkAliasConflict: ' + e);
+    logError('checkAliasConflict', e, { aliases: aliasesStr });
     return 'Error checking aliases: ' + e.message;
   }
 }
@@ -856,7 +806,7 @@ function getSyncMetadataFromProperties() {
       return {}; // Empty metadata
     }
   } catch (e) {
-    Logger.log('Error reading sync metadata: ' + e.toString());
+    logWarning('getSyncMetadataFromProperties', 'Error reading sync metadata', { error: e.toString() });
     return {};
   }
 }
@@ -871,7 +821,7 @@ function saveSyncMetadata(metadata) {
     const props = PropertiesService.getDocumentProperties();
     props.setProperty('SALES_LOG_SYNC_META', JSON.stringify(metadata));
   } catch (e) {
-    Logger.log('Error saving sync metadata: ' + e.toString());
+    logError('saveSyncMetadata', e);
     throw e;
   }
 }
@@ -897,7 +847,7 @@ function updateSyncMetadata(fullName, source) {
     saveSyncMetadata(metadata);
     Logger.log('Updated sync metadata for ' + fullName + ' (source: ' + source + ')');
   } catch (e) {
-    Logger.log('Error updating sync metadata: ' + e.toString());
+    logWarning('updateSyncMetadata', 'Error updating sync metadata', { error: e.toString(), fullName });
     // Don't throw - metadata tracking failure shouldn't break CRUD operations
   }
 }
@@ -983,7 +933,7 @@ function migrateToConfigUI() {
     };
     
   } catch (e) {
-    Logger.log('Error in migrateToConfigUI: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    logError('migrateToConfigUI', e);
     return {
       success: false,
       message: 'Migration failed: ' + e.message
@@ -1032,7 +982,7 @@ function syncToSalespeopleSheet(config) {
     CacheService.getScriptCache().remove('salespersonMaps');
     
   } catch (e) {
-    Logger.log('Error in syncToSalespeopleSheet: ' + e.toString());
+    logWarning('syncToSalespeopleSheet', 'Error syncing to SALESPEOPLE sheet', { error: e.toString(), count: config?.salespeople?.length });
     // Don't throw - sync is secondary operation
   }
 }
@@ -1106,7 +1056,7 @@ function exportConfiguration() {
     const config = getConfiguration();
     return JSON.stringify(config, null, 2);
   } catch (e) {
-    Logger.log('Error in exportConfiguration: ' + e);
+    logError('exportConfiguration', e);
     throw new Error('Failed to export configuration: ' + e.message);
   }
 }
@@ -1133,7 +1083,7 @@ function importConfiguration(json) {
     return updateConfiguration(config);
     
   } catch (e) {
-    Logger.log('Error in importConfiguration: ' + e);
+    logError('importConfiguration', e);
     throw new Error('Failed to import configuration: ' + e.message);
   }
 }
@@ -1175,7 +1125,7 @@ function getConfigurationForSidebar() {
         // Re-read config after sync
         config = getConfiguration();
       } else {
-        Logger.log('[Config] Sync failed: ' + syncResult.error);
+        logWarning('getConfigurationForSidebar', 'Sync failed', { error: syncResult.error });
         // Continue with current config even if sync fails
       }
     } else {
@@ -1186,7 +1136,7 @@ function getConfigurationForSidebar() {
     return config;
     
   } catch (error) {
-    Logger.log('[Config] Error in getConfigurationForSidebar: ' + error.toString());
+    logError('getConfigurationForSidebar', error);
     // Fall back to regular getConfiguration
     return getConfiguration();
   }
@@ -1212,7 +1162,7 @@ function prepareScriptletData() {
       featureFlags: prepareFeatureFlags(config)
     };
   } catch (e) {
-    Logger.log('Error in prepareScriptletData: ' + e.toString());
+    logError('prepareScriptletData', e);
     // Return safe defaults on error
     return {
       cssVariables: generateCssVariables(DEFAULT_CONFIG.visual),

@@ -84,7 +84,7 @@ function onEditSalespeopleSheet(e) {
         Logger.log('[Sync] Created pre-edit backup: ' + backupKey);
       }
     } catch (backupError) {
-      Logger.log('[Sync] Could not create backup: ' + backupError.toString());
+      logWarning('onEditSalespeopleSheet', 'Could not create backup', { error: backupError.toString() });
       // Continue without backup
     }
     
@@ -93,7 +93,7 @@ function onEditSalespeopleSheet(e) {
     
     if (!result.success) {
       // Validation or sync failed - revert the change
-      Logger.log('[Sync] Sync failed: ' + result.error);
+      logError('onEditSalespeopleSheet', result.error, { row, operation: 'sync_row' });
       
       // Attempt to restore from backup if available
       if (backupKey && fullNameForBackup) {
@@ -103,7 +103,7 @@ function onEditSalespeopleSheet(e) {
             Logger.log('[Sync] Restored from backup after sync failure');
           }
         } catch (restoreError) {
-          Logger.log('[Sync] Could not restore from backup: ' + restoreError.toString());
+          logWarning('onEditSalespeopleSheet', 'Could not restore from backup', { error: restoreError.toString(), fullName: fullNameForBackup });
         }
       }
       
@@ -151,8 +151,7 @@ function onEditSalespeopleSheet(e) {
     Logger.log('[Sync] Row ' + row + ' synced successfully to Properties');
     
   } catch (error) {
-    Logger.log('[Sync] Error in onEditSalespeopleSheet: ' + error.toString());
-    Logger.log('[Sync] Stack: ' + (error.stack || 'No stack trace'));
+    logError('onEditSalespeopleSheet', error, { row });
     
     // Attempt recovery using handleSyncFailure
     const recovery = handleSyncFailure(error, {
@@ -179,7 +178,8 @@ function onEditSalespeopleSheet(e) {
 
 /**
  * Validates sheet edit data before syncing
- * Applies same validation rules as sidebar with enhanced checks
+ * Uses shared validation rules from validation_rules.js
+ * Adds context-aware duplicate checking for display codes
  *
  * @param {Array} rowData - [fullName, aliases, displayCode]
  * @param {string|null} existingFullName - Full name of existing salesperson (for updates)
@@ -187,120 +187,54 @@ function onEditSalespeopleSheet(e) {
  * @returns {Object} {valid: boolean, errors: Array, sanitized: Object}
  */
 function validateSheetEdit(rowData, existingFullName, rowNumber) {
-  const errors = [];
-  const fullName = rowData[COL_FULLNAME] ? String(rowData[COL_FULLNAME]).trim() : '';
-  const aliases = rowData[COL_ALIASES] ? String(rowData[COL_ALIASES]).trim() : '';
-  const displayCode = rowData[COL_DISPLAYCODE] ? String(rowData[COL_DISPLAYCODE]).trim() : '';
+  // Use shared validation function from validation_rules.js
+  const baseValidation = validateSheetRowData(rowData);
   
-  // Check if row is being deleted (all cells empty)
-  if (!fullName && !aliases && !displayCode) {
+  // If it's a delete operation or has basic validation errors, return early
+  if (baseValidation.isDelete || !baseValidation.valid) {
     return {
-      valid: true,
-      isDelete: true,
-      errors: [],
+      valid: baseValidation.valid,
+      isDelete: baseValidation.isDelete,
+      errors: baseValidation.errors,
       sanitized: null
     };
   }
   
-  // Validate fullName - required
-  if (!fullName) {
-    errors.push({
-      field: 'Full Name',
-      message: 'field is required',
-      value: '(empty)',
-      column: 'A'
-    });
-  } else if (fullName.length < 2) {
-    errors.push({
-      field: 'Full Name',
-      message: 'must be at least 2 characters',
-      value: '"' + fullName + '"',
-      column: 'A'
-    });
-  } else if (fullName.length > 100) {
-    errors.push({
-      field: 'Full Name',
-      message: 'must be less than 100 characters',
-      value: '"' + fullName.substring(0, 20) + '..." (' + fullName.length + ' chars)',
-      column: 'A'
-    });
-  } else if (!/^[A-Za-z\s\-']+$/.test(fullName)) {
-    errors.push({
-      field: 'Full Name',
-      message: 'can only contain letters, spaces, hyphens, and apostrophes',
-      value: '"' + fullName + '"',
-      column: 'A'
-    });
-  }
+  // Create sanitized data from validated input
+  const fullName = rowData[COL_FULLNAME] ? String(rowData[COL_FULLNAME]).trim() : '';
+  const aliases = rowData[COL_ALIASES] ? String(rowData[COL_ALIASES]).trim() : '';
+  const displayCode = rowData[COL_DISPLAYCODE] ? String(rowData[COL_DISPLAYCODE]).trim() : '';
   
-  // Validate aliases - optional but must be valid if provided
-  if (aliases && aliases.length > 200) {
-    errors.push({
-      field: 'Aliases',
-      message: 'must be less than 200 characters',
-      value: '"' + aliases.substring(0, 20) + '..." (' + aliases.length + ' chars)',
-      column: 'B'
-    });
-  }
-  if (aliases && !/^[A-Za-z0-9\s,\-']+$/.test(aliases)) {
-    errors.push({
-      field: 'Aliases',
-      message: 'can only contain letters, numbers, spaces, commas, hyphens, and apostrophes',
-      value: '"' + aliases + '"',
-      column: 'B'
-    });
-  }
+  const sanitized = {
+    fullName: fullName,
+    aliases: aliases,
+    displayCode: displayCode.toUpperCase() // Normalize to uppercase
+  };
   
-  // Validate displayCode - required
-  if (!displayCode) {
-    errors.push({
-      field: 'Display Code',
-      message: 'field is required',
-      value: '(empty)',
-      column: 'C'
-    });
-  } else if (!/^[A-Za-z0-9]{2,4}$/.test(displayCode)) {
-    errors.push({
-      field: 'Display Code',
-      message: 'must be 2-4 alphanumeric characters',
-      value: '"' + displayCode + '"',
-      column: 'C'
-    });
-  }
-  
-  // If validation passed, create sanitized data and perform context-aware validation
-  let sanitized = null;
-  if (errors.length === 0) {
-    sanitized = {
-      fullName: fullName,
-      aliases: aliases,
-      displayCode: displayCode.toUpperCase() // Normalize to uppercase
-    };
+  // Perform context-aware validation (duplicate checks)
+  const errors = [];
+  try {
+    const config = getConfiguration();
+    const salespeople = config.salespeople || [];
     
-    // Get current configuration for duplicate checks
-    try {
-      const config = getConfiguration();
-      const salespeople = config.salespeople || [];
-      
-      // Check for duplicate display codes (excluding current if update)
-      const duplicateCode = salespeople.find(sp =>
-        sp.displayCode.toUpperCase() === sanitized.displayCode &&
-        (!existingFullName || sp.fullName !== existingFullName)
-      );
-      
-      if (duplicateCode) {
-        errors.push({
-          field: 'Display Code',
-          message: 'already used by "' + duplicateCode.fullName + '"',
-          value: '"' + sanitized.displayCode + '"',
-          column: 'C'
-        });
-      }
-      
-    } catch (configError) {
-      Logger.log('[Sync] Error checking duplicates during validation: ' + configError.toString());
-      // Don't fail validation on config read error - will be caught in syncRowToProperties
+    // Check for duplicate display codes (excluding current if update)
+    const duplicateCode = salespeople.find(sp =>
+      sp.displayCode.toUpperCase() === sanitized.displayCode &&
+      (!existingFullName || sp.fullName !== existingFullName)
+    );
+    
+    if (duplicateCode) {
+      errors.push({
+        field: 'Display Code',
+        message: 'already used by "' + duplicateCode.fullName + '"',
+        value: '"' + sanitized.displayCode + '"',
+        column: 'C'
+      });
     }
+    
+  } catch (configError) {
+    logWarning('validateSheetEdit', 'Error checking duplicates during validation', { error: configError.toString() });
+    // Don't fail validation on config read error - will be caught in syncRowToProperties
   }
   
   return {
@@ -316,20 +250,153 @@ function validateSheetEdit(rowData, existingFullName, rowNumber) {
 // ============================================================================
 
 /**
- * Syncs a single row from sheet to Properties Service
- * Handles add, update, and delete operations with conflict detection
+ * Syncs a single row from the SALESPEOPLE sheet to Properties Service.
  *
- * @param {number} row - Row number (1-indexed)
- * @param {Array} rowData - [fullName, aliases, displayCode]
- * @param {string} oldValue - Previous value (for conflict detection)
- * @returns {Object} {success: boolean, error: string, operation: string, conflictResolution: Object}
+ * This is the core synchronization function that maintains data consistency between the
+ * visible SALESPEOPLE sheet and the authoritative Properties Service storage. It handles
+ * the complete lifecycle of sheet edits including validation, conflict detection, backup
+ * creation, and cache invalidation.
+ *
+ * **Key Responsibilities:**
+ * - Validates edited row data against business rules
+ * - Detects and resolves conflicts with concurrent sidebar edits
+ * - Manages add, update, and delete operations
+ * - Creates pre-edit backups for recovery
+ * - Performs data integrity checks after modifications
+ * - Coordinates cache invalidation across all layers
+ * - Updates sync metadata for bidirectional sync tracking
+ *
+ * **Operation Flow:**
+ * 1. Acquires script lock (30s timeout) to prevent race conditions
+ * 2. Determines operation type (add/update/delete) based on row position
+ * 3. Creates backup of existing data before modifications
+ * 4. Validates input data (format, duplicates, aliases)
+ * 5. Detects and resolves conflicts with Properties data
+ * 6. Performs the operation (add/update/delete)
+ * 7. Runs post-update integrity checks with auto-repair
+ * 8. Updates sync metadata for tracking
+ * 9. Invalidates all caches to ensure consistency
+ *
+ * **Conflict Resolution:**
+ * When Properties data differs from sheet edit, the function uses timing-based resolution:
+ * - If modified within 1 second: Properties wins (sidebar has better validation)
+ * - Otherwise: Sheet wins (most recent edit)
+ * The losing side is automatically updated to match the winner.
+ *
+ * **Error Handling:**
+ * Comprehensive error handling with automatic recovery attempts:
+ * - Lock timeout: Retry with exponential backoff
+ * - Validation errors: Revert to backup if available
+ * - Conflict errors: Force resolution using conflict logic
+ * - Network errors: Queue for retry
+ *
+ * @param {number} row - The 1-indexed row number in the SALESPEOPLE sheet (row 2 = first data row).
+ *                       Used to determine operation type and position in salespeople array.
+ * @param {Array<string>} rowData - The edited row data as a 3-element array:
+ *                                   [fullName, aliases, displayCode]
+ *                                   - fullName: Required, min 2 chars
+ *                                   - aliases: Optional, comma-separated
+ *                                   - displayCode: Required, 2-4 uppercase alphanumeric chars
+ * @param {string|undefined} oldValue - The previous cell value before edit. Used for conflict
+ *                                      detection and revert operations. May be undefined for
+ *                                      new cell values or formatting-only changes.
+ *
+ * @returns {Object} Result object with the following structure:
+ *   - success {boolean} - True if sync completed successfully, false otherwise
+ *   - error {string|null} - Detailed error message if success is false, null otherwise
+ *   - operation {string} - Type of operation performed: 'add', 'update', 'delete',
+ *                          'conflict_resolved', or 'no-op'
+ *   - rowNumber {number} - Row number for error context (only included on validation errors)
+ *   - conflictResolution {Object|null} - Present if conflict was detected:
+ *       - action {string} - 'resolved', 'no_conflict', or 'error'
+ *       - winner {string} - 'sheet' or 'properties'
+ *       - data {Object} - The winning data that was applied
+ *       - notify {Object} - User notification details:
+ *           - message {string} - Human-readable conflict message
+ *           - severity {string} - 'warning' or 'error'
+ *   - recovery {Object} - Recovery information if error occurred:
+ *       - action {string} - Recovery action taken: 'retry', 'reverted', 'force_resolve',
+ *                           'queue_retry', or 'failed'
+ *       - message {string} - Recovery status message
+ *       - recoverable {boolean} - Whether the error can be recovered
+ *       - delay {number} - Retry delay in milliseconds (for 'retry' action)
+ *
+ * @throws {Error} Indirectly throws errors that are caught and returned in result.error:
+ *   - Lock acquisition timeout after 30 seconds
+ *   - Configuration read/write failures
+ *   - Cache invalidation failures (critical - propagates to ensure data consistency)
+ *   - Backup creation/restoration failures (non-critical - logged as warnings)
+ *
+ * @example
+ * // Example 1: Successful add operation
+ * const result = syncRowToProperties(
+ *   5,
+ *   ['Jane Smith', 'JS, Jane', 'JS01'],
+ *   undefined
+ * );
+ * // Returns: {
+ * //   success: true,
+ * //   operation: 'add',
+ * //   conflictResolution: null,
+ * //   error: null
+ * // }
+ *
+ * @example
+ * // Example 2: Update with conflict resolution
+ * const result = syncRowToProperties(
+ *   3,
+ *   ['John Doe', 'JD, Johnny', 'JD'],
+ *   'John Doe'
+ * );
+ * // If Properties was recently modified:
+ * // Returns: {
+ * //   success: true,
+ * //   operation: 'conflict_resolved',
+ * //   conflictResolution: {
+ * //     action: 'resolved',
+ * //     winner: 'properties',
+ * //     notify: {
+ * //       message: 'Conflict detected and resolved. Sidebar changes preserved.',
+ * //       severity: 'warning'
+ * //     }
+ * //   },
+ * //   error: null
+ * // }
+ *
+ * @example
+ * // Example 3: Validation error
+ * const result = syncRowToProperties(
+ *   4,
+ *   ['Bob', '', 'XY'],  // displayCode too short
+ *   'Bob Jones'
+ * );
+ * // Returns: {
+ * //   success: false,
+ * //   error: 'Column C (Display Code): must be 2-4 uppercase letters/numbers [value: "XY"]',
+ * //   rowNumber: 4
+ * // }
+ *
+ * @example
+ * // Example 4: Delete operation (all cells cleared)
+ * const result = syncRowToProperties(
+ *   6,
+ *   ['', '', ''],
+ *   'Alice Brown'
+ * );
+ * // Returns: {
+ * //   success: true,
+ * //   operation: 'delete',
+ * //   error: null
+ * // }
  */
 function syncRowToProperties(row, rowData, oldValue) {
   const lock = LockService.getScriptLock();
   let backupKey = null;
   
   try {
-    // Wait up to 30 seconds for lock
+    // ===== PHASE 1: LOCK ACQUISITION =====
+    // Acquire script lock to prevent race conditions with concurrent edits.
+    // 30-second timeout allows for complex operations while preventing indefinite waits.
     if (!lock.tryLock(30000)) {
       return {
         success: false,
@@ -337,32 +404,37 @@ function syncRowToProperties(row, rowData, oldValue) {
       };
     }
     
-    // Get current configuration
+    // ===== PHASE 2: LOAD CURRENT STATE =====
+    // Load current configuration from Properties Service (source of truth)
     const config = getConfiguration();
     const salespeople = config.salespeople || [];
     
-    // Determine if this is an add or update
+    // Get sheet reference for potential conflict resolution operations
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SALESPEOPLE_SHEET_NAME);
     const allData = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
     
+    // ===== PHASE 3: DETERMINE OPERATION TYPE =====
+    // Map sheet row position to salespeople array index to determine if this is an add or update.
+    // Row 2 in sheet = index 0 in array (row 1 is header)
     let existingSalesperson = null;
     let operation = 'add';
     
-    // Find the salesperson at this row position
-    const editIndex = row - 2; // row 2 = index 0
+    const editIndex = row - 2; // Convert 1-indexed row to 0-indexed array position
     if (editIndex >= 0 && editIndex < salespeople.length) {
+      // Row corresponds to existing salesperson - this is an update
       existingSalesperson = salespeople[editIndex];
       operation = 'update';
       
-      // Create backup before making changes
+      // Create backup before making changes for rollback capability
       backupKey = createBackup(existingSalesperson.fullName);
     }
     
-    // Validate the data with context
+    // ===== PHASE 4: VALIDATION =====
+    // Validate input data using shared validation rules and context-aware duplicate checking
     const validation = validateSheetEdit(rowData, existingSalesperson ? existingSalesperson.fullName : null, row);
     
     if (!validation.valid) {
-      // Format detailed error message with row and field context
+      // Format detailed error message with column context for user feedback
       const errorDetails = validation.errors.map(err => {
         if (typeof err === 'string') {
           return err; // Backward compatibility for string errors
@@ -377,14 +449,16 @@ function syncRowToProperties(row, rowData, oldValue) {
       };
     }
     
-    // Handle delete operation
+    // Handle delete operation (all cells empty) via specialized handler
     if (validation.isDelete) {
       return handleRowDeletion(row);
     }
     
     const sanitized = validation.sanitized;
     
-    // Check for duplicate full name (excluding current if update)
+    // ===== PHASE 5: DUPLICATE CHECKING =====
+    // Check for duplicate full names (excluding current salesperson if update)
+    // Full names must be globally unique across all salespeople
     const duplicateName = salespeople.find(sp =>
       sp.fullName === sanitized.fullName &&
       (!existingSalesperson || sp.fullName !== existingSalesperson.fullName)
@@ -398,7 +472,8 @@ function syncRowToProperties(row, rowData, oldValue) {
       };
     }
     
-    // Check for alias conflicts
+    // Check for alias conflicts with existing names, codes, and other aliases
+    // Aliases must not conflict with any identifier in the system
     const aliasConflict = checkAliasConflictForSync(
       sanitized.aliases,
       existingSalesperson ? existingSalesperson.fullName : null
@@ -412,7 +487,9 @@ function syncRowToProperties(row, rowData, oldValue) {
       };
     }
     
-    // CONFLICT DETECTION: Check if Properties data differs from sheet edit
+    // ===== PHASE 6: CONFLICT DETECTION & RESOLUTION =====
+    // For updates, check if Properties was recently modified (within 60 seconds).
+    // This handles the case where sidebar and sheet are edited simultaneously.
     let conflictResolution = null;
     if (operation === 'update' && existingSalesperson) {
       const resolution = resolveConflict(
@@ -424,19 +501,19 @@ function syncRowToProperties(row, rowData, oldValue) {
       if (resolution.action === 'resolved') {
         conflictResolution = resolution;
         
-        // If Properties wins, use Properties data instead of sheet data
+        // CONFLICT RESOLUTION: Properties wins in simultaneous edits
+        // Properties has better validation and is the source of truth
         if (resolution.winner === 'properties') {
           Logger.log('[Sync] Conflict resolved - Properties wins. Reverting sheet to Properties data.');
           
-          // Update the sheet to match Properties
+          // Revert sheet to match Properties (undo user's edit)
           sheet.getRange(row, 1, 1, 3).setValues([[
             existingSalesperson.fullName,
             existingSalesperson.aliases,
             existingSalesperson.displayCode
           ]]);
           
-          // Don't update Properties since it already has the correct data
-          // Just update sync metadata
+          // Properties already has correct data, just update sync metadata
           updateSyncMetadata(existingSalesperson.fullName, 'sheet');
           invalidateAllCaches();
           
@@ -448,20 +525,21 @@ function syncRowToProperties(row, rowData, oldValue) {
           };
         }
         
-        // If sheet wins, continue with normal update
+        // Sheet wins - continue with normal update flow
         Logger.log('[Sync] Conflict resolved - Sheet wins. Updating Properties.');
       }
     }
     
-    // Perform the operation
+    // ===== PHASE 7: PERFORM OPERATION =====
+    // Apply the validated, conflict-resolved change to the salespeople array
     if (operation === 'update' && existingSalesperson) {
-      // Update existing salesperson
+      // UPDATE: Replace existing salesperson at same position
       const index = salespeople.indexOf(existingSalesperson);
       salespeople[index] = sanitized;
       Logger.log('[Sync] Updating salesperson at index ' + index + ': ' + sanitized.fullName);
     } else {
-      // Add new salesperson
-      const insertIndex = row - 2; // row 2 = index 0
+      // ADD: Insert new salesperson at row position or append if beyond current array
+      const insertIndex = row - 2; // Convert row to array index
       if (insertIndex <= salespeople.length) {
         salespeople.splice(insertIndex, 0, sanitized);
       } else {
@@ -470,10 +548,12 @@ function syncRowToProperties(row, rowData, oldValue) {
       Logger.log('[Sync] Adding new salesperson: ' + sanitized.fullName);
     }
     
-    // Update configuration
+    // Persist changes to Properties Service (source of truth)
     const updatedConfig = updateConfiguration({ salespeople: salespeople });
     
-    // Check data integrity after update
+    // ===== PHASE 8: DATA INTEGRITY CHECK =====
+    // Run comprehensive integrity checks to catch any inconsistencies introduced by the change
+    // This includes duplicate detection, format validation, and orphaned metadata cleanup
     const integrityCheck = checkDataIntegrity(updatedConfig);
     if (!integrityCheck.valid) {
       Logger.log('[Sync] Data integrity issues detected after update:');
@@ -481,17 +561,19 @@ function syncRowToProperties(row, rowData, oldValue) {
         Logger.log('[Sync]   - ' + issue.message);
       });
       
-      // Attempt automatic repair
+      // Attempt automatic repair of fixable issues (e.g., orphaned metadata)
       const repair = repairDataIntegrity(integrityCheck.issues);
       if (repair.repaired) {
         Logger.log('[Sync] Auto-repaired ' + repair.actions.length + ' issues');
       }
     }
     
-    // Update sync metadata
+    // ===== PHASE 9: SYNC METADATA & CACHE INVALIDATION =====
+    // Update sync metadata to track this modification for future conflict detection
     updateSyncMetadata(sanitized.fullName, 'sheet');
     
-    // Invalidate all caches
+    // Invalidate ALL caches to ensure consistency across the system
+    // This includes config cache, salesperson maps, and visual config
     invalidateAllCaches();
     
     Logger.log('[Sync] Successfully synced row ' + row + ' - Operation: ' + operation);
@@ -504,9 +586,12 @@ function syncRowToProperties(row, rowData, oldValue) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in syncRowToProperties: ' + error.toString());
+    // ===== ERROR HANDLING =====
+    // Log detailed error information for debugging
+    logError('syncRowToProperties', error, { row, operation: 'sync' });
     
-    // Attempt recovery
+    // Attempt intelligent recovery based on error type
+    // Recovery strategies include: retry with backoff, revert to backup, force resolution, or queue for later
     const recovery = handleSyncFailure(error, {
       row: row,
       backupKey: backupKey,
@@ -520,6 +605,7 @@ function syncRowToProperties(row, rowData, oldValue) {
       recovery: recovery
     };
   } finally {
+    // Always release lock to prevent deadlocks, even if operation failed
     lock.releaseLock();
   }
 }
@@ -571,7 +657,7 @@ function handleRowDeletion(row) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in handleRowDeletion: ' + error.toString());
+    logError('handleRowDeletion', error, { row });
     return {
       success: false,
       error: 'Delete failed: ' + error.message
@@ -624,7 +710,7 @@ function checkAliasConflictForSync(aliasesStr, excludeFullName) {
     
     return null;
   } catch (error) {
-    Logger.log('[Sync] Error in checkAliasConflictForSync: ' + error.toString());
+    logError('checkAliasConflictForSync', error, { aliases: aliasesStr });
     return 'Error checking aliases: ' + error.message;
   }
 }
@@ -655,7 +741,7 @@ function invalidateAllCaches() {
     Logger.log('[Sync] All caches invalidated');
     
   } catch (error) {
-    Logger.log('[Sync] CRITICAL: Error invalidating caches: ' + error.toString());
+    logError('invalidateAllCaches', error, { severity: 'CRITICAL' });
     // IMPORTANT: Throw error - callers must know cache invalidation failed
     // to prevent stale data from being used after config changes
     throw new Error('Cache invalidation failed: ' + error.message);
@@ -690,7 +776,7 @@ function updateSyncMetadata(fullName, source) {
     Logger.log('[Sync] Updated metadata for ' + fullName + ' (source: ' + source + ')');
     
   } catch (error) {
-    Logger.log('[Sync] Error updating sync metadata: ' + error.toString());
+    logWarning('updateSyncMetadata', 'Error updating sync metadata', { error: error.toString(), fullName });
     // Don't throw - metadata tracking failure shouldn't break sync
   }
 }
@@ -706,7 +792,7 @@ function getSyncMetadata(fullName) {
     const metadata = getSyncMetadataFromProperties();
     return metadata[fullName] || null;
   } catch (error) {
-    Logger.log('[Sync] Error getting sync metadata: ' + error.toString());
+    logWarning('getSyncMetadata', 'Error getting sync metadata', { error: error.toString(), fullName });
     return null;
   }
 }
@@ -727,7 +813,7 @@ function getSyncMetadataFromProperties() {
       return {}; // Empty metadata
     }
   } catch (error) {
-    Logger.log('[Sync] Error reading sync metadata: ' + error.toString());
+    logWarning('getSyncMetadataFromProperties', 'Error reading sync metadata', { error: error.toString() });
     return {};
   }
 }
@@ -742,7 +828,7 @@ function saveSyncMetadata(metadata) {
     const props = PropertiesService.getDocumentProperties();
     props.setProperty(SYNC_METADATA_KEY, JSON.stringify(metadata));
   } catch (error) {
-    Logger.log('[Sync] Error saving sync metadata: ' + error.toString());
+    logError('saveSyncMetadata', error);
     throw error;
   }
 }
@@ -804,7 +890,7 @@ function detectConflict(fullName, sheetData, propsData) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in detectConflict: ' + error.toString());
+    logWarning('detectConflict', 'Error in conflict detection', { error: error.toString(), fullName });
     // On error, assume no conflict to allow operation to proceed
     return {
       hasConflict: false,
@@ -876,7 +962,7 @@ function resolveConflict(fullName, sheetData, propsData) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in resolveConflict: ' + error.toString());
+    logWarning('resolveConflict', 'Error resolving conflict', { error: error.toString(), fullName });
     // On error, default to accepting sheet data
     return {
       action: 'error',
@@ -926,7 +1012,7 @@ function dataEquals(data1, data2) {
     return true;
     
   } catch (error) {
-    Logger.log('[Sync] Error in dataEquals: ' + error.toString());
+    logWarning('dataEquals', 'Error comparing data', { error: error.toString() });
     return false;
   }
 }
@@ -961,7 +1047,7 @@ function logConflict(conflictInfo) {
     }
     
   } catch (error) {
-    Logger.log('[Sync] Error in logConflict: ' + error.toString());
+    logWarning('logConflict', 'Error logging conflict', { error: error.toString() });
     // Don't throw - logging failure shouldn't break sync
   }
 }
@@ -1081,7 +1167,7 @@ function checkDataIntegrity(config) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in checkDataIntegrity: ' + error.toString());
+    logError('checkDataIntegrity', error);
     return {
       valid: false,
       issues: [{
@@ -1147,7 +1233,7 @@ function repairDataIntegrity(issues) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in repairDataIntegrity: ' + error.toString());
+    logError('repairDataIntegrity', error);
     return {
       repaired: false,
       actions: [{
@@ -1205,7 +1291,7 @@ function createBackup(fullName) {
       saveSyncMetadata(metadata);
       Logger.log('[Sync] Stored backup key in metadata for ' + fullName);
     } catch (metadataError) {
-      Logger.log('[Sync] Warning: Could not store backup key in metadata: ' + metadataError.toString());
+      logWarning('createBackup', 'Could not store backup key in metadata', { error: metadataError.toString(), fullName });
       // Continue - backup is still in cache, just not referenced in metadata
     }
     
@@ -1214,7 +1300,7 @@ function createBackup(fullName) {
     return backupKey;
     
   } catch (error) {
-    Logger.log('[Sync] Error in createBackup: ' + error.toString());
+    logError('createBackup', error, { fullName });
     return null;
   }
 }
@@ -1245,7 +1331,7 @@ function restoreFromBackup(fullName) {
         }
       }
     } catch (metadataError) {
-      Logger.log('[Sync] Could not retrieve backup key from metadata: ' + metadataError.toString());
+      logWarning('restoreFromBackup', 'Could not retrieve backup key from metadata', { error: metadataError.toString(), fullName });
     }
     
     // Fallback: Try timestamp guessing (for backward compatibility with old backups)
@@ -1302,7 +1388,7 @@ function restoreFromBackup(fullName) {
     }
     
   } catch (error) {
-    Logger.log('[Sync] Error in restoreFromBackup: ' + error.toString());
+    logError('restoreFromBackup', error, { fullName });
     return {
       restored: false,
       backup: null,
@@ -1377,7 +1463,7 @@ function handleSyncFailure(error, context) {
     }
     
   } catch (recoveryError) {
-    Logger.log('[Sync] Error in handleSyncFailure: ' + recoveryError.toString());
+    logError('handleSyncFailure', recoveryError, { originalError: error.toString() });
     return {
       action: 'failed',
       message: 'Recovery failed: ' + recoveryError.message,
@@ -1469,7 +1555,7 @@ function readSalespeopleFromSheet() {
     return salespeople;
     
   } catch (error) {
-    Logger.log('[Sync] Error in readSalespeopleFromSheet: ' + error.toString());
+    logError('readSalespeopleFromSheet', error);
     return [];
   }
 }
@@ -1519,7 +1605,7 @@ function syncFromSheetToProperties(sheetSalespeople) {
     };
     
   } catch (error) {
-    Logger.log('[Sync] Error in syncFromSheetToProperties: ' + error.toString());
+    logError('syncFromSheetToProperties', error);
     return {
       success: false,
       error: error.message
@@ -1587,7 +1673,7 @@ function needsSync(sheetData, propsData) {
     return false;
     
   } catch (error) {
-    Logger.log('[Sync] Error in needsSync: ' + error.toString());
+    logWarning('needsSync', 'Error checking sync status', { error: error.toString() });
     // On error, don't sync to avoid data corruption
     return false;
   }
@@ -1612,7 +1698,7 @@ function logSyncEvent(event) {
     // For Phase 1 & 2, console logging is sufficient
     
   } catch (error) {
-    Logger.log('[Sync] Error logging sync event: ' + error.toString());
+    logWarning('logSyncEvent', 'Error logging sync event', { error: error.toString() });
     // Don't throw - logging failure shouldn't break sync
   }
 }
