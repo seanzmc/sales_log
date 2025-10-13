@@ -1,10 +1,10 @@
 /**
  * sales_analytics.js
  * Sales Analytics Module for Sales Log Pro
- * 
+ *
  * Provides comprehensive sales metrics including total sales,
  * new/used breakdowns, and per-salesperson analytics.
- * 
+ *
  * Integration: Automatically calculates analytics during processDaily()
  * and preserves data during rolloverMonth() operations.
  */
@@ -26,16 +26,16 @@ const CACHE_TTL_ANALYTICS = 300; // 5 minutes (consistent with existing patterns
  * Calculates comprehensive sales analytics for the current month.
  * Reads all data from MONTHLY sheet, processes by salesperson and inventory type,
  * and returns analytics summary object.
- * 
+ *
  * Uses existing utilities: getSalespersonMaps(), tallyCounts(), findLastRowInCols()
- * 
+ *
  * @returns {Object|null} Analytics summary object containing:
  *   - totals: {Object} Month-level totals (delivered, newDelivered, usedDelivered)
  *   - teamMetrics: {Object} Team-level metrics (sellingDays, newPerDay, usedPerDay)
  *   - salespersonMetrics: {Array<Object>} Individual salesperson metrics
  *   - timestamp: {string} ISO timestamp of calculation
  *   - dataQuality: {Object} Data quality metrics and unknown salespeople
- * 
+ *
  * @throws {Error} If MONTHLY sheet is missing or has insufficient columns
  */
 function calculateMonthlyAnalytics() {
@@ -167,7 +167,7 @@ function writeAnalyticsToMonthly(analyticsData, monthlySheet) {
  * Reads existing analytics data from MONTHLY sheet columns S-Z.
  * Returns parsed analytics object without performing new calculations.
  * Useful for displaying current state or exporting data.
- * 
+ *
  * @returns {Object|null} Analytics object or null if no analytics exist
  */
 function getMonthlyAnalyticsSummary() {
@@ -265,7 +265,7 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
       if (row[0] === 1) {
         metrics.sellingDays++;
       }
-      
+
       // Process New Car Section (columns B-G, array indices 1-6)
       const newFI = String(row[2] || "").trim().toUpperCase(); // Col C (index 2)
       const newSalesperson = String(row[6] || "").trim(); // Col G (index 6)
@@ -397,7 +397,7 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
   const salespersonMetrics = [];
   Object.entries(processedData.salespersonAccumulator).forEach(([fullName, counts]) => {
     const totalSales = counts.newCount + counts.usedCount;
-    
+
     salespersonMetrics.push({
       fullName: fullName,
       displayCode: displayCodeMap[fullName] || fullName,
@@ -446,7 +446,7 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap) {
 function buildSummarySection(analyticsData) {
   const now = new Date();
   const dateStr = `${now.getMonth() + 1}/${now.getDate()}/${now.getFullYear()} ${now.toLocaleTimeString()}`;
-  
+
   const sellingDays = analyticsData.teamMetrics.sellingDays;
   const newPerDay = sellingDays > 0 ? analyticsData.teamMetrics.newPerDay : "N/A";
   const usedPerDay = sellingDays > 0 ? analyticsData.teamMetrics.usedPerDay : "N/A";
@@ -496,24 +496,31 @@ function formatSummarySection(sheet) {
       .setFontWeight("bold")
       .setFontSize(12)
       .setBackground("#4A86E8")
-      .setFontColor("#FFFFFF");
+      .setFontColor("#FFFFFF")
+      .setFontFamily("Calibri");
 
     // Format column headers (row 2)
     sheet.getRange(2, ANALYTICS_START_COL, 1, ANALYTICS_COL_COUNT)
       .setFontWeight("bold")
       .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
-
-    // Format data rows (3-6)
-    sheet.getRange(3, ANALYTICS_START_COL, 4, 2)
+      .setHorizontalAlignment("center")
       .setFontFamily("Calibri")
       .setFontSize(10);
+
+    // Format data rows (3-6)
+    sheet.getRange(3, ANALYTICS_START_COL, 4, ANALYTICS_COL_COUNT)
+      .setFontFamily("Calibri")
+      .setFontSize(10)
+      .setHorizontalAlignment("center")
+      .setFontWeight("bold");
 
     // Format salesperson header row (row 8)
     sheet.getRange(8, ANALYTICS_START_COL, 1, ANALYTICS_COL_COUNT)
       .setFontWeight("bold")
       .setBackground("#E8F0FE")
-      .setHorizontalAlignment("center");
+      .setHorizontalAlignment("center")
+      .setFontFamily("Calibri")
+      .setFontSize(10);
 
   } catch (e) {
     Logger.log('Error formatting summary section: ' + e);
@@ -535,7 +542,8 @@ function formatSalespersonSection(sheet, rowCount) {
     dataRange
       .setFontFamily("Calibri")
       .setFontSize(10)
-      .setHorizontalAlignment("center");
+      .setHorizontalAlignment("center")
+      .setFontWeight("bold");
 
     // Set number formats
     sheet.getRange(9, ANALYTICS_START_COL + 1, rowCount, 3) // Columns T-V (counts)
@@ -557,9 +565,9 @@ function formatSalespersonSection(sheet, rowCount) {
  * Performs validation checks on analytics data before writing to sheet.
  * Ensures all required fields are present and valid.
  * Checks for data integrity issues (negative counts, missing names, etc.).
- * 
+ *
  * @param {Object} analyticsData - Analytics data to validate
- * 
+ *
  * @returns {Array<string>} Array of validation error messages (empty if valid)
  */
 function validateAnalyticsData(analyticsData) {
@@ -585,8 +593,8 @@ function validateAnalyticsData(analyticsData) {
     }
 
     // Check for negative values
-    if (analyticsData.totals.delivered < 0 || 
-        analyticsData.totals.newDelivered < 0 || 
+    if (analyticsData.totals.delivered < 0 ||
+        analyticsData.totals.newDelivered < 0 ||
         analyticsData.totals.usedDelivered < 0) {
       errors.push("Negative count values detected");
     }
@@ -621,7 +629,7 @@ function validateAnalyticsData(analyticsData) {
 
 /**
  * Creates an empty analytics object for when MONTHLY sheet is empty.
- * 
+ *
  * @returns {Object} Empty analytics object
  */
 function createEmptyAnalytics() {
@@ -670,7 +678,7 @@ function refreshAnalyticsManually() {
       writeAnalyticsToMonthly(analyticsData, sheets.monthly);
 
       // Show summary to user
-      const summary = 
+      const summary =
         `Total Delivered: ${analyticsData.totals.delivered}\n` +
         `New: ${analyticsData.totals.newDelivered}\n` +
         `Used: ${analyticsData.totals.usedDelivered}\n\n` +

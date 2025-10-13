@@ -64,19 +64,7 @@ I've analyzed all 6 files (6,909 total lines) focusing on error handling, robust
 
 ---
 
-## 🟠 MAJOR ISSUES (Significant Maintenance/UX Impact)
-
-### 7. **Magic Numbers Everywhere**
-
-**Examples:** `300` at [`core_saleslogPro.js:240`](src/core_saleslogPro.js:240), `60` at [`sync_service.js:726`](src/sync_service.js:726), `600` at [`config_service.js:14`](src/config_service.js:14)
-
-**Impact:** Difficult to tune, inconsistent timeouts, hard to debug
-
-**Fix:** Create centralized constants file for all timeouts, TTLs, and thresholds.
-
----
-
-### 8. **Poor Error Context for Users** - [`sync_service.js:105`](src/sync_service.js:105)
+### 8. **Poor Error Context for Users** - FIXED [`sync_service.js:105`](src/sync_service.js:105)
 
 **Problem:** Generic error toasts like "Edit rejected: Validation failed" don't tell users which field failed or why.
 
@@ -86,13 +74,25 @@ I've analyzed all 6 files (6,909 total lines) focusing on error handling, robust
 
 ---
 
-### 9. **OnEdit Fires for Every Cell** - [`sync_service.js:34`](src/sync_service.js:34)
+### 9. **OnEdit Fires for Every Cell** - FIXED [`sync_service.js:34`](src/sync_service.js:34)
 
 **Problem:** [`onEditSalespeopleSheet()`](src/sync_service.js:34) runs on ALL edits including formatting, column resizes.
 
 **Impact:** Lock contention, slow UI, quota waste
 
 **Fix:** Skip if `e.oldValue === e.value` (formatting-only change).
+
+---
+
+## 🟠 MAJOR ISSUES (Significant Maintenance/UX Impact)
+
+### 7. **Magic Numbers Everywhere**
+
+**Examples:** `300` at [`core_saleslogPro.js:240`](src/core_saleslogPro.js:240), `60` at [`sync_service.js:726`](src/sync_service.js:726), `600` at [`config_service.js:14`](src/config_service.js:14)
+
+**Impact:** Difficult to tune, inconsistent timeouts, hard to debug
+
+**Fix:** Create centralized constants file for all timeouts, TTLs, and thresholds.
 
 ---
 
