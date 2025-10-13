@@ -113,7 +113,6 @@
   // Populate date settings
   if (config.dates) {
     document.getElementById('skip-sundays').checked = config.dates.skipSundays;
-    document.getElementById('monday-logs-saturday').checked = config.dates.mondayLogsSaturday;
     document.getElementById('archive-format').value = config.dates.archiveFormat || 'M/YY';
   }
 
@@ -404,9 +403,10 @@ window.resetVisualDefaults = function() {
 // ========================================================================
 
 window.saveDateSettings = function() {
+  const skipSundaysValue = document.getElementById('skip-sundays').checked;
   const dates = {
-    skipSundays: document.getElementById('skip-sundays').checked,
-    mondayLogsSaturday: document.getElementById('monday-logs-saturday').checked,
+    skipSundays: skipSundaysValue,
+    mondayLogsSaturday: skipSundaysValue,
     archiveFormat: document.getElementById('archive-format').value
   };
 
@@ -431,7 +431,6 @@ window.resetDateDefaults = function() {
   }
 
   document.getElementById('skip-sundays').checked = true;
-  document.getElementById('monday-logs-saturday').checked = true;
   document.getElementById('archive-format').value = 'M/YY';
 
   showToast('Defaults restored. Click "Save Date Settings" to apply.', 'success');
