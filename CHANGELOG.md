@@ -8,13 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [8.1.0] - 2025-10-13
 
 ### Added
+
 - **Lock Retry Logic**: Automatic retry with exponential backoff for all lock acquisitions
+
   - New utility module: [`utilities_locks.js`](src/utilities_locks.js) with `acquireScriptLockWithRetry()`
   - Configuration: 100ms initial delay, 5 attempts, 2x backoff multiplier, 30s timeout per attempt
   - Retry schedule: 100ms → 200ms → 400ms → 800ms → 1600ms (total ~3.1s plus lock timeouts)
   - Affects: Configuration updates, daily processing, sheet synchronization operations
   - User benefit: Operations automatically retry under lock contention instead of failing immediately
-  
+
 - **PropertiesService Size Validation**: Automatic monitoring and cleanup of sync metadata
   - Size threshold: 8KB (with 9KB hard limit for safety margin)
   - Warning threshold: 6KB (75% of limit) triggers logging
@@ -24,7 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User benefit: Prevents quota errors, automatic maintenance, no user action required
 
 ### Improved
+
 - **Cache Operations**: Non-fatal error handling for all cache invalidations
+
   - Operations continue successfully even if cache service fails
   - Cache expires naturally within TTL period (5-10 minutes depending on data type)
   - Comprehensive logging with severity levels (CRITICAL, HIGH, MEDIUM)
@@ -33,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User benefit: Improved reliability - cache issues no longer cause operation failures
 
 - **Event Triggers**: Robust error handling for onOpen trigger
+
   - User-facing notifications via toast message (10-second duration)
   - Graceful degradation when menu creation fails - spreadsheet remains functional
   - Defensive programming with comprehensive try-catch-finally blocks
@@ -41,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User benefit: Clear error notifications instead of silent failures, better debugging
 
 - **Sheet Validation**: Formalized best practices for sheet existence checks
+
   - Documented standard pattern using [`getSheets()`](src/core_saleslogPro.js#L125)
   - Comprehensive error messages specify exactly which sheets are missing
   - Consistent usage pattern across entire codebase
@@ -56,24 +62,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User benefit: Concurrent access handled gracefully with automatic retry
 
 ### Technical Details
+
 - **Performance Impact**:
+
   - Lock retry: <10ms overhead for typical operations (no contention), 100-3100ms during retries
   - Cache operations: <1ms overhead for try-catch wrapping
   - Size validation: <10ms for normal sizes, 50-100ms during cleanup operations
   - Overall: 99% of operations see <10ms overhead
-  
+
 - **Backward Compatibility**: All changes are non-breaking and transparent to users
+
   - Existing configurations work without modification
   - No migration required
   - No changes to user-facing APIs
   - No changes to data structures or storage formats
-  
+
 - **Error Messages**: Enhanced with detailed context and actionable information
+
   - Lock timeouts now specify retry attempts and total wait time
   - Cache failures logged with operation context for debugging
   - Size warnings include current size and threshold information
   - All errors include severity level for proper alerting
-  
+
 - **Logging**: Comprehensive logging with severity levels
   - CRITICAL: System errors requiring immediate attention
   - HIGH: Important warnings that may need investigation
@@ -82,6 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Size validation progress logged at appropriate levels
 
 ### Migration Notes
+
 No migration required. All changes are backward compatible and transparent to users.
 
 - Existing installations automatically benefit from new error handling
@@ -91,6 +102,7 @@ No migration required. All changes are backward compatible and transparent to us
 - Enhanced logging provides better visibility into system operations
 
 ### Developer Notes
+
 For developers extending or customizing Sales Log Pro:
 
 - Use `acquireScriptLockWithRetry()` instead of direct `LockService.getScriptLock()`
@@ -104,6 +116,7 @@ For developers extending or customizing Sales Log Pro:
 ## [8.0.0] - 2025-10-10
 
 ### Added
+
 - **Settings UI Sidebar**: Comprehensive three-tab configuration interface
   - General Settings: Application-wide preferences and behavior
   - Advanced Settings: Storage backend configuration and technical options
@@ -128,6 +141,7 @@ For developers extending or customizing Sales Log Pro:
   - Progress tracking throughout setup process
 
 ### Changed
+
 - **Configuration Management**: Migrated from hardcoded constants to dynamic storage
 - **Data Validation**: Enhanced input validation across all forms and interfaces
 - **User Interface**: Modernized sidebar design with improved usability
@@ -135,6 +149,7 @@ For developers extending or customizing Sales Log Pro:
 - **Error Handling**: More descriptive error messages and recovery options
 
 ### Security
+
 - **XSS Prevention**: Implemented comprehensive cross-site scripting protections
   - HTML sanitization for all user-supplied content
   - Safe rendering of dynamic content in templates
@@ -143,6 +158,7 @@ For developers extending or customizing Sales Log Pro:
 - **Access Control**: Enhanced permission checking for sensitive operations
 
 ### Fixed
+
 - Resolved edge cases in date calculations for analytics
 - Fixed salesperson name handling with special characters
 - Improved error recovery in setup wizard
@@ -166,6 +182,7 @@ Legacy versions 6.0.0 through 6.9.x established core functionality and initial r
 ## Version History Notes
 
 For detailed information about versions prior to 8.0.0, including:
+
 - Complete feature lists
 - Bug fixes and improvements
 - Migration guides

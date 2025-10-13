@@ -3,9 +3,11 @@
 ## 1. Module Overview
 
 ### Purpose
+
 The Sales Analytics Module provides real-time and historical sales performance metrics for the Sales Log Pro system. It automatically calculates comprehensive sales statistics during daily processing and preserves them for month-end analysis.
 
 ### Scope
+
 - **Total Sales Metrics**: Month-to-date delivered unit counts (total, new, used)
 - **Per-Salesperson Analytics**: Individual performance breakdowns by inventory type
 - **Automated Integration**: Seamless integration with existing `processDaily()` workflow
@@ -13,7 +15,9 @@ The Sales Analytics Module provides real-time and historical sales performance m
 - **MONTHLY Sheet Storage**: Results written to columns S-Z for visibility and rollover compatibility
 
 ### Integration Approach
+
 The module follows a **non-invasive augmentation pattern**:
+
 1. Extends existing `processDaily()` function to call analytics after successful daily log
 2. Integrates with `rolloverMonth()` to preserve analytics in archived sheets
 3. Uses existing data access patterns and utilities without modification
@@ -26,6 +30,7 @@ The module follows a **non-invasive augmentation pattern**:
 ### Public Functions
 
 #### `calculateMonthlyAnalytics()`
+
 Primary entry point for generating current month analytics.
 
 ```javascript
@@ -33,9 +38,9 @@ Primary entry point for generating current month analytics.
  * Calculates comprehensive sales analytics for the current month.
  * Reads all data from MONTHLY sheet, processes by salesperson and inventory type,
  * and writes results to columns S-Z on MONTHLY sheet.
- * 
+ *
  * Uses existing utilities: getSalespersonMaps(), tallyCounts(), memoizedGetSellingDays()
- * 
+ *
  * @returns {Object} Analytics summary object containing:
  *   - totalSales: {number} Total delivered units (new + used)
  *   - newSales: {number} Total new inventory delivered
@@ -43,13 +48,14 @@ Primary entry point for generating current month analytics.
  *   - perSalesperson: {Array<Object>} Individual salesperson metrics
  *   - timestamp: {string} ISO timestamp of calculation
  *   - errorCount: {number} Count of data quality issues encountered
- * 
+ *
  * @throws {Error} If MONTHLY sheet is missing or has insufficient columns
  */
 function calculateMonthlyAnalytics()
 ```
 
 #### `writeAnalyticsToMonthly(analyticsData, monthlySheet)`
+
 Writes analytics results to MONTHLY sheet starting at column S.
 
 ```javascript
@@ -57,7 +63,7 @@ Writes analytics results to MONTHLY sheet starting at column S.
  * Writes analytics data to MONTHLY sheet in designated columns (S-Z).
  * Creates formatted summary section at top of sheet with headers and totals.
  * Writes per-salesperson breakdown below summary section.
- * 
+ *
  * Column Layout:
  *   S: Salesperson Name
  *   T: New Sales Count
@@ -67,17 +73,18 @@ Writes analytics results to MONTHLY sheet starting at column S.
  *   X: Reserved for future metrics
  *   Y: Reserved for future metrics
  *   Z: Reserved for future metrics
- * 
+ *
  * @param {Object} analyticsData - Output from calculateMonthlyAnalytics()
  * @param {GoogleAppsScript.Spreadsheet.Sheet} monthlySheet - MONTHLY sheet reference
  * @returns {void}
- * 
+ *
  * @throws {Error} If sheet has insufficient columns or data is malformed
  */
 function writeAnalyticsToMonthly(analyticsData, monthlySheet)
 ```
 
 #### `getMonthlyAnalyticsSummary()`
+
 Retrieves current analytics without recalculation (read-only).
 
 ```javascript
@@ -85,10 +92,10 @@ Retrieves current analytics without recalculation (read-only).
  * Reads existing analytics data from MONTHLY sheet columns S-Z.
  * Returns parsed analytics object without performing new calculations.
  * Useful for displaying current state or exporting data.
- * 
+ *
  * @returns {Object|null} Analytics object or null if no analytics exist
  *   - Same structure as calculateMonthlyAnalytics() return value
- * 
+ *
  * @throws {Error} If analytics data is corrupted or unreadable
  */
 function getMonthlyAnalyticsSummary()
@@ -97,6 +104,7 @@ function getMonthlyAnalyticsSummary()
 ### Private/Helper Functions
 
 #### `processMonthlyDataForAnalytics(monthlyData, aliasMap)`
+
 Core data processing function that analyzes MONTHLY sheet data.
 
 ```javascript
@@ -105,10 +113,10 @@ Core data processing function that analyzes MONTHLY sheet data.
  * Filters for delivered deals only (single-letter FI flags A-Z).
  * Separates new vs. used inventory based on column positions.
  * Handles split sales (e.g., "John/Jane") with 0.5 credit each.
- * 
+ *
  * @param {Array<Array>} monthlyData - 2D array from MONTHLY sheet (columns A-N)
  * @param {Object} aliasMap - Salesperson alias mapping from getSalespersonMaps()
- * 
+ *
  * @returns {Object} Processed analytics data:
  *   - totalNew: {number} Total new units delivered
  *   - totalUsed: {number} Total used units delivered
@@ -119,6 +127,7 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap)
 ```
 
 #### `formatAnalyticsForDisplay(processedData, displayCodeMap)`
+
 Formats analytics data for human-readable output.
 
 ```javascript
@@ -127,16 +136,17 @@ Formats analytics data for human-readable output.
  * Sorts salespeople by total sales (descending).
  * Calculates team percentages.
  * Maps full names to display codes for compact presentation.
- * 
+ *
  * @param {Object} processedData - Output from processMonthlyDataForAnalytics()
  * @param {Object} displayCodeMap - Display code mapping from getSalespersonMaps()
- * 
+ *
  * @returns {Object} Formatted analytics ready for writeAnalyticsToMonthly()
  */
 function formatAnalyticsForDisplay(processedData, displayCodeMap)
 ```
 
 #### `validateAnalyticsData(analyticsData)`
+
 Validates analytics data structure and values.
 
 ```javascript
@@ -144,9 +154,9 @@ Validates analytics data structure and values.
  * Performs validation checks on analytics data before writing to sheet.
  * Ensures all required fields are present and valid.
  * Checks for data integrity issues (negative counts, missing names, etc.).
- * 
+ *
  * @param {Object} analyticsData - Analytics data to validate
- * 
+ *
  * @returns {Array<string>} Array of validation error messages (empty if valid)
  */
 function validateAnalyticsData(analyticsData)
@@ -159,34 +169,36 @@ function validateAnalyticsData(analyticsData)
 ### Input Data Format
 
 #### MONTHLY Sheet Row Structure (Columns A-N)
+
 ```javascript
 // Each row in MONTHLY sheet:
 [
-  sequenceNum,      // Col A: Sequential number (1, 2, 3...)
-  newFI,            // Col B: New car Finance Indicator (blank or A-Z)
-  newFI,            // Col C: New car FI (duplicate for compatibility)
-  newStock,         // Col D: New car stock number
-  newPrice,         // Col E: New car price
-  newTrade,         // Col F: New car trade-in
-  newSalesperson,   // Col G: New car salesperson name/alias
-  blank,            // Col H: Separator
-  usedFI,           // Col I: Used car Finance Indicator (blank or A-Z)
-  usedFI,           // Col J: Used car FI (duplicate)
-  usedStock,        // Col K: Used car stock number
-  usedPrice,        // Col L: Used car price
-  usedTrade,        // Col M: Used car trade-in
-  usedSalesperson   // Col N: Used car salesperson name/alias
-]
+  sequenceNum, // Col A: Sequential number (1, 2, 3...)
+  newFI, // Col B: New car Finance Indicator (blank or A-Z)
+  newFI, // Col C: New car FI (duplicate for compatibility)
+  newStock, // Col D: New car stock number
+  newPrice, // Col E: New car price
+  newTrade, // Col F: New car trade-in
+  newSalesperson, // Col G: New car salesperson name/alias
+  blank, // Col H: Separator
+  usedFI, // Col I: Used car Finance Indicator (blank or A-Z)
+  usedFI, // Col J: Used car FI (duplicate)
+  usedStock, // Col K: Used car stock number
+  usedPrice, // Col L: Used car price
+  usedTrade, // Col M: Used car trade-in
+  usedSalesperson, // Col N: Used car salesperson name/alias
+];
 ```
 
 ### Output Data Format
 
 #### Analytics Object Structure
+
 ```javascript
 {
   version: "1.0",                    // Analytics format version
   timestamp: "2025-01-15T10:30:00Z", // ISO 8601 timestamp
-  
+
   // Month-level totals
   totals: {
     delivered: 45,        // Total delivered units (new + used)
@@ -195,7 +207,7 @@ function validateAnalyticsData(analyticsData)
     monthStartDate: "1/1", // Month start (M/D format)
     lastUpdateDate: "1/15" // Last calculation date
   },
-  
+
   // Per-salesperson breakdown
   salespersonMetrics: [
     {
@@ -218,7 +230,7 @@ function validateAnalyticsData(analyticsData)
     }
     // ... additional salespeople
   ],
-  
+
   // Data quality metrics
   dataQuality: {
     unknownSalespeople: [],        // Array of unrecognized inputs
@@ -229,51 +241,19 @@ function validateAnalyticsData(analyticsData)
 }
 ```
 
-#### MONTHLY Sheet Analytics Columns (S-Z)
-
-**Summary Section (Rows 1-10)**
-```
-Row 1: "MONTHLY ANALYTICS" (merged S1:Z1)
-Row 2: Headers ["Metric", "Value", "", "", "", "", "", ""]
-Row 3: ["Total Delivered", 45, "", "", "", "", "", ""]
-Row 4: ["New Delivered", 28, "", "", "", "", "", ""]
-Row 5: ["Used Delivered", 17, "", "", "", "", "", ""]
-Row 6: ["Last Updated", "1/15/2025 10:30 AM", "", "", "", "", "", ""]
-Row 7: Blank separator
-Row 8: Headers ["Salesperson", "New", "Used", "Total", "% of Team", "", "", ""]
-Row 9: Blank separator
-Row 10+: Salesperson data rows
-```
-
-**Salesperson Data Rows (Starting Row 10)**
-```javascript
-// Column layout for each salesperson row:
-[
-  displayCode,    // Col S: "JD"
-  newSales,       // Col T: 8.5
-  usedSales,      // Col U: 4.0
-  totalSales,     // Col V: 12.5
-  percentOfTeam,  // Col W: 27.8
-  "",             // Col X: Reserved
-  "",             // Col Y: Reserved
-  rank            // Col Z: 1
-]
-```
-
-### Internal Data Structures
-
 #### Salesperson Metrics Accumulator
+
 ```javascript
 // Used during data processing
 const salespersonAccumulator = {
   "John Doe": {
     newCount: 0,
-    usedCount: 0
+    usedCount: 0,
   },
   "Jane Smith": {
     newCount: 0,
-    usedCount: 0
-  }
+    usedCount: 0,
+  },
   // ... etc
 };
 ```
@@ -284,7 +264,7 @@ const salespersonAccumulator = {
 
 ### High-Level Flow Diagram
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    processDaily()                            │
 │  (Existing function - modified to call analytics)           │
@@ -388,6 +368,7 @@ const salespersonAccumulator = {
 ### Detailed Processing Steps
 
 #### Step 1-4: Data Acquisition
+
 ```javascript
 // In calculateMonthlyAnalytics():
 const sheets = getSheets(); // Existing utility
@@ -400,27 +381,32 @@ const monthlyData = monthlySheet.getRange(2, 1, lastRow - 1, 14).getValues();
 ```
 
 #### Step 5-8: Data Processing
+
 ```javascript
 // In processMonthlyDataForAnalytics():
 const metrics = {
   totalNew: 0,
   totalUsed: 0,
-  salespersonAccumulator: {}
+  salespersonAccumulator: {},
 };
 
-monthlyData.forEach(row => {
+monthlyData.forEach((row) => {
   // New car section (columns B-G, indices 1-6)
-  const newFI = String(row[2] || "").trim().toUpperCase(); // Col C (index 2)
+  const newFI = String(row[2] || "")
+    .trim()
+    .toUpperCase(); // Col C (index 2)
   const newSalesperson = String(row[6] || "").trim(); // Col G (index 6)
-  
+
   if (/^[A-Z]$/.test(newFI) && newSalesperson) {
     processNewSale(newSalesperson, metrics, aliasMap);
   }
-  
+
   // Used car section (columns I-N, indices 8-13)
-  const usedFI = String(row[9] || "").trim().toUpperCase(); // Col J (index 9)
+  const usedFI = String(row[9] || "")
+    .trim()
+    .toUpperCase(); // Col J (index 9)
   const usedSalesperson = String(row[13] || "").trim(); // Col N (index 13)
-  
+
   if (/^[A-Z]$/.test(usedFI) && usedSalesperson) {
     processUsedSale(usedSalesperson, metrics, aliasMap);
   }
@@ -428,15 +414,16 @@ monthlyData.forEach(row => {
 ```
 
 #### Step 9-15: Formatting and Validation
+
 ```javascript
 // In formatAnalyticsForDisplay():
 const formatted = {
   totals: {
     delivered: metrics.totalNew + metrics.totalUsed,
     newDelivered: metrics.totalNew,
-    usedDelivered: metrics.totalUsed
+    usedDelivered: metrics.totalUsed,
   },
-  salespersonMetrics: []
+  salespersonMetrics: [],
 };
 
 // Convert accumulator to array and sort
@@ -446,7 +433,7 @@ Object.entries(metrics.salespersonAccumulator).forEach(([fullName, counts]) => {
     displayCode: displayCodeMap[fullName] || fullName,
     newSales: counts.newCount,
     usedSales: counts.usedCount,
-    totalSales: counts.newCount + counts.usedCount
+    totalSales: counts.newCount + counts.usedCount,
   });
 });
 
@@ -455,37 +442,52 @@ formatted.salespersonMetrics.sort((a, b) => b.totalSales - a.totalSales);
 // Calculate percentages and ranks
 const teamTotal = formatted.totals.delivered;
 formatted.salespersonMetrics.forEach((person, index) => {
-  person.percentOfTeam = teamTotal > 0 ? (person.totalSales / teamTotal * 100) : 0;
+  person.percentOfTeam =
+    teamTotal > 0 ? (person.totalSales / teamTotal) * 100 : 0;
   person.rank = index + 1;
 });
 ```
 
 #### Step 16-20: Writing to Sheet
+
 ```javascript
 // In writeAnalyticsToMonthly():
 const ANALYTICS_START_COL = 19; // Column S (1-indexed)
 
 // Clear existing analytics
-monthlySheet.getRange(1, ANALYTICS_START_COL, monthlySheet.getMaxRows(), 8).clear();
+monthlySheet
+  .getRange(1, ANALYTICS_START_COL, monthlySheet.getMaxRows(), 8)
+  .clear();
 
 // Build data arrays for batch write
 const summaryData = [
   ["MONTHLY ANALYTICS", "", "", "", "", "", "", ""], // Row 1 (will merge)
-  ["Metric", "Value", "", "", "", "", "", ""],       // Row 2
+  ["Metric", "Value", "", "", "", "", "", ""], // Row 2
   ["Total Delivered", analyticsData.totals.delivered, "", "", "", "", "", ""],
   ["New Delivered", analyticsData.totals.newDelivered, "", "", "", "", "", ""],
-  ["Used Delivered", analyticsData.totals.usedDelivered, "", "", "", "", "", ""],
+  [
+    "Used Delivered",
+    analyticsData.totals.usedDelivered,
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ],
   ["Last Updated", new Date().toLocaleString(), "", "", "", "", "", ""],
   ["", "", "", "", "", "", "", ""], // Row 7 (separator)
   ["Salesperson", "New", "Used", "Total", "% of Team", "", "", "Rank"], // Row 8
-  ["", "", "", "", "", "", "", ""]  // Row 9 (separator)
+  ["", "", "", "", "", "", "", ""], // Row 9 (separator)
 ];
 
 // Batch write summary
-monthlySheet.getRange(1, ANALYTICS_START_COL, summaryData.length, 8).setValues(summaryData);
+monthlySheet
+  .getRange(1, ANALYTICS_START_COL, summaryData.length, 8)
+  .setValues(summaryData);
 
 // Build salesperson data array
-const salespersonData = analyticsData.salespersonMetrics.map(person => [
+const salespersonData = analyticsData.salespersonMetrics.map((person) => [
   person.displayCode,
   person.newSales,
   person.usedSales,
@@ -493,12 +495,13 @@ const salespersonData = analyticsData.salespersonMetrics.map(person => [
   person.percentOfTeam,
   "", // Reserved
   "", // Reserved
-  person.rank
+  person.rank,
 ]);
 
 // Batch write salesperson data
 if (salespersonData.length > 0) {
-  monthlySheet.getRange(10, ANALYTICS_START_COL, salespersonData.length, 8)
+  monthlySheet
+    .getRange(10, ANALYTICS_START_COL, salespersonData.length, 8)
     .setValues(salespersonData);
 }
 ```
@@ -508,6 +511,7 @@ if (salespersonData.length > 0) {
 ## 5. Caching Strategy
 
 ### Cache Keys
+
 ```javascript
 const CACHE_KEY_ANALYTICS = "monthlyAnalytics";
 const CACHE_TTL_ANALYTICS = 300; // 5 minutes (consistent with existing patterns)
@@ -516,15 +520,18 @@ const CACHE_TTL_ANALYTICS = 300; // 5 minutes (consistent with existing patterns
 ### Caching Behavior
 
 #### When to Cache
+
 - **After Calculation**: Cache analytics object after `calculateMonthlyAnalytics()` completes
 - **Benefit**: Prevents redundant calculations if analytics are accessed multiple times within 5 minutes
 
 #### When to Invalidate
+
 1. **After `processDaily()`**: New data added, analytics must be recalculated
 2. **After `recalcMtdFromMonthly()`**: MONTHLY data modified, analytics potentially stale
 3. **Manual Clear**: When user manually edits MONTHLY data (cannot auto-detect)
 
 #### Cache Implementation
+
 ```javascript
 function calculateMonthlyAnalytics() {
   // Check cache first
@@ -533,16 +540,20 @@ function calculateMonthlyAnalytics() {
     try {
       return JSON.parse(cached);
     } catch (e) {
-      Logger.log('Analytics cache parse error: ' + e);
+      Logger.log("Analytics cache parse error: " + e);
     }
   }
-  
+
   // Calculate fresh analytics
   const analyticsData = performCalculation();
-  
+
   // Cache the result
-  CACHE.put(CACHE_KEY_ANALYTICS, JSON.stringify(analyticsData), CACHE_TTL_ANALYTICS);
-  
+  CACHE.put(
+    CACHE_KEY_ANALYTICS,
+    JSON.stringify(analyticsData),
+    CACHE_TTL_ANALYTICS
+  );
+
   return analyticsData;
 }
 
@@ -552,6 +563,7 @@ function invalidateAnalyticsCache() {
 ```
 
 ### Cache Dependencies
+
 - **Depends on**: `getSalespersonMaps()` cache (already has 5-minute TTL)
 - **Invalidates with**: Changes to SALESPEOPLE or MONTHLY data
 - **Shared Cache**: Uses same CacheService.getScriptCache() as existing code
@@ -563,45 +575,55 @@ function invalidateAnalyticsCache() {
 ### Error Scenarios and Handling Approaches
 
 #### Scenario 1: Missing MONTHLY Sheet
+
 ```javascript
 // In calculateMonthlyAnalytics()
 try {
   const sheets = getSheets(); // Already throws if sheets missing
   const monthlySheet = sheets.monthly;
 } catch (e) {
-  Logger.log('Analytics error - missing sheet: ' + e);
-  alertError('Cannot calculate analytics: MONTHLY sheet not found', 'Analytics Error');
+  Logger.log("Analytics error - missing sheet: " + e);
+  alertError(
+    "Cannot calculate analytics: MONTHLY sheet not found",
+    "Analytics Error"
+  );
   return null; // Graceful degradation
 }
 ```
 
 #### Scenario 2: Insufficient Columns in MONTHLY
+
 ```javascript
 // In calculateMonthlyAnalytics()
 const maxCols = monthlySheet.getMaxColumns();
-if (maxCols < 26) { // Need columns A-Z (26 columns minimum)
-  const msg = 'MONTHLY sheet needs at least 26 columns (A-Z) for analytics. Current: ' + maxCols;
-  Logger.log('Analytics error: ' + msg);
-  alertError(msg, 'Analytics Error');
+if (maxCols < 26) {
+  // Need columns A-Z (26 columns minimum)
+  const msg =
+    "MONTHLY sheet needs at least 26 columns (A-Z) for analytics. Current: " +
+    maxCols;
+  Logger.log("Analytics error: " + msg);
+  alertError(msg, "Analytics Error");
   return null;
 }
 ```
 
 #### Scenario 3: Empty MONTHLY Sheet (No Data)
+
 ```javascript
 // In calculateMonthlyAnalytics()
 const lastRow = findLastRowInCols(monthlySheet, 1, 14);
 if (lastRow < 2) {
-  Logger.log('Analytics: MONTHLY sheet is empty, returning zero counts');
+  Logger.log("Analytics: MONTHLY sheet is empty, returning zero counts");
   return {
     totals: { delivered: 0, newDelivered: 0, usedDelivered: 0 },
     salespersonMetrics: [],
-    dataQuality: { errorCount: 0, unknownSalespeople: [] }
+    dataQuality: { errorCount: 0, unknownSalespeople: [] },
   };
 }
 ```
 
 #### Scenario 4: Unknown Salesperson Detected
+
 ```javascript
 // In processMonthlyDataForAnalytics()
 const unknownSalespeople = [];
@@ -621,12 +643,13 @@ return {
   // ... other data
   dataQuality: {
     unknownSalespeople: unknownSalespeople,
-    errorCount: unknownSalespeople.length
-  }
+    errorCount: unknownSalespeople.length,
+  },
 };
 ```
 
 #### Scenario 5: Invalid Data in Row (Malformed)
+
 ```javascript
 // In processMonthlyDataForAnalytics()
 monthlyData.forEach((row, index) => {
@@ -642,6 +665,7 @@ monthlyData.forEach((row, index) => {
 ```
 
 #### Scenario 6: Write to Sheet Fails
+
 ```javascript
 // In writeAnalyticsToMonthly()
 try {
@@ -656,6 +680,7 @@ try {
 ```
 
 #### Scenario 7: Date Boundary Issues (Month Rollover During Processing)
+
 ```javascript
 // In calculateMonthlyAnalytics()
 const processingStartTime = new Date();
@@ -664,22 +689,29 @@ const processingStartTime = new Date();
 
 const processingEndTime = new Date();
 if (processingStartTime.getMonth() !== processingEndTime.getMonth()) {
-  Logger.log('Warning: Month changed during analytics calculation. Results may be inconsistent.');
+  Logger.log(
+    "Warning: Month changed during analytics calculation. Results may be inconsistent."
+  );
   // Include warning in analytics object
-  analyticsData.warnings = ['Month changed during calculation'];
+  analyticsData.warnings = ["Month changed during calculation"];
 }
 ```
 
 ### Error Logging Pattern
+
 ```javascript
 // Follow existing pattern from 7.9.8.js
 function safeAnalyticsCalculation() {
   try {
     return calculateMonthlyAnalytics();
   } catch (e) {
-    Logger.log('Error in analytics: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    Logger.log(
+      "Error in analytics: " +
+        e.toString() +
+        (e.stack ? "\nStack: " + e.stack : "")
+    );
     // Optionally alert user if critical
-    alertError('Analytics calculation failed: ' + e.message, 'Analytics Error');
+    alertError("Analytics calculation failed: " + e.message, "Analytics Error");
     return null; // Return null to indicate failure
   }
 }
@@ -694,12 +726,13 @@ function safeAnalyticsCalculation() {
 The analytics module respects existing configuration settings:
 
 #### 1. Date Settings
+
 ```javascript
 // From config_service.js
 function calculateMonthlyAnalytics() {
   // Respect skipSundays setting for date calculations
   const skipSundays = shouldSkipSundays(); // From config_service.js
-  
+
   // Use in selling days calculations if needed
   const { daysElapsed, totalDays } = memoizedGetSellingDays(year, month);
   // This already respects skipSundays configuration
@@ -707,9 +740,11 @@ function calculateMonthlyAnalytics() {
 ```
 
 #### 2. Visual Configuration
+
 ```javascript
 // Analytics output can use configured colors for formatting
-const ANALYTICS_HEADER_COLOR = getColor('leaderboardZeroMtdBgColor') || "#F0F8FF";
+const ANALYTICS_HEADER_COLOR =
+  getColor("leaderboardZeroMtdBgColor") || "#F0F8FF";
 const ANALYTICS_HIGHLIGHT_COLOR = "#E8F5E9"; // Light green for top performers
 
 // Apply in writeAnalyticsToMonthly():
@@ -717,6 +752,7 @@ summaryRange.setBackground(ANALYTICS_HEADER_COLOR);
 ```
 
 #### 3. Salesperson Configuration
+
 ```javascript
 // Analytics automatically uses current salesperson configuration
 // via getSalespersonMaps() which reads from Properties Service
@@ -733,6 +769,7 @@ const { aliasMap, displayCodeMap } = getSalespersonMaps();
 ### No New Configuration Needed
 
 The analytics module requires **no new configuration settings**. It leverages:
+
 - Existing salesperson data
 - Existing date configuration
 - Existing visual configuration (optional for formatting)
@@ -770,12 +807,15 @@ function shouldCalculateAnalytics() {
 ### File Structure
 
 **Primary Implementation**: `sales_analytics.js` (new file)
+
 - Contains all analytics-specific functions
 - Imports/references existing utilities from `7.9.8.js` and `config_service.js`
 - Follows same code style and patterns
 
 **Modified Files**:
+
 1. **`7.9.8.js`**
+
    - Modify `processDaily()` to call analytics after successful completion
    - Modify `rolloverMonth()` to preserve analytics columns during archive
    - Add menu item for manual analytics refresh (optional)
@@ -790,7 +830,7 @@ function shouldCalculateAnalytics() {
 /**
  * sales_analytics.js
  * Sales Analytics Module for Sales Log Pro
- * 
+ *
  * Provides comprehensive sales metrics including total sales,
  * new/used breakdowns, and per-salesperson analytics.
  */
@@ -799,7 +839,7 @@ function shouldCalculateAnalytics() {
 // MODULE CONSTANTS
 // ============================================================================
 const ANALYTICS_START_COL = 19; // Column S (1-indexed)
-const ANALYTICS_COL_COUNT = 8;  // Columns S through Z
+const ANALYTICS_COL_COUNT = 8; // Columns S through Z
 const CACHE_KEY_ANALYTICS = "monthlyAnalytics";
 const CACHE_TTL_ANALYTICS = 300; // 5 minutes
 
@@ -810,22 +850,30 @@ const CACHE_TTL_ANALYTICS = 300; // 5 minutes
 /**
  * Main entry point - calculates all analytics
  */
-function calculateMonthlyAnalytics() { /* ... */ }
+function calculateMonthlyAnalytics() {
+  /* ... */
+}
 
 /**
  * Writes analytics to MONTHLY sheet
  */
-function writeAnalyticsToMonthly(analyticsData, monthlySheet) { /* ... */ }
+function writeAnalyticsToMonthly(analyticsData, monthlySheet) {
+  /* ... */
+}
 
 /**
  * Reads existing analytics without recalculation
  */
-function getMonthlyAnalyticsSummary() { /* ... */ }
+function getMonthlyAnalyticsSummary() {
+  /* ... */
+}
 
 /**
  * Invalidates analytics cache
  */
-function invalidateAnalyticsCache() { /* ... */ }
+function invalidateAnalyticsCache() {
+  /* ... */
+}
 
 // ============================================================================
 // DATA PROCESSING FUNCTIONS
@@ -834,22 +882,30 @@ function invalidateAnalyticsCache() { /* ... */ }
 /**
  * Core processing logic
  */
-function processMonthlyDataForAnalytics(monthlyData, aliasMap) { /* ... */ }
+function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
+  /* ... */
+}
 
 /**
  * Processes a single new car sale
  */
-function processNewSale(salespersonInput, metrics, aliasMap) { /* ... */ }
+function processNewSale(salespersonInput, metrics, aliasMap) {
+  /* ... */
+}
 
 /**
  * Processes a single used car sale
  */
-function processUsedSale(salespersonInput, metrics, aliasMap) { /* ... */ }
+function processUsedSale(salespersonInput, metrics, aliasMap) {
+  /* ... */
+}
 
 /**
  * Handles split sales (e.g., "John/Jane")
  */
-function processSplitSale(salespersonInput, saleType, metrics, aliasMap) { /* ... */ }
+function processSplitSale(salespersonInput, saleType, metrics, aliasMap) {
+  /* ... */
+}
 
 // ============================================================================
 // FORMATTING FUNCTIONS
@@ -858,17 +914,23 @@ function processSplitSale(salespersonInput, saleType, metrics, aliasMap) { /* ..
 /**
  * Formats processed data for display
  */
-function formatAnalyticsForDisplay(processedData, displayCodeMap) { /* ... */ }
+function formatAnalyticsForDisplay(processedData, displayCodeMap) {
+  /* ... */
+}
 
 /**
  * Builds summary section data array
  */
-function buildSummarySection(analyticsData) { /* ... */ }
+function buildSummarySection(analyticsData) {
+  /* ... */
+}
 
 /**
  * Builds salesperson data array
  */
-function buildSalespersonSection(analyticsData) { /* ... */ }
+function buildSalespersonSection(analyticsData) {
+  /* ... */
+}
 
 // ============================================================================
 // VALIDATION FUNCTIONS
@@ -877,12 +939,16 @@ function buildSalespersonSection(analyticsData) { /* ... */ }
 /**
  * Validates analytics data structure
  */
-function validateAnalyticsData(analyticsData) { /* ... */ }
+function validateAnalyticsData(analyticsData) {
+  /* ... */
+}
 
 /**
  * Validates MONTHLY sheet for analytics compatibility
  */
-function validateMonthlySheetForAnalytics(sheet) { /* ... */ }
+function validateMonthlySheetForAnalytics(sheet) {
+  /* ... */
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -891,12 +957,16 @@ function validateMonthlySheetForAnalytics(sheet) { /* ... */ }
 /**
  * Applies formatting to analytics range
  */
-function formatAnalyticsRange(sheet, startRow, endRow) { /* ... */ }
+function formatAnalyticsRange(sheet, startRow, endRow) {
+  /* ... */
+}
 
 /**
  * Creates analytics header row
  */
-function createAnalyticsHeader() { /* ... */ }
+function createAnalyticsHeader() {
+  /* ... */
+}
 ```
 
 ### Integration Points in `7.9.8.js`
@@ -906,7 +976,7 @@ function createAnalyticsHeader() { /* ... */ }
 function processDaily() {
   withScriptLock(() => {
     // ... existing code ...
-    
+
     // After successful daily processing and before final cleanup
     try {
       Logger.log("Calculating monthly analytics...");
@@ -917,9 +987,11 @@ function processDaily() {
       }
     } catch (analyticsError) {
       // Log but don't fail processDaily if analytics fails
-      Logger.log("Analytics calculation failed (non-critical): " + analyticsError);
+      Logger.log(
+        "Analytics calculation failed (non-critical): " + analyticsError
+      );
     }
-    
+
     // ... continue with existing cleanup code ...
   });
 }
@@ -928,11 +1000,9 @@ function processDaily() {
 function rolloverMonth() {
   withScriptLock(() => {
     // ... existing code ...
-    
     // After archiveSheet is created
     // Analytics columns (S:Z) are automatically included in copyTo()
     // No special handling needed - they transfer with the rest of MONTHLY
-    
     // ... continue with existing code ...
   });
 }
@@ -944,7 +1014,10 @@ function onOpen() {
       .createMenu("Sales Tools")
       .addItem("Log Yesterday's Sales", "processDaily")
       .addSeparator()
-      .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
+      .addItem(
+        "Recalculate MTD & Check Monthly Errors/Formats",
+        "recalcMtdFromMonthly"
+      )
       .addItem("🔄 Refresh Analytics", "refreshAnalyticsManually") // NEW
       .addSeparator()
       .addItem("Start New Month (Rollover)", "rolloverMonth")
@@ -977,27 +1050,32 @@ function refreshAnalyticsManually() {
 ### Logical Grouping
 
 **Tier 1: Public API** (4 functions)
+
 - `calculateMonthlyAnalytics()`
 - `writeAnalyticsToMonthly()`
 - `getMonthlyAnalyticsSummary()`
 - `invalidateAnalyticsCache()`
 
 **Tier 2: Core Processing** (4 functions)
+
 - `processMonthlyDataForAnalytics()`
 - `processNewSale()`
 - `processUsedSale()`
 - `processSplitSale()`
 
 **Tier 3: Formatting** (3 functions)
+
 - `formatAnalyticsForDisplay()`
 - `buildSummarySection()`
 - `buildSalespersonSection()`
 
 **Tier 4: Validation** (2 functions)
+
 - `validateAnalyticsData()`
 - `validateMonthlySheetForAnalytics()`
 
 **Tier 5: Helpers** (2+ functions)
+
 - `formatAnalyticsRange()`
 - `createAnalyticsHeader()`
 - Additional helpers as needed
@@ -1011,6 +1089,7 @@ function refreshAnalyticsManually() {
 **Trigger Point**: End of `processDaily()` function after successful daily log
 
 **Integration Code**:
+
 ```javascript
 // In 7.9.8.js, processDaily() function
 // After line 638 (after cleanup, before final return)
@@ -1021,12 +1100,17 @@ try {
   const analyticsData = calculateMonthlyAnalytics();
   if (analyticsData) {
     writeAnalyticsToMonthly(analyticsData, sheets.monthly);
-    Logger.log("Analytics updated: " + 
-      analyticsData.totals.delivered + " total units delivered this month");
+    Logger.log(
+      "Analytics updated: " +
+        analyticsData.totals.delivered +
+        " total units delivered this month"
+    );
   }
 } catch (analyticsError) {
   // Non-critical error - log but don't fail processDaily
-  Logger.log("Analytics calculation failed (non-critical): " + analyticsError.toString());
+  Logger.log(
+    "Analytics calculation failed (non-critical): " + analyticsError.toString()
+  );
   // Optionally toast a warning to user
   // toastInfo("Note: Analytics update failed. Daily log completed successfully.", "Warning");
 }
@@ -1039,6 +1123,7 @@ try {
 **Trigger Point**: During `rolloverMonth()` archiving process
 
 **Integration Code**:
+
 ```javascript
 // In 7.9.8.js, rolloverMonth() function
 // After line 872 (after archive sheet is created and named)
@@ -1071,6 +1156,7 @@ try {
 **Trigger Point**: `recalcMtdFromMonthly()` function completion
 
 **Integration Code**:
+
 ```javascript
 // In 7.9.8.js, recalcMtdFromMonthly() function
 // After line 838 (after reapplyCF() call, before final toast)
@@ -1083,7 +1169,9 @@ try {
     writeAnalyticsToMonthly(analyticsData, sheets.monthly);
   }
 } catch (analyticsError) {
-  Logger.log("Analytics recalculation failed after MTD refresh: " + analyticsError);
+  Logger.log(
+    "Analytics recalculation failed after MTD refresh: " + analyticsError
+  );
   // Non-critical - don't prevent recalcMtdFromMonthly from completing
 }
 ```
@@ -1098,6 +1186,7 @@ try {
 ```
 
 **Menu Function**:
+
 ```javascript
 function refreshAnalyticsManually() {
   try {
@@ -1105,34 +1194,40 @@ function refreshAnalyticsManually() {
     const response = ui.alert(
       "Refresh Analytics",
       "This will recalculate all monthly analytics from MONTHLY sheet data.\n\n" +
-      "Continue?",
+        "Continue?",
       ui.ButtonSet.YES_NO
     );
-    
+
     if (response !== ui.Button.YES) {
       toastInfo("Analytics refresh cancelled.", "Cancelled");
       return;
     }
-    
+
     toastInfo("Refreshing analytics...", "Working");
     const sheets = getSheets();
     invalidateAnalyticsCache();
     const analyticsData = calculateMonthlyAnalytics();
-    
+
     if (analyticsData) {
       writeAnalyticsToMonthly(analyticsData, sheets.monthly);
-      
+
       // Show summary to user
-      const summary = 
+      const summary =
         `Total Delivered: ${analyticsData.totals.delivered}\n` +
         `New: ${analyticsData.totals.newDelivered}\n` +
         `Used: ${analyticsData.totals.usedDelivered}\n\n` +
-        `Top Performer: ${analyticsData.salespersonMetrics[0]?.displayCode || 'N/A'} ` +
+        `Top Performer: ${
+          analyticsData.salespersonMetrics[0]?.displayCode || "N/A"
+        } ` +
         `(${analyticsData.salespersonMetrics[0]?.totalSales || 0} units)`;
-      
+
       ui.alert("Analytics Refreshed", summary, ui.ButtonSet.OK);
     } else {
-      ui.alert("Analytics Error", "No analytics data was generated.", ui.ButtonSet.OK);
+      ui.alert(
+        "Analytics Error",
+        "No analytics data was generated.",
+        ui.ButtonSet.OK
+      );
     }
   } catch (e) {
     Logger.log("Manual analytics refresh error: " + e.toString());
@@ -1144,6 +1239,7 @@ function refreshAnalyticsManually() {
 ### 9.5 Existing Utility Dependencies
 
 **Required Functions** (from 7.9.8.js and config_service.js):
+
 - `getSheets()` - Sheet reference retrieval
 - `getSalespersonMaps()` - Alias/display code mapping
 - `findLastRowInCols()` - Accurate row detection
@@ -1155,6 +1251,7 @@ function refreshAnalyticsManually() {
 - `Logger.log()` - Logging
 
 **Cache Service Usage**:
+
 ```javascript
 // Analytics shares the same cache instance
 const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
@@ -1165,11 +1262,13 @@ const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
 ### 9.6 Data Dependencies
 
 **Read Operations**:
+
 - MONTHLY sheet: Columns A-N (read-only for analytics)
 - SALESPEOPLE sheet: Via `getSalespersonMaps()` (read-only)
 - Properties Service: Via `getConfiguration()` (read-only, optional)
 
 **Write Operations**:
+
 - MONTHLY sheet: Columns S-Z only (analytics output area)
 - Cache: `CACHE_KEY_ANALYTICS` (isolated from other cache keys)
 
@@ -1177,7 +1276,7 @@ const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
 
 ### 9.7 Trigger Sequence Summary
 
-```
+```text
 1. User clicks "Log Yesterday's Sales"
    ↓
 2. processDaily() executes
@@ -1222,6 +1321,7 @@ const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
 ### Optimization Strategies
 
 #### 1. Batch Operations
+
 ```javascript
 // GOOD: Single batch read
 const monthlyData = monthlySheet.getRange(2, 1, lastRow - 1, 14).getValues();
@@ -1233,6 +1333,7 @@ for (let i = 2; i <= lastRow; i++) {
 ```
 
 #### 2. Minimize API Calls
+
 ```javascript
 // Count API calls in calculateMonthlyAnalytics():
 // 1. getSheets() - reuses existing SS reference
@@ -1243,6 +1344,7 @@ for (let i = 2; i <= lastRow; i++) {
 ```
 
 #### 3. Use Existing Caches
+
 ```javascript
 // Leverage getSalespersonMaps() cache (5 min TTL)
 const { aliasMap, displayCodeMap } = getSalespersonMaps(); // Cached
@@ -1252,6 +1354,7 @@ CACHE.put(CACHE_KEY_ANALYTICS, JSON.stringify(analyticsData), 300);
 ```
 
 #### 4. Avoid Unnecessary Calculations
+
 ```javascript
 // Only calculate if processDaily succeeded
 if (dailyLogSuccess) {
@@ -1266,10 +1369,13 @@ if (cached && !forceRefresh) {
 ```
 
 #### 5. Optimize Data Processing
+
 ```javascript
 // Use array methods instead of loops where possible
 const totalNew = monthlyData.reduce((sum, row) => {
-  const newFI = String(row[2] || "").trim().toUpperCase();
+  const newFI = String(row[2] || "")
+    .trim()
+    .toUpperCase();
   return /^[A-Z]$/.test(newFI) ? sum + 1 : sum;
 }, 0);
 
@@ -1277,23 +1383,26 @@ const totalNew = monthlyData.reduce((sum, row) => {
 const metrics = {
   totalNew: 0,
   totalUsed: 0,
-  salespersonAccumulator: {} // Will grow as needed
+  salespersonAccumulator: {}, // Will grow as needed
 };
 ```
 
 ### Scalability Analysis
 
 **Current Usage**:
+
 - Typical month: 60-100 rows in MONTHLY
 - Busy month: 150-200 rows
 - Large team: 20-30 salespeople
 
 **Performance at Scale**:
+
 - 100 rows × 14 columns = 1,400 cells read (< 1 second)
 - 30 salespeople × 8 columns = 240 cells written (< 1 second)
 - Processing: Linear O(n) complexity (< 1 second for 200 rows)
 
 **Tested Limits**:
+
 - 500 rows: ~3 seconds total
 - 50 salespeople: ~2 seconds total
 - Well within 6-minute Apps Script limit
@@ -1363,27 +1472,32 @@ monthlyData = null; // Allow garbage collection after processing
 ### Potential Features (Out of Scope for Initial Implementation)
 
 1. **Trend Analysis**
+
    - Week-over-week comparisons
    - Month-over-month growth rates
    - Forecast projections based on pace
 
 2. **Advanced Metrics**
+
    - Average sale price by salesperson
    - Trade-in percentage by salesperson
    - New vs. used mix ratios
    - Daily velocity (sales per selling day)
 
 3. **Visual Dashboards**
+
    - Chart generation (bar charts, pie charts)
    - Conditional formatting for top/bottom performers
    - Sparklines for trends
 
 4. **Export Capabilities**
+
    - CSV export of analytics
    - Email reports to management
    - Integration with external BI tools
 
 5. **Comparative Analytics**
+
    - Team vs. individual comparisons
    - This month vs. last month
    - Year-to-date aggregations
@@ -1442,6 +1556,7 @@ The architecture supports future enhancements through:
 ### Rollback Plan
 
 If issues occur:
+
 1. Comment out analytics call in `processDaily()`
 2. Remove menu item for manual refresh
 3. Analytics columns (S-Z) can be manually cleared if needed
@@ -1454,11 +1569,12 @@ If issues occur:
 ### Code Documentation
 
 Each function must include JSDoc comments:
+
 ```javascript
 /**
  * Brief description of function purpose.
  * More detailed explanation if needed.
- * 
+ *
  * @param {Type} paramName - Parameter description
  * @returns {Type} Return value description
  * @throws {Error} When this error occurs
@@ -1475,6 +1591,7 @@ Each function must include JSDoc comments:
 ### User Documentation
 
 Update README.md to include:
+
 - Analytics feature overview
 - Column S-Z explanation
 - How to read analytics output
@@ -1487,16 +1604,17 @@ Update README.md to include:
 
 This architectural design provides a **production-ready blueprint** for implementing the Sales Analytics Module. The design:
 
-✅ **Integrates seamlessly** with existing Sales Log Pro patterns  
-✅ **Follows all conventions** (naming, caching, error handling)  
-✅ **Leverages existing utilities** (no duplication)  
-✅ **Uses batch operations** for optimal performance  
-✅ **Handles edge cases** gracefully  
-✅ **Supports future extensibility** through modular design  
-✅ **Preserves data** through rollover process  
-✅ **Fails gracefully** without breaking core functionality  
+✅ **Integrates seamlessly** with existing Sales Log Pro patterns
+✅ **Follows all conventions** (naming, caching, error handling)
+✅ **Leverages existing utilities** (no duplication)
+✅ **Uses batch operations** for optimal performance
+✅ **Handles edge cases** gracefully
+✅ **Supports future extensibility** through modular design
+✅ **Preserves data** through rollover process
+✅ **Fails gracefully** without breaking core functionality
 
 **Key Metrics**:
+
 - **4 public functions** for clean API
 - **~10 total functions** for complete implementation
 - **< 3 seconds** overhead added to processDaily()

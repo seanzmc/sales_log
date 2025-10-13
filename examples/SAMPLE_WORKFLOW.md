@@ -30,7 +30,7 @@ Before starting this workflow:
 3. Wait for the wizard to complete
 4. Verify all sheets were created:
    - ✅ TODAY
-   - ✅ MONTHLY  
+   - ✅ MONTHLY
    - ✅ SALESPEOPLE
    - ✅ DEPOSITS
 
@@ -47,10 +47,12 @@ Before starting this workflow:
 3. Navigate to **👥 Sales Team** tab
 
 **Remove Example Data**:
+
 1. Delete the 3 example salespeople (John Smith, Jane Doe, Bob Wilson)
 2. Click **Save Changes**
 
 **Import Your Team**:
+
 1. Download [`sample_salespeople.csv`](sample_salespeople.csv)
 2. In Settings sidebar, click **📥 Import from CSV**
 3. Paste the contents of sample_salespeople.csv
@@ -58,8 +60,9 @@ Before starting this workflow:
 5. Verify 10 salespeople were added
 6. Click **Save Changes**
 
-**Expected Result**: 
-```
+**Expected Result**:
+
+```ruby
 ✓ Michael Chen (MC)
 ✓ Sarah Johnson (SJ)
 ✓ Robert Williams (RW)
@@ -92,7 +95,7 @@ Before starting this workflow:
 
 1. In Settings sidebar, go to **📅 Dates** tab
 2. Set **Month Start Day**: 1
-3. Set **Rollover Day**: 1  
+3. Set **Rollover Day**: 1
 4. Click **Save Changes**
 
 **Expected Result**: Month will start on the 1st, rollover will occur on the 1st of next month.
@@ -138,6 +141,7 @@ Before starting this workflow:
 Enter these 3 sales in the New Car section (starting at row 2):
 
 **Row 2**:
+
 - #: 1
 - CUSTOMER: Thompson Robert
 - FI: A
@@ -147,6 +151,7 @@ Enter these 3 sales in the New Car section (starting at row 2):
 - SALES PERSON: MC
 
 **Row 3**:
+
 - #: 2
 - CUSTOMER: Martinez Elena
 - FI: B
@@ -156,6 +161,7 @@ Enter these 3 sales in the New Car section (starting at row 2):
 - SALES PERSON: Sarah Johnson
 
 **Row 4**:
+
 - #: 3
 - CUSTOMER: Williams David
 - FI: (leave blank - pending)
@@ -165,6 +171,7 @@ Enter these 3 sales in the New Car section (starting at row 2):
 - SALES PERSON: RW
 
 **Expected Result**: 3 new car sales entered. Note different input styles:
+
 - "MC" (display code)
 - "Sarah Johnson" (full name)
 - "RW" (alias)
@@ -178,6 +185,7 @@ All three should be recognized when analytics run.
 Enter these 2 sales in the Used Car section (starting at row 2):
 
 **Row 2**:
+
 - CUSTOMER: Johnson Mark
 - FI: A
 - MODEL: F-150
@@ -186,6 +194,7 @@ Enter these 2 sales in the Used Car section (starting at row 2):
 - SALES PERSON: RW
 
 **Row 3**:
+
 - CUSTOMER: Smith Patricia
 - FI: B
 - MODEL: Accord
@@ -205,9 +214,9 @@ Try entering a stock number from the DEPOSITS sheet:
 2. Type: **N24-1215** (this is in DEPOSITS)
 3. Press Enter
 
-**Expected Result**: The entire row should highlight in lime green (#b4ff0c) with red text, indicating this stock is already in deposits.
+   **Expected Result**: The entire row should highlight in lime green (#b4ff0c) with red text, indicating this stock is already in deposits.
 
-**Screenshot Placeholder**: [Row with duplicate stock number highlighted in lime green]
+   > **Screenshot Placeholder**: [Row with duplicate stock number highlighted in lime green]
 
 4. Delete this test entry (clear Row 5)
 
@@ -221,7 +230,8 @@ Try entering a stock number from the DEPOSITS sheet:
 4. Click **OK**
 
 **Expected Result**: Dialog shows:
-```
+
+```ruby
 Analytics updated successfully!
 
 Period: [Current Month]
@@ -237,13 +247,15 @@ Pending Delivery: 1
 2. Review the analytics section (columns S-X):
 
 **Expected Metrics** (approximately):
+
 - **Total New Delivered**: 2
-- **Total Used Delivered**: 2  
+- **Total Used Delivered**: 2
 - **Total Delivered**: 4
 - **Total Pending**: 1
 - **Delivery Rate**: 80% (4 out of 5 funded)
 
 **Expected Salesperson Rankings** (rows 9+):
+
 - Michael Chen (MC): 1 new, 0 used = 1.0 total
 - Robert Williams (RW): 0 new, 1 used = 1.0 total
 - Sarah Johnson (SJ): 1 new, 0 used = 1.0 total
@@ -266,6 +278,7 @@ Pending Delivery: 1
 Return to **TODAY** sheet and add these sales (rows 5-8):
 
 **Row 5**:
+
 - #: 4
 - CUSTOMER: Anderson Lisa
 - FI: C
@@ -275,6 +288,7 @@ Return to **TODAY** sheet and add these sales (rows 5-8):
 - SALES PERSON: JM
 
 **Row 6**:
+
 - #: 5
 - CUSTOMER: Davis Michael
 - FI: D
@@ -284,6 +298,7 @@ Return to **TODAY** sheet and add these sales (rows 5-8):
 - SALES PERSON: Dave
 
 **Row 7** (Pending Sale):
+
 - #: 6
 - CUSTOMER: Garcia Maria
 - FI: (leave blank)
@@ -293,6 +308,7 @@ Return to **TODAY** sheet and add these sales (rows 5-8):
 - SALES PERSON: ET
 
 **Row 8** (Split Sale):
+
 - #: 7
 - CUSTOMER: Rodriguez James
 - FI: (leave blank)
@@ -302,6 +318,7 @@ Return to **TODAY** sheet and add these sales (rows 5-8):
 - SALES PERSON: Jim/Lisa
 
 **Expected Result**: 4 more new car sales, including:
+
 - "Dave" (alias for David Anderson)
 - "ET" (display code for Emily Thompson)
 - "Jim/Lisa" (split sale between James Brown and Lisa Garcia)
@@ -313,6 +330,7 @@ Return to **TODAY** sheet and add these sales (rows 5-8):
 Add these used car sales (rows 4-6):
 
 **Row 4**:
+
 - CUSTOMER: Lee Kevin
 - FI: C
 - MODEL: Camry
@@ -321,6 +339,7 @@ Add these used car sales (rows 4-6):
 - SALES PERSON: DA
 
 **Row 5** (Pending):
+
 - CUSTOMER: Harris Tom
 - FI: (leave blank)
 - MODEL: Civic
@@ -329,6 +348,7 @@ Add these used car sales (rows 4-6):
 - SALES PERSON: JB
 
 **Row 6** (Split Sale):
+
 - CUSTOMER: Lewis John
 - FI: E
 - MODEL: Explorer
@@ -347,7 +367,8 @@ Add these used car sales (rows 4-6):
 3. Review confirmation
 
 **Expected Result**: Dialog shows increased totals:
-```
+
+```code
 Total Delivered: 8
 Pending Delivery: 3
 ```
@@ -359,6 +380,7 @@ Pending Delivery: 3
 Navigate to **MONTHLY** sheet and review:
 
 **Overall Metrics**:
+
 - Total New Delivered: ~5
 - Total Used Delivered: ~3
 - Total Delivered: ~8
@@ -367,6 +389,7 @@ Navigate to **MONTHLY** sheet and review:
 
 **Top Performers**:
 Look for salespeople with split sales showing 0.5 credits:
+
 - James Brown: Should show 0.5 from "Jim/Lisa" split
 - Lisa Garcia: Should show 0.5 from "Jim/Lisa" split
 - Christopher Davis: Should show 0.5 from "Chris/Bob" split
@@ -381,14 +404,15 @@ Look for salespeople with split sales showing 0.5 credits:
 1. Return to **TODAY** sheet
 2. Try entering a sale using different aliases:
 
-Add in Row 9:
-- #: 8
-- CUSTOMER: Test Customer
-- FI: F
-- MODEL: Test
-- STOCK #: N24-9999
-- TRADE STK#: (blank)
-- SALES PERSON: Mike (alias for Michael Chen)
+   Add in Row 9:
+
+   - #: 8
+   - CUSTOMER: Test Customer
+   - FI: F
+   - MODEL: Test
+   - STOCK #: N24-9999
+   - TRADE STK#: (blank)
+   - SALES PERSON: Mike (alias for Michael Chen)
 
 3. Run analytics again
 4. Check MONTHLY sheet - should credit "Michael Chen", not "Mike"
@@ -426,8 +450,9 @@ Before rollover:
 3. Confirm you want to proceed
 4. Wait for processing (10-15 seconds)
 
-**Expected Result**: 
-```
+**Expected Result**:
+
+```shell
 Rollover completed successfully!
 
 - TODAY sheet cleared and ready for new entries
@@ -441,12 +466,14 @@ Rollover completed successfully!
 ### Step 4.3: Verify Rollover Results
 
 **Check TODAY Sheet**:
+
 1. Navigate to TODAY sheet
 2. Verify all data rows (2+) are cleared
 3. Headers remain intact
 4. Leaderboard (columns P-R) is empty
 
 **Check MONTHLY Sheet**:
+
 1. Navigate to MONTHLY sheet
 2. Verify previous month's data is preserved
 3. Analytics section shows final month statistics
@@ -471,7 +498,9 @@ Rollover completed successfully!
 ### Throughout This Workflow
 
 #### 1. **Flexible Salesperson Entry**
+
 You've used:
+
 - Full names: "Sarah Johnson"
 - Display codes: "MC", "RW", "ET"
 - Aliases: "Dave", "Mike", "Jim", "Chris", "Bob"
@@ -479,21 +508,26 @@ You've used:
 All correctly resolved to proper names in analytics.
 
 #### 2. **Split Sales Handling**
+
 Format: "Name1/Name2"
+
 - "Jim/Lisa" split between James Brown and Lisa Garcia
 - "Chris/Bob" split between Christopher Davis and Robert Williams
 - Each person gets 0.5 credit
 
 #### 3. **FI Status Tracking**
+
 - **A-Z**: Delivered and funded (counted in analytics)
 - **Blank**: Pending delivery (tracked but not in delivery rate)
 
 #### 4. **Duplicate Detection**
+
 - Stock numbers in DEPOSITS highlight in TODAY
 - Prevents double-counting delivered vehicles
 - Visual warning with lime green highlight
 
 #### 5. **Analytics Automation**
+
 - Automatic calculations across all metrics
 - Salesperson rankings by performance
 - Delivery rate tracking
@@ -532,22 +566,26 @@ After completing this workflow, verify:
 
 ## 🔄 Suggested Monthly Cycle
 
-**Week 1**: 
+**Week 1**:
+
 - Enter daily sales in TODAY
 - Monitor leaderboard in real-time
 - Track deposits as they occur
 
 **Week 2-3**:
+
 - Continue daily sales entry
 - Run analytics mid-month for performance review
 - Address any unknown salesperson errors
 
 **Week 4**:
+
 - Final sales push
 - Daily analytics updates
 - Prepare for month-end
 
 **Month End**:
+
 - Run final analytics
 - Review MONTHLY sheet performance
 - Export reports if needed
@@ -572,7 +610,7 @@ Now that you've completed the sample workflow:
 
 - **[README.md](README.md)**: Overview of all example files
 - **[../QUICKSTART.md](../QUICKSTART.md)**: Quick setup guide
-- **[../docs/guides/USER_GUIDE.md](../docs/guides/USER_GUIDE.md)**: Complete feature documentation  
+- **[../docs/guides/USER_GUIDE.md](../docs/guides/USER_GUIDE.md)**: Complete feature documentation
 - **[../docs/troubleshooting/FAQ.md](../docs/troubleshooting/FAQ.md)**: Common questions
 - **[../docs/troubleshooting/TROUBLESHOOTING.md](../docs/troubleshooting/TROUBLESHOOTING.md)**: Problem resolution
 
@@ -597,13 +635,13 @@ A: Yes, run analytics as often as needed. It always uses current data.
 
 ---
 
-## 🎓 Congratulations!
+## 🎓 Congratulations
 
 You've completed the full Sales Log Pro workflow from setup through month-end. You now understand:
 
 ✅ Initial configuration and setup
 ✅ Sales team management
-✅ Daily sales entry with various formats  
+✅ Daily sales entry with various formats
 ✅ Split sales handling
 ✅ Deposit tracking and duplicate prevention
 ✅ Analytics generation and interpretation

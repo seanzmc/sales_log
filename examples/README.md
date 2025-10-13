@@ -4,9 +4,11 @@ This directory contains sample data files to help you understand and test the Sa
 
 ## ⚠️ Important Notice
 
-**DO NOT USE THESE FILES IN PRODUCTION**
+> [!WARNING]
+> DO NOT USE THESE FILES IN PRODUCTION
 
 These example files contain fictional data for demonstration purposes only. They are designed to help you:
+
 - Understand the expected data formats
 - Test the application functionality
 - Learn how different features work together
@@ -25,6 +27,7 @@ Before using Sales Log Pro with real data, replace all example data with your ac
 **Contains**: 10 fictional automotive sales team members with various alias patterns.
 
 **Format**:
+
 ```csv
 FULL NAME,ALIASES,DISPLAY CODE
 Michael Chen,MC,Mike,Michael,Chen,MC
@@ -32,11 +35,13 @@ Sarah Johnson,SJ,Sarah,Johnson,Sally,SJ
 ```
 
 **Column Descriptions**:
+
 - **FULL NAME**: Complete official name for tracking and reports
 - **ALIASES**: Comma-separated list of alternative names/nicknames/codes that map to this person
 - **DISPLAY CODE**: 2-4 character code used in leaderboards and analytics (typically initials)
 
 **Use Cases**:
+
 - Understanding how aliases work (e.g., "MC", "Mike", "Michael", "Chen" all resolve to "Michael Chen")
 - Seeing different display code styles (initials, abbreviations)
 - Testing the import functionality via Settings → Import Salespeople
@@ -53,18 +58,21 @@ Sarah Johnson,SJ,Sarah,Johnson,Sally,SJ
 **Contains**: 20 realistic automotive sales entries (10 new cars, 10 used cars).
 
 **Format - New Car Sales**:
+
 ```csv
 #,CUSTOMER,FI,MODEL,STOCK #,TRADE STK#,SALES PERSON
 1,Thompson Robert,A,Camry,N24-1205,U23-8842,MC
 ```
 
 **Format - Used Car Sales** (no # column):
+
 ```csv
 CUSTOMER,FI,MODEL,STOCK #,TRADE STK#,SALES PERSON
 Johnson Mark,A,F-150,U24-3301,,RW
 ```
 
 **Column Descriptions**:
+
 - **#**: Sequential number (new cars only)
 - **CUSTOMER**: Customer name
 - **FI**: Finance & Insurance status (A-Z = delivered/funded, blank = pending)
@@ -74,6 +82,7 @@ Johnson Mark,A,F-150,U24-3301,,RW
 - **SALES PERSON**: Salesperson (can use full name, display code, or alias)
 
 **Special Features Demonstrated**:
+
 - **Split Sales**: "John/Jane" format divides credit equally (0.5 each)
 - **Mixed Entry Styles**: Full names, display codes, and aliases
 - **FI Status Tracking**: Shows both delivered (A-Z) and pending (blank) sales
@@ -90,12 +99,14 @@ Johnson Mark,A,F-150,U24-3301,,RW
 **Contains**: 12 realistic deposit tracking entries with delivery dates and notes.
 
 **Format**:
+
 ```csv
 DATE,NEW/USED,YEAR,MAKE,MODEL,ORDER #,STOCK #,SALESPERSON,BDC,CUSTOMER,DIRECTOR,PHONE #,EST DELIVERY DATE,NOTES
 10/01/2024,NEW,2025,Toyota,Camry XLE,ORD-2024-1001,N24-1215,MC,Sarah Chen,Robert Thompson,Mike Wilson,555-0101,10/15/2024,Customer requested silver exterior
 ```
 
 **Column Descriptions**:
+
 - **DATE**: Deposit date
 - **NEW/USED**: Vehicle type
 - **YEAR**: Model year
@@ -137,7 +148,7 @@ Stock numbers in the DEPOSITS sheet are automatically highlighted if entered in 
 
 ### Step-by-Step Quick Start
 
-```
+```plaintext
 1. Run Setup Wizard (Sales Log → Setup Wizard)
 2. Import salespeople from sample_salespeople.csv
 3. Manually copy a few rows from sample_sales_data.csv to TODAY sheet
@@ -151,15 +162,15 @@ Stock numbers in the DEPOSITS sheet are automatically highlighted if entered in 
 
 ## 📊 How Files Relate to Sheets
 
-| Example File | Target Sheet | Purpose |
-|-------------|-------------|---------|
-| sample_salespeople.csv | SALESPEOPLE | Defines team roster and alias mappings |
-| sample_sales_data.csv | TODAY | Daily sales entry and tracking |
-| sample_deposits.csv | DEPOSITS | Deposit tracking and duplicate prevention |
+| Example File           | Target Sheet | Purpose                                   |
+| ---------------------- | ------------ | ----------------------------------------- |
+| sample_salespeople.csv | SALESPEOPLE  | Defines team roster and alias mappings    |
+| sample_sales_data.csv  | TODAY        | Daily sales entry and tracking            |
+| sample_deposits.csv    | DEPOSITS     | Deposit tracking and duplicate prevention |
 
 ### Data Flow Example
 
-```
+```liquid
 1. Import salespeople → SALESPEOPLE sheet
 2. Enter daily sales → TODAY sheet (using any salesperson alias)
 3. System resolves aliases → Analytics use full names
@@ -172,7 +183,9 @@ Stock numbers in the DEPOSITS sheet are automatically highlighted if entered in 
 ## 🔍 Key Concepts Demonstrated
 
 ### Alias Resolution
+
 The sample_salespeople.csv shows how one person can have multiple aliases:
+
 - Full name: "Michael Chen"
 - Aliases: "MC", "Mike", "Michael", "Chen"
 - Display code: "MC"
@@ -180,14 +193,18 @@ The sample_salespeople.csv shows how one person can have multiple aliases:
 All of these resolve to the same person in analytics.
 
 ### Split Sales
+
 In sample_sales_data.csv, entries like "MC/SJ" or "Jim/Lisa" show split sales where two salespeople share credit (0.5 each).
 
 ### FI Status Tracking
+
 The FI column uses:
+
 - **A-Z**: Delivered and funded (counts in analytics)
 - **Blank**: Pending delivery (tracked but not counted)
 
 ### Duplicate Detection
+
 Stock numbers in sample_deposits.csv will trigger conditional formatting if entered in the TODAY sheet, preventing double-counting.
 
 ---

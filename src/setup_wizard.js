@@ -674,6 +674,7 @@ function checkAndCreateSalespeopleSheet(ss, results) {
     // Set font to Calibri, 10pt for entire sheet
     sheet.getRange("A:C").setFontFamily("Calibri");
     sheet.getRange("A:C").setFontSize(10);
+    sheet.getRange("A:C").setWraps(true);
 
     // Add example data to help users understand the format
     const exampleData = [

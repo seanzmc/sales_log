@@ -1,16 +1,16 @@
 # Sample Salesperson Data for Sales Log Pro
 # This file demonstrates the format for importing salesperson data
 # Format: Full Name, Aliases (comma-separated), Display Code
-# Aliases can include initials, nicknames, or common variations
+# Aliases can include initials, nicknames, or common variations (e.g. "MC,Mike,Michael,Michael C")
 # Display Code should be 2-4 characters for leaderboard display
 FULL NAME,ALIASES,DISPLAY CODE
-Michael Chen,MC,Mike,Michael,Chen,MC
-Sarah Johnson,SJ,Sarah,Johnson,Sally,SJ
-Robert Williams,RW,Rob,Bob,Bobby,Williams,RW
-Jennifer Martinez,JM,Jen,Jenny,Jennifer,Martinez,JM
-David Anderson,DA,Dave,David,Anderson,Andy,DA
-Emily Thompson,ET,Em,Emily,Thompson,Emmy,ET
-James Brown,JB,Jim,Jimmy,James,Brown,JB
-Lisa Garcia,LG,Lisa,Garcia,Lee,LG
-Christopher Davis,CD,Chris,Christopher,Davis,CD
-Amanda Rodriguez,AR,Amanda,Mandy,Rodriguez,AR
+Michael Chen,"MC,Mike,Michael,Michael C,Chen",MC
+Sarah Johnson,"SJ,Sarah,Johnson,Sally, Sarah J",SJ
+Robert Williams,"RW,Rob,Bob,Bobby,Williams, Robert W",RW
+Jennifer Martinez,"JM,Jen,Jenny,Jennifer,Martinez, Jen M",JM
+David Anderson,"DA,Dave,David,Anderson,Andy, David A",DA
+Emily Thompson,"ET,Em,Emily,Thompson,Emmy, Emily T",ET
+James Brown,"JB,Jim,Jimmy,James,Brown, James B",JB
+Lisa Garcia,"LG,Lisa,Garcia,Lee, Lisa G",LG
+Christopher Davis,"CD,Chris,Christopher,Davis, Chris D",CD
+Amanda Rodriguez,"AR,Amanda,Mandy,Rodriguez, Amanda R",AR

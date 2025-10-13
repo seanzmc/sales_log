@@ -3,30 +3,30 @@
 # Include both NEW and USED car sections
 # FI Column: A-Z = Delivered (funded), Blank = Pending delivery
 # SALES PERSON: Full name, display code, or alias (supports split sales: "John/Jane")
-# Format: #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
+# Format: "#, CUSTOMER, FI, NEW MODEL, STOCK #, TRADE STK#, SALESPERSON,,CUSTOMER,FI,USED MODEL,STOCK #,TRADE STK#,SALESPERSON"
 
 # NEW CAR SALES SECTION
-#,CUSTOMER,FI,MODEL,STOCK #,TRADE STK#,SALES PERSON
-1,Thompson Robert,A,Camry,N24-1205,U23-8842,MC
-2,Martinez Elena,B,Accord,N24-1206,N23-1103,Sarah Johnson
-3,Williams David,C,RAV4,N24-1207,,RW
-4,Anderson Lisa,D,Civic,N24-1208,U23-9156,JM
-5,Davis Michael,E,CRV,N24-1209,U24-0012,Dave
-6,Garcia Maria,,Highlander,N24-1210,,ET
-7,Rodriguez James,,Camry,N24-1211,N23-1205,Jim/Lisa
-8,Wilson Jennifer,F,Accord,N24-1212,U23-9201,CD
-9,Taylor Christopher,G,RAV4,N24-1213,,Amanda
-10,Brown Sarah,H,Civic,N24-1214,U24-0023,MC/SJ
+#,CUSTOMER,FI,NEW MODEL,STOCK #,TRADE STK#,SALESPERSON
+1,Thompson,A,Camry,N24-1205,U23-8842,MC
+2,Martinez,B,Accord,N24-1206,N23-1103,Sarah Johnson
+3,Williams,C,RAV4,N24-1207,NT,RW
+4,Anderson,D,Civic,N24-1208,U23-9156,JM
+5,Davis,E,CRV,N24-1209,U24-0012,Dave
+6,Garcia,,Highlander,N24-1210,NT,ET
+7,Rodriguez,,Camry,N24-1211,N23-1205,Jim/Lisa
+8,Wilson,F,Accord,N24-1212,U23-9201,CD
+9,Taylor,G,RAV4,N24-1213,NT,Amanda
+10,Brown,H,Civic,N24-1214,U24-0023,MC/SJ
 
 # USED CAR SALES SECTION (No # column for used)
-CUSTOMER,FI,MODEL,STOCK #,TRADE STK#,SALES PERSON
-Johnson Mark,A,F-150,U24-3301,,RW
-Smith Patricia,B,Accord,U24-3302,N23-1150,Jennifer Martinez
-Lee Kevin,C,Camry,U24-3303,,DA
-White Susan,D,Silverado,U24-3304,U23-8950,Emily
-Harris Tom,,Civic,U24-3305,,JB
-Clark Nancy,E,Tacoma,U24-3306,U24-0015,Lisa Garcia
-Lewis John,F,Explorer,U24-3307,,Chris/Bob
-Young Michelle,,CRV,U24-3308,U23-9100,AR
-King Robert,G,Malibu,U24-3309,,MC
-Hall Jennifer,H,Corolla,U24-3310,N24-1101,SJ/ET
+CUSTOMER,FI,USED MODEL,STOCK #,TRADE STK#,SALESPERSON
+Johnson,A,F-150,U24-3301,NT,RW
+Smith,B,Accord,U24-3302,N23-1150,Jennifer Martinez
+Lee,C,Camry,U24-3303,NT,DA
+White,D,Silverado,U24-3304,U23-8950,Emily
+Harris,E,Civic,U24-3305,NT,JB
+Clark,F,Tacoma,U24-3306,U24-0015,Lisa Garcia
+Lewis,G,Explorer,U24-3307,NT,Chris/Bob
+Young,H,CRV,U24-3308,U23-9100,AR
+King,I,Malibu,U24-3309,NT,MC
+Hall,J,Corolla,U24-3310,N24-1101,SJ/ET

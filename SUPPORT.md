@@ -8,9 +8,10 @@ Sales Log Pro provides professional support to licensed customers. This document
 
 ## Support Eligibility
 
-**Support is provided exclusively to licensed customers** with active, valid licenses. 
+**Support is provided exclusively to licensed customers** with active, valid licenses.
 
 Before requesting support, please verify:
+
 - You have a current Sales Log Pro license
 - Your license has not expired
 - You have your license key or customer ID available
@@ -119,30 +120,34 @@ Screenshots:
 ### Support Request Priority Levels
 
 **Critical (Response within 4-8 business hours)**
+
 - System completely non-functional
 - Data loss or corruption
 - Security vulnerability
 - Blocks all daily operations
 
 **High (Response within 1 business day)**
+
 - Major feature not working
 - Significant functionality impaired
 - Affects multiple users
 - Workaround exists but inconvenient
 
 **Medium (Response within 2 business days)**
+
 - Minor feature not working
 - Cosmetic issues affecting usability
 - Affects single user
 - Workaround available
 
 **Low (Response within 3-5 business days)**
+
 - Feature requests
 - Enhancement suggestions
 - Questions about usage
 - Documentation clarifications
 
-*Note: Response times are for initial acknowledgment. Resolution time varies based on complexity.*
+_Note: Response times are for initial acknowledgment. Resolution time varies based on complexity._
 
 ---
 
@@ -199,6 +204,7 @@ Before contacting support, try these common solutions:
 **Cause**: Name entered doesn't match configuration
 
 **Solutions**:
+
 1. Check exact spelling in Settings → Salespeople
 2. Use configured aliases for variations
 3. Add new salesperson if missing
@@ -209,6 +215,7 @@ Before contacting support, try these common solutions:
 **Cause**: Script not loaded or permissions issue
 
 **Solutions**:
+
 1. Refresh the spreadsheet page
 2. Wait 10-15 seconds for menu to load
 3. Open Apps Script editor and verify all files saved
@@ -219,6 +226,7 @@ Before contacting support, try these common solutions:
 **Cause**: Permissions or sheet structure issue
 
 **Solutions**:
+
 1. Verify you have edit permissions on the sheet
 2. Ensure no sheets named TODAY, SALESPEOPLE, or LEADERBOARD exist
 3. Check Apps Script execution log for specific errors
@@ -229,6 +237,7 @@ Before contacting support, try these common solutions:
 **Cause**: Stock number format inconsistency
 
 **Solutions**:
+
 1. Use consistent format for all stock numbers (e.g., no leading zeros)
 2. Ensure stock numbers are text or numbers, not formulas
 3. Re-run Process Daily after correcting format
@@ -239,6 +248,7 @@ Before contacting support, try these common solutions:
 **Cause**: Cache or sync issue
 
 **Solutions**:
+
 1. Click Save button in Settings sidebar
 2. Close and reopen the Settings sidebar
 3. Refresh the spreadsheet
@@ -249,6 +259,7 @@ Before contacting support, try these common solutions:
 **Cause**: Large dataset or first-time cache build
 
 **Solutions**:
+
 1. First run takes longer (15-30 seconds) due to cache building
 2. Archive old months to reduce active data size
 3. Close other browser tabs to free memory
@@ -263,11 +274,13 @@ Before contacting support, try these common solutions:
 If basic troubleshooting doesn't resolve your issue:
 
 1. **Check Execution Log**:
+
    - Open Apps Script editor
    - View → Executions
    - Review recent execution logs for errors
 
 2. **Enable Detailed Logging**:
+
    - Some functions log additional details
    - Check Apps Script → View → Logs
 
@@ -278,12 +291,14 @@ If basic troubleshooting doesn't resolve your issue:
 ### System Requirements
 
 **Supported:**
+
 - Google Workspace (all editions)
 - Personal Gmail accounts with Google Sheets
 - Modern web browsers (Chrome, Firefox, Safari, Edge)
 - Mobile access via Google Sheets app (limited functionality)
 
 **Not Supported:**
+
 - Offline mode (requires Google Apps Script server)
 - Third-party sheet applications
 - Legacy Google Sheets (old version)
@@ -297,6 +312,7 @@ If basic troubleshooting doesn't resolve your issue:
 We value customer feedback on product improvements.
 
 **How to Submit**:
+
 1. Use support email with subject: "Feature Request: [Brief Description]"
 2. Include:
    - Description of desired feature
@@ -306,6 +322,7 @@ We value customer feedback on product improvements.
    - Priority level (from your perspective)
 
 **Evaluation Process**:
+
 - Feature requests are logged and reviewed quarterly
 - Decisions based on customer demand, technical feasibility, and roadmap alignment
 - High-demand features are prioritized for development
@@ -327,15 +344,18 @@ Support requests require valid license verification:
 ### License Issues
 
 **Lost License Key**:
+
 - Contact support with purchase information
 - Provide registered email address
 - Include approximate purchase date
 
 **Expired License**:
+
 - Contact sales for renewal options
 - Support available during renewal process
 
 **Multiple Installations**:
+
 - License terms specify number of allowed installations
 - Contact sales for additional licenses
 
@@ -353,6 +373,7 @@ For critical, business-stopping issues:
 4. **Be Available**: Respond quickly to support follow-up questions
 
 **Critical Issue Definition**:
+
 - Complete system failure
 - Data loss or corruption
 - Security breach
@@ -377,6 +398,7 @@ For critical, business-stopping issues:
 ### Community
 
 While Sales Log Pro doesn't have a public community forum, licensed customers can:
+
 - Share tips via support channel
 - Request peer connections for large deployments
 - Access customer success stories and case studies
@@ -386,14 +408,17 @@ While Sales Log Pro doesn't have a public community forum, licensed customers ca
 ## Contact Information
 
 **Licensed Customers**:
+
 - Use the support email provided with your license documentation
 - Include your license key or customer ID in all communications
 
 **Prospective Customers**:
+
 - For sales inquiries, licensing information, or product demonstrations
 - Refer to product documentation for general information
 
 **General Inquiries**:
+
 - See [README.md](README.md) for product overview
 - See [CONTRIBUTING.md](CONTRIBUTING.md) for development policies
 
@@ -404,6 +429,7 @@ While Sales Log Pro doesn't have a public community forum, licensed customers ca
 We continually improve our support based on customer feedback.
 
 **Help us serve you better**:
+
 - Rate your support experience
 - Suggest documentation improvements
 - Report unclear or missing information

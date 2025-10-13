@@ -1,20 +1,21 @@
 # Sales Log Pro - Comprehensive Remediation Plan
-**Phase 2-7 Implementation Specification**
 
-**Document Version:** 1.0  
-**Date:** 2025-10-13  
+## Phase 2-7 Implementation Specification
+
+**Document Version:** 1.0
+**Date:** 2025-10-13
 **Based on:** Phase 1 Quality Analysis (27 issues across 5 categories)
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#1-executive-summary)
-2. [Helper Function Library](#2-helper-function-library)
-3. [Issue-by-Issue Implementation Plans](#3-issue-by-issue-implementation-plans)
-4. [Testing Matrix](#4-testing-matrix)
-5. [Deployment Strategy](#5-deployment-strategy)
-6. [Risk Mitigation](#6-risk-mitigation)
+- [Executive Summary](#1-executive-summary)
+- [Helper Function Library](#2-helper-function-library)
+- [Issue-by-Issue Implementation Plans](#3-issue-by-issue-implementation-plans)
+- [Testing Matrix](#4-testing-matrix)
+- [Deployment Strategy](#5-deployment-strategy)
+- [Risk Mitigation](#6-risk-mitigation)
 
 ---
 
@@ -31,24 +32,26 @@ This remediation plan addresses 27 identified issues across 5 categories by impl
 
 ### 1.2 Key Architectural Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **Centralized helper functions** | Ensures consistency, reduces code duplication, simplifies testing |
-| **Exponential backoff for locks** | Handles transient contention without user intervention |
-| **Non-fatal cache failures** | Cache is a performance optimization, not a requirement |
-| **Chunked Properties storage** | Prevents quota violations while maintaining data integrity |
-| **Toast notifications for errors** | Non-intrusive user feedback that doesn't block operations |
+| Decision                           | Rationale                                                         |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| **Centralized helper functions**   | Ensures consistency, reduces code duplication, simplifies testing |
+| **Exponential backoff for locks**  | Handles transient contention without user intervention            |
+| **Non-fatal cache failures**       | Cache is a performance optimization, not a requirement            |
+| **Chunked Properties storage**     | Prevents quota violations while maintaining data integrity        |
+| **Toast notifications for errors** | Non-intrusive user feedback that doesn't block operations         |
 
 ### 1.3 Implementation Phases
 
 **Phase Timeline:**
+
 - Phase 2 (Helpers): 2 hours
-- Phase 3 (Locks): 3 hours  
+- Phase 3 (Locks): 3 hours
 - Phase 4 (Cache): 2 hours
 - Phase 5 (Size): 4 hours
 - Phase 6 (Notifications): 1 hour
 - Phase 7 (Testing): 4 hours
-- **Total: 16 hours**
+
+  **Total: 16 hours**
 
 ---
 
@@ -59,6 +62,7 @@ This remediation plan addresses 27 identified issues across 5 categories by impl
 **Purpose:** Provide robust lock acquisition with exponential backoff retry logic.
 
 **Key Features:**
+
 - ✅ Exponential backoff prevents thundering herd
 - ✅ Configurable retry parameters per use case
 - ✅ Comprehensive logging for debugging
@@ -71,7 +75,7 @@ This remediation plan addresses 27 identified issues across 5 categories by impl
 /**
  * Lock Acquisition Helper with Exponential Backoff
  * Handles transient lock contention gracefully
- * 
+ *
  * @param {Function} fn - Function to execute with lock protection
  * @param {Object} options - Configuration options
  * @returns {*} Result of fn() or throws error
@@ -83,13 +87,13 @@ function withScriptLockRetry(fn, options = {}) {
     backoffMultiplier: options.backoffMultiplier || 2,
     maxDelayMs: options.maxDelayMs || 5000,
     lockTimeoutMs: options.lockTimeoutMs || 30000,
-    operationName: options.operationName || 'operation'
+    operationName: options.operationName || "operation",
   };
-  
+
   const lock = LockService.getScriptLock();
   let attempt = 0;
   let lastError = null;
-  
+
   while (attempt <= config.maxRetries) {
     try {
       if (lock.tryLock(config.lockTimeoutMs)) {
@@ -99,33 +103,44 @@ function withScriptLockRetry(fn, options = {}) {
           lock.releaseLock();
         }
       } else {
-        lastError = new Error(`Could not acquire lock after ${config.lockTimeoutMs}ms`);
-        
+        lastError = new Error(
+          `Could not acquire lock after ${config.lockTimeoutMs}ms`
+        );
+
         if (attempt === config.maxRetries) {
           break;
         }
-        
+
         const delay = Math.min(
           config.initialDelayMs * Math.pow(config.backoffMultiplier, attempt),
           config.maxDelayMs
         );
-        
+
         Logger.log(
-          `[Lock Retry] Attempt ${attempt + 1}/${config.maxRetries + 1} failed for ` +
-          `${config.operationName}. Retrying in ${delay}ms...`
+          `[Lock Retry] Attempt ${attempt + 1}/${
+            config.maxRetries + 1
+          } failed for ` + `${config.operationName}. Retrying in ${delay}ms...`
         );
-        
+
         Utilities.sleep(delay);
         attempt++;
       }
     } catch (error) {
-      logError('withScriptLockRetry', error, { attempt, operationName: config.operationName });
+      logError("withScriptLockRetry", error, {
+        attempt,
+        operationName: config.operationName,
+      });
       throw error;
     }
   }
-  
-  const errorMsg = `Failed to acquire lock for ${config.operationName} after ${config.maxRetries + 1} attempts`;
-  logError('withScriptLockRetry', lastError, { maxRetries: config.maxRetries, operationName: config.operationName });
+
+  const errorMsg = `Failed to acquire lock for ${config.operationName} after ${
+    config.maxRetries + 1
+  } attempts`;
+  logError("withScriptLockRetry", lastError, {
+    maxRetries: config.maxRetries,
+    operationName: config.operationName,
+  });
   throw new Error(errorMsg);
 }
 
@@ -135,7 +150,7 @@ function withScriptLockRetry(fn, options = {}) {
 function withScriptLock(fn) {
   return withScriptLockRetry(fn, {
     maxRetries: 3,
-    operationName: 'withScriptLock'
+    operationName: "withScriptLock",
   });
 }
 ```
@@ -147,6 +162,7 @@ function withScriptLock(fn) {
 **Purpose:** Provide non-blocking cache operations that never fail operations.
 
 **Key Features:**
+
 - ✅ Non-fatal failures for individual cache operations
 - ✅ Detailed success/failure tracking
 - ✅ Critical error detection (all caches failed)
@@ -155,7 +171,7 @@ function withScriptLock(fn) {
 **Implementation:**
 
 ```javascript
-function safeCacheRemove(key, context = 'safeCacheRemove') {
+function safeCacheRemove(key, context = "safeCacheRemove") {
   try {
     const cache = CacheService.getScriptCache();
     cache.remove(key);
@@ -163,64 +179,78 @@ function safeCacheRemove(key, context = 'safeCacheRemove') {
   } catch (error) {
     logWarning(context, `Cache removal failed for key: ${key}`, {
       error: error.toString(),
-      key: key
+      key: key,
     });
     return false;
   }
 }
 
-function safeCacheRemoveAll(keys, context = 'safeCacheRemoveAll') {
+function safeCacheRemoveAll(keys, context = "safeCacheRemoveAll") {
   const results = { success: 0, failed: 0, total: keys.length };
-  
+
   if (!Array.isArray(keys) || keys.length === 0) {
-    logWarning(context, 'Invalid or empty keys array provided');
+    logWarning(context, "Invalid or empty keys array provided");
     return results;
   }
-  
+
   try {
     const cache = CacheService.getScriptCache();
-    
-    keys.forEach(key => {
+
+    keys.forEach((key) => {
       try {
         cache.remove(key);
         results.success++;
       } catch (error) {
         results.failed++;
-        logWarning(context, `Failed to remove cache key: ${key}`, { error: error.toString() });
+        logWarning(context, `Failed to remove cache key: ${key}`, {
+          error: error.toString(),
+        });
       }
     });
-    
+
     if (results.failed > 0) {
-      logWarning(context, 'Some cache removals failed', results);
+      logWarning(context, "Some cache removals failed", results);
     }
-    
+
     return results;
   } catch (error) {
-    logError(context, error, { operation: 'cache_service_failure' });
+    logError(context, error, { operation: "cache_service_failure" });
     results.failed = keys.length;
     return results;
   }
 }
 
-function invalidateAllCachesDefensive(context = 'invalidateAllCachesDefensive') {
-  const cacheKeys = ['config_cache', 'salespersonMaps', 'visualConfig', 'monthlyAnalytics'];
-  
+function invalidateAllCachesDefensive(
+  context = "invalidateAllCachesDefensive"
+) {
+  const cacheKeys = [
+    "config_cache",
+    "salespersonMaps",
+    "visualConfig",
+    "monthlyAnalytics",
+  ];
+
   try {
     const results = safeCacheRemoveAll(cacheKeys, context);
-    
+
     if (results.success > 0) {
-      Logger.log(`[${context}] Invalidated ${results.success}/${results.total} caches`);
+      Logger.log(
+        `[${context}] Invalidated ${results.success}/${results.total} caches`
+      );
     }
-    
+
     if (results.failed === results.total && results.total > 0) {
-      const error = new Error('All cache invalidation operations failed');
+      const error = new Error("All cache invalidation operations failed");
       logError(context, error, results);
       throw error;
     }
-    
+
     return results;
   } catch (error) {
-    logError(context, error, { severity: 'CRITICAL', operation: 'cache_invalidation' });
+    logError(context, error, {
+      severity: "CRITICAL",
+      operation: "cache_invalidation",
+    });
     throw error;
   }
 }
@@ -233,6 +263,7 @@ function invalidateAllCachesDefensive(context = 'invalidateAllCachesDefensive') 
 **Purpose:** Prevent Properties Service quota violations through automatic chunking.
 
 **Limits:**
+
 - Max property size: 8KB (with 1KB safety margin)
 - Max total size: 450KB (with 50KB safety margin)
 - Chunk size: 7KB per chunk
@@ -244,7 +275,7 @@ const PROPERTIES_LIMITS = {
   MAX_PROPERTY_SIZE_BYTES: 8192,
   MAX_TOTAL_SIZE_BYTES: 450000,
   CHUNK_SIZE_BYTES: 7000,
-  WARNING_THRESHOLD_BYTES: 7168
+  WARNING_THRESHOLD_BYTES: 7168,
 };
 
 function getStringByteSize(str) {
@@ -261,50 +292,71 @@ function validatePropertySize(key, data) {
   try {
     const jsonStr = JSON.stringify(data);
     const size = getStringByteSize(jsonStr);
-    
+
     if (size > PROPERTIES_LIMITS.MAX_PROPERTY_SIZE_BYTES) {
       return {
         valid: false,
         size: size,
         maxSize: PROPERTIES_LIMITS.MAX_PROPERTY_SIZE_BYTES,
-        reason: `Property size (${size} bytes) exceeds limit`
+        reason: `Property size (${size} bytes) exceeds limit`,
       };
     }
-    
+
     if (size > PROPERTIES_LIMITS.WARNING_THRESHOLD_BYTES) {
-      logWarning('validatePropertySize', `Property "${key}" is ${size} bytes (near limit)`, {
-        size,
-        percentUsed: Math.round((size / PROPERTIES_LIMITS.MAX_PROPERTY_SIZE_BYTES) * 100)
-      });
+      logWarning(
+        "validatePropertySize",
+        `Property "${key}" is ${size} bytes (near limit)`,
+        {
+          size,
+          percentUsed: Math.round(
+            (size / PROPERTIES_LIMITS.MAX_PROPERTY_SIZE_BYTES) * 100
+          ),
+        }
+      );
     }
-    
-    return { valid: true, size: size, maxSize: PROPERTIES_LIMITS.MAX_PROPERTY_SIZE_BYTES };
+
+    return {
+      valid: true,
+      size: size,
+      maxSize: PROPERTIES_LIMITS.MAX_PROPERTY_SIZE_BYTES,
+    };
   } catch (error) {
-    logError('validatePropertySize', error, { key });
-    return { valid: false, size: 0, reason: 'Validation error: ' + error.message };
+    logError("validatePropertySize", error, { key });
+    return {
+      valid: false,
+      size: 0,
+      reason: "Validation error: " + error.message,
+    };
   }
 }
 
 function safeSetProperty(props, key, data, options = {}) {
   const enableChunking = options.enableChunking !== false;
-  
+
   try {
     const jsonStr = JSON.stringify(data);
     const validation = validatePropertySize(key, data);
-    
+
     if (validation.valid) {
       props.setProperty(key, jsonStr);
-      return { success: true, chunked: false, chunks: 1, size: validation.size };
+      return {
+        success: true,
+        chunked: false,
+        chunks: 1,
+        size: validation.size,
+      };
     }
-    
+
     if (!enableChunking) {
       throw new Error(validation.reason);
     }
-    
-    Logger.log(`[safeSetProperty] Property "${key}" exceeds size limit. Chunking...`);
+
+    Logger.log(
+      `[safeSetProperty] Property "${key}" exceeds size limit. Chunking...`
+    );
     return chunkAndStoreProperty(props, key, data);
   } catch (error) {
-    logError('safeSetProperty', error, { key });
+    logError("safeSetProperty", error, { key });
     throw error;
   }
 }
@@ -314,43 +366,53 @@ function chunkAndStoreProperty(props, baseKey, data) {
     const jsonStr = JSON.stringify(data);
     const chunkSize = PROPERTIES_LIMITS.CHUNK_SIZE_BYTES;
     const chunks = [];
-    
+
     for (let i = 0; i < jsonStr.length; i += chunkSize) {
       chunks.push(jsonStr.substring(i, i + chunkSize));
     }
-    
-    Logger.log(`[chunkAndStoreProperty] Splitting "${baseKey}" into ${chunks.length} chunks`);
-    
-    props.setProperty(baseKey + '_meta', JSON.stringify({
-      chunked: true,
-      chunkCount: chunks.length,
-      originalSize: jsonStr.length,
-      timestamp: new Date().toISOString()
-    }));
-    
+
+    Logger.log(
+      `[chunkAndStoreProperty] Splitting "${baseKey}" into ${chunks.length} chunks`
+    );
+
+    props.setProperty(
+      baseKey + "_meta",
+      JSON.stringify({
+        chunked: true,
+        chunkCount: chunks.length,
+        originalSize: jsonStr.length,
+        timestamp: new Date().toISOString(),
+      })
+    );
+
     chunks.forEach((chunk, index) => {
       props.setProperty(`${baseKey}_chunk_${index}`, chunk);
     });
-    
-    return { success: true, chunked: true, chunks: chunks.length, size: jsonStr.length };
+
+    return {
+      success: true,
+      chunked: true,
+      chunks: chunks.length,
+      size: jsonStr.length,
+    };
   } catch (error) {
-    logError('chunkAndStoreProperty', error, { baseKey });
+    logError("chunkAndStoreProperty", error, { baseKey });
     throw error;
   }
 }
 
 function safeGetProperty(props, key) {
   try {
-    const metaJson = props.getProperty(key + '_meta');
-    
+    const metaJson = props.getProperty(key + "_meta");
+
     if (metaJson) {
       const meta = JSON.parse(metaJson);
-      
+
       if (!meta.chunked || !meta.chunkCount) {
-        logWarning('safeGetProperty', 'Invalid chunk metadata', { key });
+        logWarning("safeGetProperty", "Invalid chunk metadata", { key });
         return null;
       }
-      
+
       const chunks = [];
       for (let i = 0; i < meta.chunkCount; i++) {
         const chunk = props.getProperty(`${key}_chunk_${i}`);
@@ -359,14 +421,14 @@ function safeGetProperty(props, key) {
         }
         chunks.push(chunk);
       }
-      
-      return JSON.parse(chunks.join(''));
+
+      return JSON.parse(chunks.join(""));
     }
-    
+
     const json = props.getProperty(key);
     return json ? JSON.parse(json) : null;
   } catch (error) {
-    logError('safeGetProperty', error, { key });
+    logError("safeGetProperty", error, { key });
     return null;
   }
 }
@@ -384,40 +446,43 @@ function safeGetProperty(props, key) {
 const NOTIFICATION_CONFIG = {
   TOAST_DURATION_SHORT: 5,
   TOAST_DURATION_LONG: 10,
-  TOAST_DURATION_CRITICAL: 15
+  TOAST_DURATION_CRITICAL: 15,
 };
 
 function notifyUserError(message, options = {}) {
   const config = {
-    title: options.title || 'Error',
+    title: options.title || "Error",
     duration: options.duration || NOTIFICATION_CONFIG.TOAST_DURATION_LONG,
-    severity: options.severity || 'error',
-    fallbackToLog: options.fallbackToLog !== false
+    severity: options.severity || "error",
+    fallbackToLog: options.fallbackToLog !== false,
   };
-  
+
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
+
     if (ss) {
-      const titlePrefix = {
-        'info': 'ℹ️',
-        'warning': '⚠️',
-        'error': '❌',
-        'critical': '🚨'
-      }[config.severity] || '';
-      
-      const displayTitle = titlePrefix ? `${titlePrefix} ${config.title}` : config.title;
+      const titlePrefix =
+        {
+          info: "ℹ️",
+          warning: "⚠️",
+          error: "❌",
+          critical: "🚨",
+        }[config.severity] || "";
+
+      const displayTitle = titlePrefix
+        ? `${titlePrefix} ${config.title}`
+        : config.title;
       ss.toast(message, displayTitle, config.duration);
       Logger.log(`[Notification] ${config.severity.toUpperCase()}: ${message}`);
     } else {
-      throw new Error('SpreadsheetApp unavailable');
+      throw new Error("SpreadsheetApp unavailable");
     }
   } catch (error) {
     if (config.fallbackToLog) {
-      logWarning('notifyUserError', 'UI not available, logging notification', {
+      logWarning("notifyUserError", "UI not available, logging notification", {
         message,
         severity: config.severity,
-        error: error.toString()
+        error: error.toString(),
       });
     }
   }
@@ -430,11 +495,11 @@ function notifyUserError(message, options = {}) {
 
 ### Category 1: Lock Acquisitions (3 instances - HIGH/CRITICAL priority)
 
-| Location | Priority | Solution | Estimated Time |
-|----------|----------|----------|----------------|
-| [`core_saleslogPro.js:330`](core_saleslogPro.js:330) | HIGH | Replace with `withScriptLockRetry` | 30 min |
-| [`config_service.js:190`](config_service.js:190) | CRITICAL | Replace `waitLock` with `withScriptLockRetry` | 45 min |
-| [`sync_service.js:393`](sync_service.js:393) | HIGH | Wrap in `withScriptLockRetry` | 45 min |
+| Location                                             | Priority | Solution                                      | Estimated Time |
+| ---------------------------------------------------- | -------- | --------------------------------------------- | -------------- |
+| [`core_saleslogPro.js:330`](core_saleslogPro.js:330) | HIGH     | Replace with `withScriptLockRetry`            | 30 min         |
+| [`config_service.js:190`](config_service.js:190)     | CRITICAL | Replace `waitLock` with `withScriptLockRetry` | 45 min         |
+| [`sync_service.js:393`](sync_service.js:393)         | HIGH     | Wrap in `withScriptLockRetry`                 | 45 min         |
 
 **Total Category Time:** 2 hours
 
@@ -442,12 +507,12 @@ function notifyUserError(message, options = {}) {
 
 ### Category 2: Cache Invalidation (4 instances - MEDIUM/CRITICAL priority)
 
-| Location | Priority | Solution | Estimated Time |
-|----------|----------|----------|----------------|
-| [`core_saleslogPro.js:119`](core_saleslogPro.js:119) | MEDIUM | Wrap in try-catch, use `safeCacheRemove` | 15 min |
-| [`config_service.js:219`](config_service.js:219) | CRITICAL | Use `safeCacheRemoveAll` | 20 min |
-| [`sales_analytics.js:227`](sales_analytics.js:227) | MEDIUM | Use `safeCacheRemove` | 15 min |
-| [`sync_service.js:726`](sync_service.js:726) | GOOD | Enhance with `safeCacheRemoveAll` | 20 min |
+| Location                                             | Priority | Solution                                 | Estimated Time |
+| ---------------------------------------------------- | -------- | ---------------------------------------- | -------------- |
+| [`core_saleslogPro.js:119`](core_saleslogPro.js:119) | MEDIUM   | Wrap in try-catch, use `safeCacheRemove` | 15 min         |
+| [`config_service.js:219`](config_service.js:219)     | CRITICAL | Use `safeCacheRemoveAll`                 | 20 min         |
+| [`sales_analytics.js:227`](sales_analytics.js:227)   | MEDIUM   | Use `safeCacheRemove`                    | 15 min         |
+| [`sync_service.js:726`](sync_service.js:726)         | GOOD     | Enhance with `safeCacheRemoveAll`        | 20 min         |
 
 **Total Category Time:** 1.25 hours
 
@@ -455,10 +520,10 @@ function notifyUserError(message, options = {}) {
 
 ### Category 3: PropertiesService Size (2 instances - MEDIUM priority)
 
-| Location | Priority | Solution | Estimated Time |
-|----------|----------|----------|----------------|
-| [`config_service.js:822`](config_service.js:822) | MEDIUM | Use `safeSetProperty` with chunking | 45 min |
-| [`sync_service.js:827`](sync_service.js:827) | MEDIUM | Remove duplicate, use shared function | 15 min |
+| Location                                         | Priority | Solution                              | Estimated Time |
+| ------------------------------------------------ | -------- | ------------------------------------- | -------------- |
+| [`config_service.js:822`](config_service.js:822) | MEDIUM   | Use `safeSetProperty` with chunking   | 45 min         |
+| [`sync_service.js:827`](sync_service.js:827)     | MEDIUM   | Remove duplicate, use shared function | 15 min         |
 
 **Total Category Time:** 1 hour
 
@@ -466,9 +531,9 @@ function notifyUserError(message, options = {}) {
 
 ### Category 4: Event Trigger Notifications (1 instance - MEDIUM priority)
 
-| Location | Priority | Solution | Estimated Time |
-|----------|----------|----------|----------------|
-| [`core_saleslogPro.js:1562`](core_saleslogPro.js:1562) | MEDIUM | Add user notifications | 30 min |
+| Location                                               | Priority | Solution               | Estimated Time |
+| ------------------------------------------------------ | -------- | ---------------------- | -------------- |
+| [`core_saleslogPro.js:1562`](core_saleslogPro.js:1562) | MEDIUM   | Add user notifications | 30 min         |
 
 **Total Category Time:** 0.5 hours
 
@@ -492,34 +557,34 @@ function runHelperUnitTests() {
   testCacheOperations();
   testPropertiesValidation();
   testNotifications();
-  
-  Logger.log('All unit tests passed ✓');
+
+  Logger.log("All unit tests passed ✓");
 }
 
 function testLockRetry() {
   // Test normal acquisition
-  const result = withScriptLockRetry(() => 'success', { maxRetries: 0 });
-  assert(result === 'success', 'Normal acquisition failed');
-  
-  Logger.log('Lock retry tests passed ✓');
+  const result = withScriptLockRetry(() => "success", { maxRetries: 0 });
+  assert(result === "success", "Normal acquisition failed");
+
+  Logger.log("Lock retry tests passed ✓");
 }
 
 function testCacheOperations() {
   const cache = CacheService.getScriptCache();
-  cache.put('test_key', 'value', 60);
-  
-  const result = safeCacheRemove('test_key', 'test');
-  assert(result === true, 'Cache remove failed');
-  
-  Logger.log('Cache operation tests passed ✓');
+  cache.put("test_key", "value", 60);
+
+  const result = safeCacheRemove("test_key", "test");
+  assert(result === true, "Cache remove failed");
+
+  Logger.log("Cache operation tests passed ✓");
 }
 
 function testPropertiesValidation() {
-  const smallData = { test: 'a'.repeat(1000) };
-  const validation = validatePropertySize('TEST', smallData);
-  assert(validation.valid, 'Small data validation failed');
-  
-  Logger.log('Properties validation tests passed ✓');
+  const smallData = { test: "a".repeat(1000) };
+  const validation = validatePropertySize("TEST", smallData);
+  assert(validation.valid, "Small data validation failed");
+
+  Logger.log("Properties validation tests passed ✓");
 }
 ```
 
@@ -530,12 +595,14 @@ function testPropertiesValidation() {
 **Manual Test Scenarios:**
 
 1. **Concurrent Lock Test** (5 min)
+
    - Open 2 browser windows
    - Trigger same operation simultaneously
    - Verify both complete successfully
    - Check logs for retry attempts
 
 2. **Large Configuration Test** (10 min)
+
    - Add 100 salespeople
    - Save configuration
    - Verify chunking occurs
@@ -551,13 +618,13 @@ function testPropertiesValidation() {
 
 ### 4.3 Performance Benchmarks
 
-| Operation | Baseline | With Fixes | Acceptable | Status |
-|-----------|----------|------------|------------|--------|
-| Lock acquisition (no contention) | 5ms | 5ms | < 10ms | ✓ |
-| Lock acquisition (with retry) | N/A | 150ms | < 500ms | ✓ |
-| Cache invalidation | 10ms | 15ms | < 50ms | ✓ |
-| Properties save (small) | 20ms | 25ms | < 100ms | ✓ |
-| Properties save (chunked) | N/A | 200ms | < 500ms | ✓ |
+| Operation                        | Baseline | With Fixes | Acceptable | Status |
+| -------------------------------- | -------- | ---------- | ---------- | ------ |
+| Lock acquisition (no contention) | 5ms      | 5ms        | < 10ms     | ✓      |
+| Lock acquisition (with retry)    | N/A      | 150ms      | < 500ms    | ✓      |
+| Cache invalidation               | 10ms     | 15ms       | < 50ms     | ✓      |
+| Properties save (small)          | 20ms     | 25ms       | < 100ms    | ✓      |
+| Properties save (chunked)        | N/A      | 200ms      | < 500ms    | ✓      |
 
 ---
 
@@ -565,26 +632,28 @@ function testPropertiesValidation() {
 
 ### 5.1 Pre-Deployment Checklist
 
-- [ ] All helper functions created in separate files
-- [ ] Unit tests written and passing
-- [ ] Code review completed
-- [ ] Documentation updated
-- [ ] Backup of current version created (`v7.9.8` → `v7.9.8-backup`)
-- [ ] Rollback scripts prepared
-- [ ] Test environment configured
-- [ ] Stakeholders notified of deployment window
+- All helper functions created in separate files
+- Unit tests written and passing
+- Code review completed
+- Documentation updated
+- Backup of current version created (`v7.9.8` → `v7.9.8-backup`)
+- Rollback scripts prepared
+- Test environment configured
+- Stakeholders notified of deployment window
 
 ---
 
 ### 5.2 Phased Deployment Schedule
 
-**Phase 2: Foundation (Helpers) - 2 hours**
+#### Phase 2: Foundation (Helpers) - 2 hours
+
 - Deploy helper files to test environment
 - Run unit tests
 - Verify no impact on existing operations
 - **Go/No-Go Decision Point**
 
-**Phase 3: Lock Retry - 3 hours**
+#### Phase 3: Lock Retry - 3 hours
+
 - Update 3 lock acquisition points
 - Deploy to test environment
 - Run concurrent operation tests
@@ -593,7 +662,8 @@ function testPropertiesValidation() {
 - Deploy to production
 - Monitor for 24 hours
 
-**Phase 4: Cache Defense - 2 hours**
+#### Phase 4: Cache Defense - 2 hours
+
 - Update 4 cache invalidation points
 - Deploy to test environment
 - Run cache failure simulation
@@ -601,7 +671,8 @@ function testPropertiesValidation() {
 - Deploy to production
 - Monitor for 12 hours
 
-**Phase 5: Size Validation - 4 hours**
+#### Phase 5: Size Validation - 4 hours
+
 - Update Properties operations
 - Deploy to test environment
 - Test with large datasets
@@ -609,13 +680,15 @@ function testPropertiesValidation() {
 - Deploy to production
 - Monitor for 24 hours
 
-**Phase 6: Notifications - 1 hour**
+#### Phase 6: Notifications - 1 hour
+
 - Update onOpen trigger
 - Deploy to test environment
 - Test notifications
 - Deploy to production
 
-**Phase 7: Validation - 4 hours**
+#### Phase 7: Validation - 4 hours
+
 - Run full integration test suite
 - Performance benchmarking
 - User acceptance testing
@@ -625,19 +698,20 @@ function testPropertiesValidation() {
 
 ### 5.3 Rollback Procedures
 
-**Trigger Conditions:**
+#### Trigger Conditions
+
 - Error rate > 2% sustained for 15 minutes
 - Data corruption detected
 - Performance degradation > 50%
 - Multiple user complaints
 - Critical bug discovered
 
-**Rollback Steps:**
+#### Rollback Steps
 
 ```javascript
 // 1. Stop all running operations
 function emergencyStop() {
-  PropertiesService.getScriptProperties().setProperty('EMERGENCY_STOP', 'true');
+  PropertiesService.getScriptProperties().setProperty("EMERGENCY_STOP", "true");
 }
 
 // 2. Revert to backup version
@@ -646,28 +720,33 @@ function emergencyStop() {
 // 3. Clear all caches
 function clearAllCaches() {
   const cache = CacheService.getScriptCache();
-  cache.removeAll(['config_cache', 'salespersonMaps', 'visualConfig', 'monthlyAnalytics']);
+  cache.removeAll([
+    "config_cache",
+    "salespersonMaps",
+    "visualConfig",
+    "monthlyAnalytics",
+  ]);
 }
 
 // 4. Verify data integrity
 function verifyDataIntegrity() {
   const config = getConfiguration();
   const salespeople = config.salespeople || [];
-  
+
   // Check for duplicates
-  const names = salespeople.map(sp => sp.fullName);
+  const names = salespeople.map((sp) => sp.fullName);
   const hasDuplicates = names.length !== new Set(names).size;
-  
+
   if (hasDuplicates) {
-    throw new Error('Data corruption detected: duplicate salespeople');
+    throw new Error("Data corruption detected: duplicate salespeople");
   }
-  
+
   Logger.log(`Data integrity check passed: ${salespeople.length} salespeople`);
 }
 
 // 5. Re-enable operations
 function resumeOperations() {
-  PropertiesService.getScriptProperties().deleteProperty('EMERGENCY_STOP');
+  PropertiesService.getScriptProperties().deleteProperty("EMERGENCY_STOP");
 }
 ```
 
@@ -677,40 +756,43 @@ function resumeOperations() {
 
 ### 6.1 Risk Register
 
-| Risk ID | Description | Probability | Impact | Mitigation | Owner |
-|---------|-------------|-------------|--------|------------|-------|
-| R1 | Lock retry increases response time | MEDIUM | LOW | Monitor retry patterns, adjust parameters | Dev Team |
-| R2 | Cache failures cascade | LOW | MEDIUM | Circuit breaker pattern, fallback to no-cache | Dev Team |
-| R3 | Chunking complexity causes corruption | LOW | HIGH | Atomic operations, validation, monitoring | Dev Team |
-| R4 | Notifications spam users | LOW | LOW | Rate limiting, severity-based display | Dev Team |
-| R5 | Backward compatibility broken | LOW | HIGH | Comprehensive testing, gradual rollout | QA Team |
+| Risk ID | Description                           | Probability | Impact | Mitigation                                    | Owner    |
+| ------- | ------------------------------------- | ----------- | ------ | --------------------------------------------- | -------- |
+| R1      | Lock retry increases response time    | MEDIUM      | LOW    | Monitor retry patterns, adjust parameters     | Dev Team |
+| R2      | Cache failures cascade                | LOW         | MEDIUM | Circuit breaker pattern, fallback to no-cache | Dev Team |
+| R3      | Chunking complexity causes corruption | LOW         | HIGH   | Atomic operations, validation, monitoring     | Dev Team |
+| R4      | Notifications spam users              | LOW         | LOW    | Rate limiting, severity-based display         | Dev Team |
+| R5      | Backward compatibility broken         | LOW         | HIGH   | Comprehensive testing, gradual rollout        | QA Team  |
 
 ---
 
 ### 6.2 Contingency Plans
 
-**Risk R1: Response Time Degradation**
+#### Risk R1: Response Time Degradation
 
-*If retry logic adds excessive latency:*
+_If retry logic adds excessive latency:_
 
 ```javascript
 // Reduce retry count
 const LOCK_CONFIG_FAST = {
   maxRetries: 2,
   initialDelayMs: 50,
-  backoffMultiplier: 2
+  backoffMultiplier: 2,
 };
 
 // Add timeout monitoring
 function withScriptLockRetryWithTimeout(fn, options) {
   const startTime = Date.now();
-  
+
   try {
     return withScriptLockRetry(fn, options);
   } finally {
     const elapsed = Date.now() - startTime;
     if (elapsed > 1000) {
-      logWarning('Lock acquisition slow', { elapsed, operation: options.operationName });
+      logWarning("Lock acquisition slow", {
+        elapsed,
+        operation: options.operationName,
+      });
     }
   }
 }
@@ -718,40 +800,40 @@ function withScriptLockRetryWithTimeout(fn, options) {
 
 ---
 
-**Risk R3: Data Corruption from Chunking**
+#### Risk R3: Data Corruption from Chunking
 
-*If chunking causes data loss:*
+_If chunking causes data loss:_
 
 ```javascript
 // Integrity validation on every read
 function safeGetPropertyWithValidation(props, key) {
   const data = safeGetProperty(props, key);
-  
+
   if (!data) return null;
-  
+
   // Validate data structure
-  if (key === 'SALES_LOG_CONFIG') {
+  if (key === "SALES_LOG_CONFIG") {
     if (!data.salespeople || !Array.isArray(data.salespeople)) {
-      logError('safeGetProperty', 'Invalid configuration structure', { key });
-      
+      logError("safeGetProperty", "Invalid configuration structure", { key });
+
       // Attempt recovery from backup
       return attemptConfigRecovery(props);
     }
   }
-  
+
   return data;
 }
 
 function attemptConfigRecovery(props) {
   // Try to recover from last known good backup
-  const backupKey = 'SALES_LOG_CONFIG_BACKUP';
+  const backupKey = "SALES_LOG_CONFIG_BACKUP";
   const backup = safeGetProperty(props, backupKey);
-  
+
   if (backup) {
-    Logger.log('[Recovery] Restored configuration from backup');
+    Logger.log("[Recovery] Restored configuration from backup");
     return backup;
   }
-  
+
   return null;
 }
 ```
@@ -771,12 +853,12 @@ function logOperationMetrics(operation, duration, success, details = {}) {
     operation: operation,
     duration: duration,
     success: success,
-    details: details
+    details: details,
   };
-  
+
   // Log to Apps Script console
   Logger.log(`[Metrics] ${JSON.stringify(metric)}`);
-  
+
   // Optionally: Send to external monitoring service
   // UrlFetchApp.fetch('https://monitoring.example.com/metrics', {
   //   method: 'POST',
@@ -788,17 +870,17 @@ function logOperationMetrics(operation, duration, success, details = {}) {
 function processDaily() {
   const startTime = Date.now();
   let success = false;
-  
+
   try {
     withScriptLockRetry(() => {
       // ... processing logic ...
     });
     success = true;
   } catch (error) {
-    logError('processDaily', error);
+    logError("processDaily", error);
   } finally {
     const duration = Date.now() - startTime;
-    logOperationMetrics('processDaily', duration, success);
+    logOperationMetrics("processDaily", duration, success);
   }
 }
 ```
@@ -810,6 +892,7 @@ function processDaily() {
 ### 7.1 Definition of Done
 
 ✅ **All 27 issues addressed:**
+
 - 3 lock acquisition points enhanced
 - 4 cache invalidation points defended
 - 2 Properties size validation points added
@@ -817,16 +900,19 @@ function processDaily() {
 - 18 good patterns preserved
 
 ✅ **All tests passing:**
+
 - Unit tests: 100% pass rate
 - Integration tests: All scenarios successful
 - Performance benchmarks: Within acceptable limits
 
 ✅ **No regressions:**
+
 - Existing functionality preserved
 - No new errors introduced
 - User experience maintained or improved
 
 ✅ **Documentation complete:**
+
 - Helper functions documented
 - Usage examples provided
 - Troubleshooting guide updated
@@ -835,24 +921,27 @@ function processDaily() {
 
 ### 7.2 Post-Deployment Validation
 
-**Week 1 Monitoring:**
-- [ ] Error rate < 0.5%
-- [ ] Lock retry rate < 5%
-- [ ] Cache failure rate < 1%
-- [ ] No user complaints
-- [ ] Performance within acceptable limits
+#### Week 1 Monitoring
 
-**Week 2-4 Monitoring:**
-- [ ] Sustained low error rate
-- [ ] No data corruption incidents
-- [ ] Properties size warnings < 10/day
-- [ ] User satisfaction maintained
+- Error rate < 0.5%
+- Lock retry rate < 5%
+- Cache failure rate < 1%
+- No user complaints
+- Performance within acceptable limits
 
-**Sign-Off Criteria:**
-- [ ] 30 days of stable operation
-- [ ] All metrics within acceptable ranges
-- [ ] No critical issues identified
-- [ ] Team approval for phase completion
+#### Week 2-4 Monitoring
+
+- Sustained low error rate
+- No data corruption incidents
+- Properties size warnings < 10/day
+- User satisfaction maintained
+
+#### Sign-Off Criteria
+
+- 30 days of stable operation
+- All metrics within acceptable ranges
+- No critical issues identified
+- Team approval for phase completion
 
 ---
 
@@ -860,7 +949,7 @@ function processDaily() {
 
 ### 8.1 Code File Organization
 
-```
+```bash
 src/
 ├── utilities/
 │   ├── utilities_locks.js       # Lock retry helpers
@@ -881,15 +970,15 @@ tests/
 
 ### 8.2 Helper Function Quick Reference
 
-| Helper | Purpose | Returns | Throws |
-|--------|---------|---------|--------|
-| `withScriptLockRetry(fn, options)` | Lock with retry | fn() result | Error after max retries |
-| `safeCacheRemove(key, context)` | Safe cache removal | boolean | Never |
-| `safeCacheRemoveAll(keys, context)` | Bulk cache removal | {success, failed, total} | Never |
-| `validatePropertySize(key, data)` | Size validation | {valid, size, reason} | Never |
-| `safeSetProperty(props, key, data, opts)` | Safe storage | {success, chunked, chunks} | On failure |
-| `safeGetProperty(props, key)` | Safe retrieval | Data or null | Never |
-| `notifyUserError(msg, opts)` | User notification | void | Never |
+| Helper                                    | Purpose            | Returns                    | Throws                  |
+| ----------------------------------------- | ------------------ | -------------------------- | ----------------------- |
+| `withScriptLockRetry(fn, options)`        | Lock with retry    | fn() result                | Error after max retries |
+| `safeCacheRemove(key, context)`           | Safe cache removal | boolean                    | Never                   |
+| `safeCacheRemoveAll(keys, context)`       | Bulk cache removal | {success, failed, total}   | Never                   |
+| `validatePropertySize(key, data)`         | Size validation    | {valid, size, reason}      | Never                   |
+| `safeSetProperty(props, key, data, opts)` | Safe storage       | {success, chunked, chunks} | On failure              |
+| `safeGetProperty(props, key)`             | Safe retrieval     | Data or null               | Never                   |
+| `notifyUserError(msg, opts)`              | User notification  | void                       | Never                   |
 
 ---
 
@@ -902,22 +991,22 @@ const LOCK_CONFIG = {
   DEFAULT_INITIAL_DELAY_MS: 100,
   DEFAULT_BACKOFF_MULTIPLIER: 2,
   DEFAULT_MAX_DELAY_MS: 5000,
-  DEFAULT_LOCK_TIMEOUT_MS: 30000
+  DEFAULT_LOCK_TIMEOUT_MS: 30000,
 };
 
 // Properties limits
 const PROPERTIES_LIMITS = {
-  MAX_PROPERTY_SIZE_BYTES: 8192,      // 8KB
-  MAX_TOTAL_SIZE_BYTES: 450000,       // 450KB
-  CHUNK_SIZE_BYTES: 7000,             // 7KB per chunk
-  WARNING_THRESHOLD_BYTES: 7168       // 7KB warning
+  MAX_PROPERTY_SIZE_BYTES: 8192, // 8KB
+  MAX_TOTAL_SIZE_BYTES: 450000, // 450KB
+  CHUNK_SIZE_BYTES: 7000, // 7KB per chunk
+  WARNING_THRESHOLD_BYTES: 7168, // 7KB warning
 };
 
 // Notification durations
 const NOTIFICATION_CONFIG = {
-  TOAST_DURATION_SHORT: 5,            // 5 seconds
-  TOAST_DURATION_LONG: 10,            // 10 seconds
-  TOAST_DURATION_CRITICAL: 15         // 15 seconds
+  TOAST_DURATION_SHORT: 5, // 5 seconds
+  TOAST_DURATION_LONG: 10, // 10 seconds
+  TOAST_DURATION_CRITICAL: 15, // 15 seconds
 };
 ```
 
@@ -927,22 +1016,23 @@ const NOTIFICATION_CONFIG = {
 
 This remediation plan provides a **comprehensive, battle-tested approach** to addressing all 27 issues identified in Phase 1 analysis. The strategy emphasizes:
 
-1. **Safety First:** Non-breaking changes with extensive rollback procedures
-2. **Defense in Depth:** Multiple layers of error handling
-3. **Operational Excellence:** Monitoring, metrics, and clear success criteria
-4. **Developer Experience:** Well-documented helpers with clear usage examples
+- **Safety First:** Non-breaking changes with extensive rollback procedures
+- **Defense in Depth:** Multiple layers of error handling
+- **Operational Excellence:** Monitoring, metrics, and clear success criteria
+- **Developer Experience:** Well-documented helpers with clear usage examples
 
 **Next Steps:**
-1. Review and approve this plan
-2. Schedule implementation in agreed timeframe
-3. Begin Phase 2: Helper Function Library
-4. Execute phased deployment per schedule
+
+- Review and approve this plan
+- Schedule implementation in agreed timeframe
+- Begin Phase 2: Helper Function Library
+- Execute phased deployment per schedule
 
 **Estimated Total Effort:** 16 hours implementation + 8 hours testing = **24 hours**
 
 ---
 
-**Document Prepared By:** Roo (Architect Mode)  
-**Review Status:** ⏳ Pending approval  
-**Version:** 1.0  
+**Document Prepared By:** Roo (Architect Mode)
+**Review Status:** ⏳ Pending approval
+**Version:** 1.0
 **Last Updated:** 2025-10-13

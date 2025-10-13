@@ -31,7 +31,7 @@ We strive to provide timely support to our customers:
 - **General Support**: Response within 2 business days
 - **Feature Requests**: Acknowledgment within 3 business days
 
-*Response times are for initial acknowledgment. Resolution time varies based on issue complexity.*
+_Response times are for initial acknowledgment. Resolution time varies based on issue complexity._
 
 ---
 
@@ -65,11 +65,12 @@ A complete bug report should contain:
 - **Workaround**: Any temporary solution you've found (if applicable)
 
 **Example:**
-```
+
+```txt
 Title: Process Daily fails with "undefined" error when stock number is blank
 
 Description:
-When processing daily sales, the system shows an error if any stock 
+When processing daily sales, the system shows an error if any stock
 number field is left blank.
 
 Steps to Reproduce:
@@ -79,7 +80,7 @@ Steps to Reproduce:
 4. Error appears: "Cannot read property 'toString' of undefined"
 
 Expected Behavior:
-System should either accept blank stock numbers or provide a clear 
+System should either accept blank stock numbers or provide a clear
 validation message
 
 Actual Behavior:
@@ -117,14 +118,15 @@ We welcome feature suggestions from licensed customers. Your input helps shape t
 - **Priority**: Low / Medium / High (from your perspective)
 
 **Example:**
-```
+
+```code
 Feature Name: Export to CSV
 
 Business Need:
 Need to export monthly sales data to external accounting software
 
 Use Case:
-At month-end, export the archived month sheet to CSV format for 
+At month-end, export the archived month sheet to CSV format for
 import into QuickBooks
 
 Current Workaround:

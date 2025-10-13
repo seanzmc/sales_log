@@ -4,7 +4,7 @@
 [![Platform](https://img.shields.io/badge/platform-Google%20Apps%20Script-green.svg)](https://developers.google.com/apps-script)
 [![License](https://img.shields.io/badge/license-Commercial-orange.svg)](LICENSE)
 
-> **Professional Automotive Sales Tracking & Analytics for Google Sheets**
+## _Professional Automotive Sales Tracking & Analytics for Google Sheets_
 
 Transform your dealership's sales operations with **Sales Log Pro** — a production-ready, enterprise-grade sales management system that eliminates manual tracking errors, automates daily reporting, and delivers real-time performance insights. Built specifically for automotive dealerships, our battle-tested solution integrates seamlessly with your existing Google Sheets workflow.
 
@@ -25,30 +25,39 @@ Transform your dealership's sales operations with **Sales Log Pro** — a produc
 ## ✨ Key Features
 
 ### 🚀 **One-Click Setup Wizard**
+
 Complete installation in minutes with automated sheet creation, pre-configured formatting, and intelligent data structure setup.
 
 ### ⚙️ **Settings UI (No Code Required)**
+
 Manage your entire configuration through an intuitive sidebar interface — salespeople, colors, thresholds, and date settings without touching code.
 
 ### 📊 **Real-Time Analytics Dashboard**
+
 Comprehensive sales metrics automatically calculated and displayed: team totals, individual rankings, performance percentages, and 3-month rolling averages.
 
 ### 🔄 **Automated Month-End Rollover**
+
 One-click month archiving with preserved analytics, automatic MTD reset, and recalculated rolling averages.
 
 ### 👥 **Salesperson Alias System**
+
 Flexible name mapping handles nicknames, display codes, and full names — plus automatic split sales support (John/Jane = 0.5 each).
 
 ### 🔍 **Duplicate Detection**
+
 Smart stock number validation highlights duplicates and cross-references deposit records to prevent entry errors.
 
 ### 🤝 **Split Sales Support**
+
 Seamlessly handles shared sales with automatic fractional credit calculation and accurate performance tracking.
 
 ### 🏆 **Performance Leaderboards**
+
 Live rankings with color-coded pace indicators, month-to-date totals, and rolling averages for instant performance visibility.
 
 ### 📈 **3-Month Rolling Averages**
+
 Automatic calculation of historical performance trends from archived month data for accurate forecasting.
 
 ---
@@ -58,6 +67,7 @@ Automatic calculation of historical performance trends from archived month data 
 Get up and running in under 10 minutes with our streamlined setup process.
 
 ### Prerequisites
+
 - Google Workspace account
 - Google Sheets access
 - Modern web browser (Chrome, Firefox, Safari, or Edge recommended)
@@ -76,26 +86,28 @@ Get up and running in under 10 minutes with our streamlined setup process.
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| **[Quick Start Guide](QUICKSTART.md)** | Get started in 10 minutes with step-by-step installation |
-| **[User Guide](docs/guides/USER_GUIDE.md)** | Complete guide to daily operations and features |
-| **[Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md)** | Production deployment and best practices |
-| **[API Reference](docs/api/API_REFERENCE.md)** | Developer documentation and function reference |
-| **[Troubleshooting Guide](docs/troubleshooting/TROUBLESHOOTING.md)** | Common issues and solutions |
-| **[FAQ](docs/troubleshooting/FAQ.md)** | Frequently asked questions |
-| **[Support](SUPPORT.md)** | How to get help and report issues |
+| Document                                                             | Description                                              |
+| -------------------------------------------------------------------- | -------------------------------------------------------- |
+| **[Quick Start Guide](QUICKSTART.md)**                               | Get started in 10 minutes with step-by-step installation |
+| **[User Guide](docs/guides/USER_GUIDE.md)**                          | Complete guide to daily operations and features          |
+| **[Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md)**              | Production deployment and best practices                 |
+| **[API Reference](docs/api/API_REFERENCE.md)**                       | Developer documentation and function reference           |
+| **[Troubleshooting Guide](docs/troubleshooting/TROUBLESHOOTING.md)** | Common issues and solutions                              |
+| **[FAQ](docs/troubleshooting/FAQ.md)**                               | Frequently asked questions                               |
+| **[Support](SUPPORT.md)**                                            | How to get help and report issues                        |
 
 ---
 
 ## 💻 System Requirements
 
 ### Required
+
 - **Google Workspace Account** with Apps Script access
 - **Google Sheets** with appropriate permissions
 - **Modern Web Browser** for configuration interface
 
 ### Recommended
+
 - **Chrome or Firefox** for optimal Settings UI experience
 - **Editor permissions** for full functionality
 - **Regular backups** via month archiving
@@ -104,7 +116,7 @@ Get up and running in under 10 minutes with our streamlined setup process.
 
 ## 📁 Project Structure
 
-```
+```bash
 sales-log-pro/
 ├── src/                          # Source code files
 │   ├── core_saleslogPro.js      # Main processing engine
@@ -208,14 +220,10 @@ Ready to transform your dealership's sales tracking? Install **Sales Log Pro** a
 
 ---
 
-<div align="center">
-
 **Sales Log Pro v8.1.0** — Transform Your Sales Tracking Today
 
 [![Get Started](https://img.shields.io/badge/Get%20Started-Quick%20Start%20Guide-brightgreen?style=for-the-badge)](QUICKSTART.md)
 [![Documentation](https://img.shields.io/badge/Read-Documentation-blue?style=for-the-badge)](docs/guides/USER_GUIDE.md)
 [![Support](https://img.shields.io/badge/Get-Support-orange?style=for-the-badge)](SUPPORT.md)
 
-*Professional • Reliable • Battle-Tested*
-
-</div>
+---

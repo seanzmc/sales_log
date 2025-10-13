@@ -10,24 +10,27 @@ Get up and running with Sales Log Pro in **10 minutes**.
 ## Installation (5 Steps)
 
 ### Step 1: Create Your Spreadsheet
+
 1. Open [Google Sheets](https://sheets.google.com)
 2. Create a new blank spreadsheet
 3. Name it "Sales Log Pro" or your preferred name
 
-**Time: 1 minute**
+   _Time: 1 minute_
 
 ---
 
 ### Step 2: Open Apps Script Editor
+
 1. In your new spreadsheet, click **Extensions** → **Apps Script**
 2. Delete any default code in the editor
 3. Keep the Apps Script tab open
 
-**Time: 30 seconds**
+   _Time: 30 seconds_
 
 ---
 
 ### Step 3: Copy Project Files
+
 1. Download or clone the Sales Log Pro repository
 2. In the Apps Script editor, create files matching the `src/` directory:
    - Click the **+** next to Files
@@ -36,6 +39,7 @@ Get up and running with Sales Log Pro in **10 minutes**.
 3. Copy and paste the content from each source file into the corresponding Apps Script file
 
 **Files to add:**
+
 - `core_saleslogPro.js` → Code.gs
 - `config_service.js` → config_service.gs
 - `sales_analytics.js` → sales_analytics.gs
@@ -44,11 +48,12 @@ Get up and running with Sales Log Pro in **10 minutes**.
 - `config_sidebar.css.html` → config_sidebar_css.html
 - `sidebar_js.html` → sidebar_js.html
 
-**Time: 5 minutes**
+  _Time: 5 minutes_
 
 ---
 
 ### Step 4: Save and Authorize
+
 1. Click the **Save** icon (💾) in the Apps Script editor
 2. Click **Run** → Select `onOpen` function
 3. Click **Review Permissions** when prompted
@@ -56,24 +61,26 @@ Get up and running with Sales Log Pro in **10 minutes**.
 5. Click **Advanced** → **Go to [Your Project] (unsafe)**
 6. Click **Allow** to grant necessary permissions
 
-**Time: 2 minutes**
+   _Time: 2 minutes_
 
 ---
 
 ### Step 5: Run Setup Wizard
+
 1. Return to your Google Sheet (refresh the page if needed)
 2. You should see a new menu: **Sales Log**
 3. Click **Sales Log** → **Run Setup Wizard**
 4. Follow the on-screen prompts to create initial sheets
 5. Wait for the setup to complete (progress shown in toast notifications)
 
-**Time: 1 minute**
+   _Time: 1 minute_
 
 ---
 
 ## First Configuration
 
 ### Add Your Sales Team
+
 1. Click **Sales Log** → **Settings**
 2. In the Settings sidebar, click **Add Salesperson**
 3. Enter the salesperson's information:
@@ -83,15 +90,16 @@ Get up and running with Sales Log Pro in **10 minutes**.
 4. Click **Add**
 5. Repeat for each team member
 
-**Tip:** Aliases help with data entry. If someone enters "Mike" instead of "Michael Chen", the system will recognize it.
+   **\*Tip:** Aliases help with data entry. If someone enters "Mike" instead of "Michael Chen", the system will recognize it.\*
 
-**Time: 2-3 minutes**
+   _Time: 2-3 minutes_
 
 ---
 
 ## First Use
 
 ### Enter Sales Data
+
 1. Open the **TODAY** sheet (created by setup wizard)
 2. Enter sales information in the appropriate columns:
    - **Date**: Sale date (auto-populated for today)
@@ -104,6 +112,7 @@ Get up and running with Sales Log Pro in **10 minutes**.
 3. Enter multiple sales as needed
 
 ### Process Daily Sales
+
 1. Click **Sales Log** → **Process Daily**
 2. The system will:
    - Validate salesperson names
@@ -113,7 +122,7 @@ Get up and running with Sales Log Pro in **10 minutes**.
    - Format the sheet with color coding
 3. Review the processed results
 
-**Time: 2-3 minutes per day**
+   _Time: 2-3 minutes per day_
 
 ---
 
@@ -122,19 +131,23 @@ Get up and running with Sales Log Pro in **10 minutes**.
 ### Common Issues
 
 **"Salesperson not found" error:**
+
 - Verify the name matches exactly (or use an alias)
 - Add the salesperson through Settings if missing
 
 **Setup wizard doesn't appear:**
+
 - Refresh the spreadsheet page
 - Wait 10-15 seconds for the menu to load
 - Check that you granted all permissions
 
 **Menu is missing:**
+
 - Close and reopen the spreadsheet
 - Check Extensions → Apps Script to ensure all files saved correctly
 
 **Processing is slow:**
+
 - First run may take longer (15-30 seconds)
 - Subsequent runs are faster due to caching
 
@@ -151,12 +164,14 @@ Get up and running with Sales Log Pro in **10 minutes**.
 ## What's Next?
 
 ### Explore Advanced Features
+
 - **Sales Analytics**: Click Sales Log → Show Sales Analytics for detailed reporting
 - **Archive System**: Monthly sheets are created automatically on the 1st of each month
 - **Custom Formatting**: Adjust colors and thresholds in Settings → Visual tab
 - **Date Settings**: Configure weekend handling in Settings → Dates tab
 
 ### Get Help
+
 - **Full Documentation**: See [README.md](README.md) for comprehensive documentation
 - **Troubleshooting**: Check [SUPPORT.md](SUPPORT.md) for common issues and solutions
 - **Feature Requests**: Contact support with suggestions for improvements
@@ -165,14 +180,14 @@ Get up and running with Sales Log Pro in **10 minutes**.
 
 ## Quick Reference
 
-| Action | Menu Path |
-|--------|-----------|
-| Add salesperson | Sales Log → Settings → Add Salesperson |
-| Process daily sales | Sales Log → Process Daily |
-| View analytics | Sales Log → Show Sales Analytics |
-| Archive month | Sales Log → Archive Current Month |
-| Run setup | Sales Log → Run Setup Wizard |
-| Change settings | Sales Log → Settings |
+| Action              | Menu Path                              |
+| ------------------- | -------------------------------------- |
+| Add salesperson     | Sales Log → Settings → Add Salesperson |
+| Process daily sales | Sales Log → Process Daily              |
+| View analytics      | Sales Log → Show Sales Analytics       |
+| Archive month       | Sales Log → Archive Current Month      |
+| Run setup           | Sales Log → Run Setup Wizard           |
+| Change settings     | Sales Log → Settings                   |
 
 ---
 
@@ -189,6 +204,7 @@ Get up and running with Sales Log Pro in **10 minutes**.
 ## Support
 
 If you encounter any issues during setup, please refer to:
+
 - [README.md](README.md) - Detailed documentation
 - [SUPPORT.md](SUPPORT.md) - Support information and troubleshooting
 

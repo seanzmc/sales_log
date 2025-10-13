@@ -11,7 +11,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Core platform and runtime environment for Sales Log Pro
 - **Provider**: Google LLC
 - **License**: Apache License 2.0
-- **Website**: https://developers.google.com/apps-script
+- **Website**: <https://developers.google.com/apps-script>
 - **Usage**: Provides the scripting environment, APIs, and execution infrastructure for all Sales Log Pro functionality
 
 **Description**: Google Apps Script is a JavaScript-based development platform that makes it fast and easy to create business applications that integrate with Google Workspace. Sales Log Pro is built entirely on this platform, utilizing its APIs for Sheets, Properties Service, Cache Service, and UI components.
@@ -27,10 +27,11 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Spreadsheet data management and manipulation
 - **Provider**: Google LLC
 - **License**: Subject to Google APIs Terms of Service
-- **Documentation**: https://developers.google.com/apps-script/reference/spreadsheet
+- **Documentation**: <https://developers.google.com/apps-script/reference/spreadsheet>
 - **Usage**: All sheet creation, reading, writing, and formatting operations
 
 **Key Features Used**:
+
 - Spreadsheet and sheet management
 - Range operations (reading/writing data)
 - Formatting and styling
@@ -42,7 +43,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Persistent key-value storage for configuration data
 - **Provider**: Google LLC
 - **License**: Subject to Google APIs Terms of Service
-- **Documentation**: https://developers.google.com/apps-script/reference/properties
+- **Documentation**: <https://developers.google.com/apps-script/reference/properties>
 - **Usage**: Stores user configuration, settings, and preferences
 
 ### Cache Service
@@ -50,7 +51,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Temporary data caching for performance optimization
 - **Provider**: Google LLC
 - **License**: Subject to Google APIs Terms of Service
-- **Documentation**: https://developers.google.com/apps-script/reference/cache
+- **Documentation**: <https://developers.google.com/apps-script/reference/cache>
 - **Usage**: Caches configuration data and computed values to improve response times
 
 ### HTML Service
@@ -58,7 +59,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Generates user interface components (sidebars, dialogs)
 - **Provider**: Google LLC
 - **License**: Subject to Google APIs Terms of Service
-- **Documentation**: https://developers.google.com/apps-script/reference/html
+- **Documentation**: <https://developers.google.com/apps-script/reference/html>
 - **Usage**: Creates Settings sidebar and configuration interfaces
 
 ### Lock Service
@@ -66,7 +67,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Prevents concurrent modification conflicts
 - **Provider**: Google LLC
 - **License**: Subject to Google APIs Terms of Service
-- **Documentation**: https://developers.google.com/apps-script/reference/lock
+- **Documentation**: <https://developers.google.com/apps-script/reference/lock>
 - **Usage**: Ensures atomic configuration updates and data integrity
 
 ---
@@ -79,15 +80,16 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Designer**: Christian Robertson (Google)
 - **License**: Apache License 2.0
 - **Source**: Google Fonts
-- **Website**: https://fonts.google.com/specimen/Roboto
+- **Website**: <https://fonts.google.com/specimen/Roboto>
 - **Usage**: Primary font for Settings sidebar and UI components
 
 **Variants Used**:
+
 - Roboto Regular (400)
 - Roboto Medium (500)
 - Roboto Bold (700)
 
-**License Information**: The Roboto font is licensed under the Apache License 2.0, allowing for commercial use, modification, and distribution. Full license text available at: http://www.apache.org/licenses/LICENSE-2.0
+**License Information**: The Roboto font is licensed under the Apache License 2.0, allowing for commercial use, modification, and distribution. Full license text available at: <http://www.apache.org/licenses/LICENSE-2.0>
 
 ---
 
@@ -110,7 +112,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 
 - **Purpose**: Development dependency management (optional)
 - **License**: MIT License (Node.js), Artistic License 2.0 (npm)
-- **Website**: https://nodejs.org/
+- **Website**: <https://nodejs.org/>
 - **Usage**: Optional tooling for local development and clasp integration
 
 **Note**: Not required for end-user deployment or operation.
@@ -120,7 +122,7 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 - **Purpose**: Command-line tool for Apps Script development
 - **Provider**: Google LLC
 - **License**: Apache License 2.0
-- **Repository**: https://github.com/google/clasp
+- **Repository**: <https://github.com/google/clasp>
 - **Usage**: Development deployment automation (optional)
 
 **Note**: Development tool only, not included in production distribution.
@@ -144,9 +146,9 @@ Sales Log Pro is built using various third-party technologies, platforms, and re
 
 Sales Log Pro uses Google's APIs and services, which are governed by:
 
-- **Google APIs Terms of Service**: https://developers.google.com/terms
-- **Google Workspace Terms of Service**: https://workspace.google.com/terms
-- **Apps Script Terms**: https://script.google.com/home/terms
+- **Google APIs Terms of Service**: <https://developers.google.com/terms>
+- **Google Workspace Terms of Service**: <https://workspace.google.com/terms>
+- **Apps Script Terms**: <https://script.google.com/home/terms>
 
 **Compliance**: Sales Log Pro is designed and implemented in full compliance with these terms of service.
 
@@ -170,9 +172,10 @@ Several components used by Sales Log Pro are licensed under the Apache License 2
 
 **License Summary**: Permits commercial use, modification, distribution, and patent use. Requires preservation of copyright and license notices.
 
-**Full License Text**: http://www.apache.org/licenses/LICENSE-2.0
+**Full License Text**: <http://www.apache.org/licenses/LICENSE-2.0>
 
 **Key Terms**:
+
 - Commercial use permitted
 - Modification permitted
 - Distribution permitted
@@ -192,6 +195,7 @@ Sales Log Pro is designed with minimal external dependencies:
 - **Self-contained**: Does not require external services or data sources
 
 This design ensures:
+
 - Maximum reliability and uptime
 - No external security vulnerabilities
 - Simplified deployment and maintenance
@@ -233,6 +237,7 @@ Data processed by Sales Log Pro is subject to:
 ### No External Data Transmission
 
 Sales Log Pro does not:
+
 - Transmit data to external servers
 - Use third-party analytics services
 - Make external API calls
@@ -247,6 +252,7 @@ All data remains within your Google Workspace environment.
 This attribution document is current as of the release date of this version of Sales Log Pro.
 
 **Updates**:
+
 - New third-party components will be documented in future releases
 - License changes will be noted in CHANGELOG.md
 - Deprecated components will be listed with removal version
@@ -260,12 +266,14 @@ This attribution document is current as of the release date of this version of S
 ### For Attribution Questions
 
 If you have questions about:
+
 - License compliance
 - Third-party component usage
 - Attribution requirements
 - Intellectual property rights
 
 Please contact support (licensed customers only) or refer to:
+
 - [LICENSE](LICENSE) - Sales Log Pro license terms
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development and IP policies
 
@@ -289,6 +297,7 @@ Sales Log Pro development team acknowledges:
 Sales Log Pro is committed to full compliance with all applicable licenses and terms of service for third-party components.
 
 **Compliance Measures**:
+
 - Regular license review and updates
 - Adherence to attribution requirements
 - Respect for intellectual property rights
@@ -298,8 +307,8 @@ Sales Log Pro is committed to full compliance with all applicable licenses and t
 
 ---
 
-**Last Updated**: January 2024  
-**Sales Log Pro Version**: 1.0.0  
+**Last Updated**: January 2024
+**Sales Log Pro Version**: 1.0.0
 **Document Version**: 1.0
 
 For the most current version of this document, please refer to the latest release of Sales Log Pro.

@@ -33,3 +33,6 @@ coverage/
 # Temporary files
 temp/
 *.tmp
+
+# Prettier configuration
+.prettierrc
