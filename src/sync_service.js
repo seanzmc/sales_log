@@ -101,11 +101,15 @@ function onEditSalespeopleSheet(e) {
         }
       }
       
-      // Show error to user
+      // Format detailed error message for user
+      const rowDisplay = result.rowNumber ? 'Row ' + result.rowNumber + ' - ' : '';
+      const errorMessage = rowDisplay + result.error;
+      
+      // Show error to user with detailed context
       SpreadsheetApp.getActiveSpreadsheet().toast(
-        'Edit rejected: ' + result.error,
-        'Sync Error',
-        5
+        errorMessage,
+        'Edit Rejected - Validation Error',
+        10
       );
       
       // Revert the cell(s) to previous value if available
@@ -173,9 +177,10 @@ function onEditSalespeopleSheet(e) {
  *
  * @param {Array} rowData - [fullName, aliases, displayCode]
  * @param {string|null} existingFullName - Full name of existing salesperson (for updates)
+ * @param {number} rowNumber - Row number for error context (optional)
  * @returns {Object} {valid: boolean, errors: Array, sanitized: Object}
  */
-function validateSheetEdit(rowData, existingFullName) {
+function validateSheetEdit(rowData, existingFullName, rowNumber) {
   const errors = [];
   const fullName = rowData[COL_FULLNAME] ? String(rowData[COL_FULLNAME]).trim() : '';
   const aliases = rowData[COL_ALIASES] ? String(rowData[COL_ALIASES]).trim() : '';
@@ -193,28 +198,68 @@ function validateSheetEdit(rowData, existingFullName) {
   
   // Validate fullName - required
   if (!fullName) {
-    errors.push('Full Name: field is required');
+    errors.push({
+      field: 'Full Name',
+      message: 'field is required',
+      value: '(empty)',
+      column: 'A'
+    });
   } else if (fullName.length < 2) {
-    errors.push('Full Name: must be at least 2 characters');
+    errors.push({
+      field: 'Full Name',
+      message: 'must be at least 2 characters',
+      value: '"' + fullName + '"',
+      column: 'A'
+    });
   } else if (fullName.length > 100) {
-    errors.push('Full Name: must be less than 100 characters');
+    errors.push({
+      field: 'Full Name',
+      message: 'must be less than 100 characters',
+      value: '"' + fullName.substring(0, 20) + '..." (' + fullName.length + ' chars)',
+      column: 'A'
+    });
   } else if (!/^[A-Za-z\s\-']+$/.test(fullName)) {
-    errors.push('Full Name: can only contain letters, spaces, hyphens, and apostrophes');
+    errors.push({
+      field: 'Full Name',
+      message: 'can only contain letters, spaces, hyphens, and apostrophes',
+      value: '"' + fullName + '"',
+      column: 'A'
+    });
   }
   
   // Validate aliases - optional but must be valid if provided
   if (aliases && aliases.length > 200) {
-    errors.push('Aliases: must be less than 200 characters');
+    errors.push({
+      field: 'Aliases',
+      message: 'must be less than 200 characters',
+      value: '"' + aliases.substring(0, 20) + '..." (' + aliases.length + ' chars)',
+      column: 'B'
+    });
   }
   if (aliases && !/^[A-Za-z0-9\s,\-']+$/.test(aliases)) {
-    errors.push('Aliases: can only contain letters, numbers, spaces, commas, hyphens, and apostrophes');
+    errors.push({
+      field: 'Aliases',
+      message: 'can only contain letters, numbers, spaces, commas, hyphens, and apostrophes',
+      value: '"' + aliases + '"',
+      column: 'B'
+    });
   }
   
   // Validate displayCode - required
   if (!displayCode) {
-    errors.push('Display Code: field is required');
+    errors.push({
+      field: 'Display Code',
+      message: 'field is required',
+      value: '(empty)',
+      column: 'C'
+    });
   } else if (!/^[A-Za-z0-9]{2,4}$/.test(displayCode)) {
-    errors.push('Display Code: must be 2-4 alphanumeric characters');
+    errors.push({
+      field: 'Display Code',
+      message: 'must be 2-4 alphanumeric characters',
+      value: '"' + displayCode + '"',
+      column: 'C'
+    });
   }
   
   // If validation passed, create sanitized data and perform context-aware validation
@@ -238,7 +283,12 @@ function validateSheetEdit(rowData, existingFullName) {
       );
       
       if (duplicateCode) {
-        errors.push('Display Code: "' + sanitized.displayCode + '" is already used by "' + duplicateCode.fullName + '"');
+        errors.push({
+          field: 'Display Code',
+          message: 'already used by "' + duplicateCode.fullName + '"',
+          value: '"' + sanitized.displayCode + '"',
+          column: 'C'
+        });
       }
       
     } catch (configError) {
@@ -303,12 +353,21 @@ function syncRowToProperties(row, rowData, oldValue) {
     }
     
     // Validate the data with context
-    const validation = validateSheetEdit(rowData, existingSalesperson ? existingSalesperson.fullName : null);
+    const validation = validateSheetEdit(rowData, existingSalesperson ? existingSalesperson.fullName : null, row);
     
     if (!validation.valid) {
+      // Format detailed error message with row and field context
+      const errorDetails = validation.errors.map(err => {
+        if (typeof err === 'string') {
+          return err; // Backward compatibility for string errors
+        }
+        return 'Column ' + err.column + ' (' + err.field + '): ' + err.message + ' [value: ' + err.value + ']';
+      }).join('\n');
+      
       return {
         success: false,
-        error: validation.errors.join('; ')
+        error: errorDetails,
+        rowNumber: row
       };
     }
     
@@ -328,7 +387,8 @@ function syncRowToProperties(row, rowData, oldValue) {
     if (duplicateName) {
       return {
         success: false,
-        error: 'A salesperson with the name "' + sanitized.fullName + '" already exists'
+        error: 'Column A (Full Name): A salesperson named "' + sanitized.fullName + '" already exists',
+        rowNumber: row
       };
     }
     
@@ -341,7 +401,8 @@ function syncRowToProperties(row, rowData, oldValue) {
     if (aliasConflict) {
       return {
         success: false,
-        error: aliasConflict
+        error: 'Column B (Aliases): ' + aliasConflict,
+        rowNumber: row
       };
     }
     
