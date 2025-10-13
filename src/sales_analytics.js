@@ -50,7 +50,7 @@ function calculateMonthlyAnalytics() {
       }
     }
 
-    // Get sheet references
+    // Standard sheet validation pattern - ensures all required sheets exist
     const sheets = getSheets();
     const monthlySheet = sheets.monthly;
 
@@ -224,7 +224,17 @@ function getMonthlyAnalyticsSummary() {
  * Should be called after processDaily, recalcMtdFromMonthly, or manual data edits.
  */
 function invalidateAnalyticsCache() {
-  CACHE.remove(CACHE_KEY_ANALYTICS);
+  try {
+    CACHE.remove(CACHE_KEY_ANALYTICS);
+  } catch (error) {
+    logError('invalidateAnalyticsCache', error, {
+      severity: 'MEDIUM',
+      operation: 'cache_invalidation',
+      cacheKey: CACHE_KEY_ANALYTICS,
+      impact: 'Stale analytics data may be served until cache expires naturally (5 minutes)'
+    });
+    // Continue execution - cache invalidation failure is non-fatal
+  }
 }
 
 // ============================================================================
@@ -670,6 +680,7 @@ function refreshAnalyticsManually() {
     }
 
     toastInfo("Refreshing analytics...", "Working");
+    // Standard sheet validation pattern - ensures all required sheets exist
     const sheets = getSheets();
     invalidateAnalyticsCache();
     const analyticsData = calculateMonthlyAnalytics();

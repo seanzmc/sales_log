@@ -390,19 +390,29 @@ function validateSheetEdit(rowData, existingFullName, rowNumber) {
  * // }
  */
 function syncRowToProperties(row, rowData, oldValue) {
-  const lock = LockService.getScriptLock();
   let backupKey = null;
   
+  // ===== PHASE 1: LOCK ACQUISITION =====
+  // Acquire script lock with exponential backoff retry logic to prevent race conditions
+  // with concurrent edits. Retry logic provides better resilience under contention.
+  const lockResult = acquireScriptLockWithRetry();
+  
+  // Check if lock acquisition was successful
+  if (!lockResult.success) {
+    const errorMsg = 'Could not acquire lock after ' + lockResult.attempts +
+                     ' attempts (' + lockResult.totalTime + 'ms). ' +
+                     'Please try again in a moment.';
+    Logger.log('[Sync] Lock acquisition failed for row ' + row + ': ' + errorMsg);
+    return {
+      success: false,
+      error: errorMsg,
+      lockAttempts: lockResult.attempts,
+      lockTotalTime: lockResult.totalTime
+    };
+  }
+  
   try {
-    // ===== PHASE 1: LOCK ACQUISITION =====
-    // Acquire script lock to prevent race conditions with concurrent edits.
-    // 30-second timeout allows for complex operations while preventing indefinite waits.
-    if (!lock.tryLock(30000)) {
-      return {
-        success: false,
-        error: 'Could not acquire lock. Please try again.'
-      };
-    }
+    Logger.log('[Sync] Lock acquired on attempt ' + lockResult.attempts + ' for row ' + row + ' sync');
     
     // ===== PHASE 2: LOAD CURRENT STATE =====
     // Load current configuration from Properties Service (source of truth)
@@ -606,7 +616,7 @@ function syncRowToProperties(row, rowData, oldValue) {
     };
   } finally {
     // Always release lock to prevent deadlocks, even if operation failed
-    lock.releaseLock();
+    lockResult.lock.releaseLock();
   }
 }
 
@@ -819,16 +829,128 @@ function getSyncMetadataFromProperties() {
 }
 
 /**
- * Saves sync metadata to Properties Service
- * 
- * @param {Object} metadata - Sync metadata to save
+ * Cleans up old sync metadata entries to reduce size.
+ * Removes entries older than 30 days and orphaned entries.
+ *
+ * @param {Object} metadata - Current metadata object
+ * @returns {Object} Cleaned metadata object
+ */
+function cleanupOldMetadata(metadata) {
+  try {
+    const RETENTION_DAYS = 30;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
+    const cutoffTime = cutoffDate.getTime();
+    
+    const cleaned = {};
+    let removedCount = 0;
+    let keptCount = 0;
+    
+    // Preserve _stats if it exists
+    if (metadata._stats) {
+      cleaned._stats = metadata._stats;
+    }
+    
+    // Filter metadata entries
+    for (const key in metadata) {
+      if (!metadata.hasOwnProperty(key)) continue;
+      
+      // Skip special keys
+      if (key === '_stats') continue;
+      
+      const value = metadata[key];
+      
+      // Check if entry has lastModified timestamp
+      if (value && value.lastModified) {
+        const entryTime = new Date(value.lastModified).getTime();
+        
+        // Keep if within retention period
+        if (entryTime >= cutoffTime) {
+          cleaned[key] = value;
+          keptCount++;
+        } else {
+          removedCount++;
+        }
+      } else {
+        // Keep entries without timestamp (shouldn't happen, but defensive)
+        cleaned[key] = value;
+        keptCount++;
+      }
+    }
+    
+    Logger.log('[cleanupOldMetadata] Removed ' + removedCount + ' old entries, kept ' + keptCount + ' entries');
+    
+    return cleaned;
+    
+  } catch (error) {
+    logWarning('cleanupOldMetadata', 'Error during cleanup', { error: error.toString() });
+    // Return original metadata if cleanup fails
+    return metadata;
+  }
+}
+
+/**
+ * Saves sync metadata to Properties Service with size validation.
+ * Performs automatic cleanup of old metadata if size limit is approached.
+ *
+ * @param {Object} metadata - Sync metadata structure to save
+ * @throws {Error} If metadata exceeds size limits even after cleanup
  */
 function saveSyncMetadata(metadata) {
   try {
     const props = PropertiesService.getDocumentProperties();
-    props.setProperty(SYNC_METADATA_KEY, JSON.stringify(metadata));
+    
+    // Convert to JSON for size checking
+    let metadataJson = JSON.stringify(metadata);
+    let metadataSize = metadataJson.length;
+    
+    // Size validation: 8KB threshold (9KB hard limit with safety margin)
+    const SIZE_LIMIT = 8192;  // 8KB in bytes
+    const SIZE_WARNING = 6144; // 6KB (75% of limit)
+    
+    // If approaching or exceeding limit, attempt cleanup
+    if (metadataSize >= SIZE_WARNING) {
+      Logger.log('[saveSyncMetadata] Metadata size: ' + metadataSize + ' bytes (' + (metadataSize/1024).toFixed(2) + ' KB)');
+      
+      if (metadataSize >= SIZE_LIMIT) {
+        // Attempt automatic cleanup
+        Logger.log('[saveSyncMetadata] Size limit reached. Attempting cleanup...');
+        metadata = cleanupOldMetadata(metadata);
+        metadataJson = JSON.stringify(metadata);
+        metadataSize = metadataJson.length;
+        
+        // If still too large after cleanup, throw error
+        if (metadataSize >= SIZE_LIMIT) {
+          throw new Error(
+            'Sync metadata exceeds size limit: ' + metadataSize + ' bytes (max: ' + SIZE_LIMIT + '). ' +
+            'Consider reducing retention period or implementing chunking.'
+          );
+        }
+        
+        Logger.log('[saveSyncMetadata] After cleanup: ' + metadataSize + ' bytes (' + (metadataSize/1024).toFixed(2) + ' KB)');
+      } else {
+        // Warning level - log but continue
+        logWarning('saveSyncMetadata', 'Approaching size limit', {
+          currentSize: metadataSize,
+          limit: SIZE_LIMIT,
+          percentUsed: ((metadataSize / SIZE_LIMIT) * 100).toFixed(1) + '%'
+        });
+      }
+    }
+    
+    // Write to Properties Service
+    props.setProperty(SYNC_METADATA_KEY, metadataJson);
+    
+    // Log successful write with size info
+    if (metadataSize >= SIZE_WARNING) {
+      Logger.log('[saveSyncMetadata] Successfully saved metadata (' + metadataSize + ' bytes)');
+    }
+    
   } catch (error) {
-    logError('saveSyncMetadata', error);
+    logError('saveSyncMetadata', error, {
+      operation: 'properties_write',
+      attemptedSize: metadataJson ? metadataJson.length : 'unknown'
+    });
     throw error;
   }
 }
@@ -1568,17 +1690,24 @@ function readSalespeopleFromSheet() {
  * @returns {Object} Result with success status
  */
 function syncFromSheetToProperties(sheetSalespeople) {
-  const lock = LockService.getScriptLock();
+  // Acquire lock with exponential backoff retry logic
+  const lockResult = acquireScriptLockWithRetry();
+  
+  // Check if lock acquisition was successful
+  if (!lockResult.success) {
+    const errorMsg = 'Could not acquire lock for sheet→Properties sync after ' +
+                     lockResult.attempts + ' attempts (' + lockResult.totalTime + 'ms)';
+    Logger.log('[Sync] ' + errorMsg);
+    return {
+      success: false,
+      error: errorMsg,
+      lockAttempts: lockResult.attempts,
+      lockTotalTime: lockResult.totalTime
+    };
+  }
   
   try {
-    // Wait up to 30 seconds for lock
-    if (!lock.tryLock(30000)) {
-      Logger.log('[Sync] Could not acquire lock for sheet→Properties sync');
-      return {
-        success: false,
-        error: 'Could not acquire lock'
-      };
-    }
+    Logger.log('[Sync] Lock acquired on attempt ' + lockResult.attempts + ' for sheet→Properties sync');
     
     // Get current config
     const config = getConfiguration();
@@ -1611,7 +1740,8 @@ function syncFromSheetToProperties(sheetSalespeople) {
       error: error.message
     };
   } finally {
-    lock.releaseLock();
+    // Always release lock to prevent deadlocks
+    lockResult.lock.releaseLock();
   }
 }
 

@@ -11,6 +11,40 @@
 // Import error logging utility
 // Note: In Apps Script, all files are automatically available in global scope
 
+/**
+ * ============================================================================
+ * SHEET VALIDATION PATTERN - BEST PRACTICES
+ * ============================================================================
+ *
+ * All functions requiring sheet access should use the getSheets() function
+ * as the first operation to ensure required sheets exist before attempting
+ * any operations.
+ *
+ * STANDARD PATTERN (RECOMMENDED):
+ *   const sheets = getSheets(); // Validates TODAY, MONTHLY, SALESPEOPLE exist
+ *   sheets.today.getRange("A1").setValue("data");
+ *   sheets.monthly.appendRow([1, 2, 3]);
+ *
+ * ALTERNATIVE PATTERN (for optional sheets only):
+ *   const sheet = ss.getSheetByName('OPTIONAL_SHEET');
+ *   if (!sheet) {
+ *     Logger.log('Optional sheet not found - continuing with defaults');
+ *     return defaultValue;
+ *   }
+ *
+ * WHY THIS MATTERS:
+ *   - Prevents cryptic "Cannot read property 'getRange' of null" errors
+ *   - Provides clear, user-friendly error messages
+ *   - Centralizes validation logic for consistency
+ *   - Makes debugging easier by failing fast with context
+ *
+ * IMPORTANT: Do NOT directly access sheets without validation unless you
+ * have a specific reason and understand the implications.
+ *
+ * See getSheets() function below for implementation details.
+ * ============================================================================
+ */
+
 // Module-scope constants & caches
 const CACHE = CacheService.getScriptCache();
 const CACHE_KEY_NAME_MAP = "salespersonMaps"; // Updated cache key name
@@ -116,15 +150,66 @@ function getPaceThresholds() {
  */
 function invalidateVisualConfigCache() {
   colorConfig = null;
-  CACHE.remove(CACHE_KEY_COLORS);
+  try {
+    CACHE.remove(CACHE_KEY_COLORS);
+  } catch (error) {
+    logError('invalidateVisualConfigCache', error, {
+      severity: 'MEDIUM',
+      operation: 'cache_invalidation',
+      cacheKey: CACHE_KEY_COLORS,
+      impact: 'Stale visual config may be served until cache expires naturally (5 minutes)'
+    });
+    // Continue execution - cache invalidation failure is non-fatal
+  }
 }
 
-// Utility: get sheet references once
 /**
- * Retrieves references to key sheets: TODAY, MONTHLY, and SALESPEOPLE.
+ * Retrieves and validates references to required sheets (TODAY, MONTHLY, SALESPEOPLE).
  *
- * @returns {{today: GoogleAppsScript.Spreadsheet.Sheet, monthly: GoogleAppsScript.Spreadsheet.Sheet, sales: GoogleAppsScript.Spreadsheet.Sheet}} Object mapping sheet keys to Sheet instances.
- * @throws {Error} If any of the required sheets are missing.
+ * This is the STANDARD PATTERN for sheet validation in Sales Log Pro.
+ * All functions requiring sheet access should call this function first to ensure
+ * sheets exist before attempting operations.
+ *
+ * **Validation Steps:**
+ * 1. Verifies SpreadsheetApp.getActive() is available (script is bound)
+ * 2. Checks that all three required sheets exist
+ * 3. Returns validated sheet references or throws descriptive error
+ *
+ * **Error Handling:**
+ * - Logs detailed error context to error_logger.js for debugging
+ * - Throws user-friendly error messages that can be shown in alerts
+ * - Provides sheet-specific information about what's missing
+ *
+ * @returns {{today: GoogleAppsScript.Spreadsheet.Sheet, monthly: GoogleAppsScript.Spreadsheet.Sheet, sales: GoogleAppsScript.Spreadsheet.Sheet}}
+ *   Object mapping sheet keys to Sheet instances:
+ *   - today: Reference to the TODAY sheet (daily data entry)
+ *   - monthly: Reference to the MONTHLY sheet (historical records)
+ *   - sales: Reference to the SALESPEOPLE sheet (salesperson configuration)
+ *
+ * @throws {Error} If SpreadsheetApp.getActive() returns null (script not bound to spreadsheet)
+ * @throws {Error} If any required sheet (TODAY, MONTHLY, SALESPEOPLE) is missing
+ *
+ * @example
+ * // Standard usage pattern - Always use try/catch for proper error handling
+ * function mySheetOperation() {
+ *   try {
+ *     const sheets = getSheets(); // Validates all required sheets exist
+ *     sheets.today.getRange("A1").setValue("data");
+ *     sheets.monthly.appendRow([1, 2, 3]);
+ *     sheets.sales.getRange("A2").getValue();
+ *   } catch (error) {
+ *     logError('mySheetOperation', error);
+ *     alertError('Sheet operation failed: ' + error.message);
+ *   }
+ * }
+ *
+ * @example
+ * // Used in critical operations throughout the codebase
+ * function processDaily() {
+ *   const sheets = getSheets(); // Standard validation pattern
+ *   const dailyRange = sheets.today.getRange(RANGES.dailyData);
+ *   // ... process daily operations
+ * }
  */
 function getSheets() {
   if (!SS) {
@@ -327,15 +412,14 @@ function setCFRulesSheet(sheet, rules) {
 
 // lockOps
 function withScriptLock(fn) {
-  const lock = LockService.getScriptLock();
-  if (lock.tryLock(30000)) {
-    try {
-      return fn();
-    } finally {
-      lock.releaseLock();
-    }
-  } else {
-    const msg = "Could not acquire script lock. Another instance may be running.";
+  // Acquire lock with exponential backoff retry logic
+  const lockResult = acquireScriptLockWithRetry();
+  
+  // Check if lock acquisition was successful
+  if (!lockResult.success) {
+    const msg = "Could not acquire script lock after " + lockResult.attempts +
+                " attempts (" + lockResult.totalTime + "ms). " +
+                "Another operation may be running. Please try again.";
     Logger.log(msg);
     try {
       SpreadsheetApp.getUi()?.alert(msg);
@@ -343,6 +427,14 @@ function withScriptLock(fn) {
       Logger.log("UI alert failed for lock: " + e);
     }
     throw new Error(msg);
+  }
+  
+  try {
+    Logger.log('Script lock acquired on attempt ' + lockResult.attempts + ' for operation');
+    return fn();
+  } finally {
+    // Always release lock, even if operation failed
+    lockResult.lock.releaseLock();
   }
 }
 
@@ -1593,6 +1685,23 @@ function onOpen() {
       .addItem("⚙️ Settings", "openConfigurationSidebar")
       .addToUi();
   } catch (e) {
+    // Log error with full context for debugging
     logError('onOpen', e, { operation: 'create_menu' });
+    
+    // Notify user of menu creation failure
+    try {
+      SpreadsheetApp.getActiveSpreadsheet().toast(
+        'Failed to create Sales Tools menu. Please refresh the page. If the problem persists, check the script logs or contact support.',
+        'Menu Creation Error',
+        10  // 10 seconds - important message
+      );
+    } catch (toastError) {
+      // If even toast fails, log it but don't throw
+      logWarning('onOpen', 'Could not display error toast', { error: toastError.toString() });
+    }
+    
+  } finally {
+    // Log completion for monitoring
+    Logger.log('[onOpen] Trigger execution completed');
   }
 }

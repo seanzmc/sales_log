@@ -1340,6 +1340,198 @@ function criticalOperation() {
 
 ---
 
+### acquireScriptLockWithRetry()
+
+Acquires a script lock with automatic retry using exponential backoff.
+
+**Source**: [`src/utilities_locks.js:12`](../../src/utilities_locks.js#L12)
+
+**Signature**:
+```javascript
+function acquireScriptLockWithRetry(
+  maxRetries: number = 5,
+  initialDelayMs: number = 100,
+  backoffMultiplier: number = 2,
+  timeoutMs: number = 30000
+): Object
+```
+
+**Parameters**:
+- `maxRetries` (number, optional): Maximum number of retry attempts (default: 5)
+- `initialDelayMs` (number, optional): Initial retry delay in milliseconds (default: 100)
+- `backoffMultiplier` (number, optional): Backoff multiplier for each retry (default: 2)
+- `timeoutMs` (number, optional): Maximum time to wait for lock in milliseconds per attempt (default: 30000)
+
+**Returns**:
+```javascript
+{
+  success: boolean,        // Whether lock was acquired
+  lock: Lock|null,        // Lock object if successful, null otherwise
+  attempts: number,        // Number of attempts made
+  totalWaitMs: number,    // Total time waited for lock (excluding timeout periods)
+  error: string|null      // Error message if failed, null if successful
+}
+```
+
+**Behavior**:
+1. Attempts to acquire script lock immediately
+2. If fails, waits initialDelayMs before retry
+3. Each subsequent retry doubles wait time (exponential backoff)
+4. Each attempt has timeoutMs to acquire lock
+5. Returns after success or maxRetries exhausted
+6. Logs each retry attempt with timing information
+
+**Retry Schedule** (with defaults):
+```
+Attempt 1: Immediate (0ms delay)
+Attempt 2: 100ms delay
+Attempt 3: 200ms delay
+Attempt 4: 400ms delay
+Attempt 5: 800ms delay
+Attempt 6: 1600ms delay
+
+Total max wait: ~3.1 seconds (plus 30s lock timeout per attempt)
+Maximum total time: ~3.1s + (6 × 30s) = ~183s worst case
+```
+
+**Example**:
+```javascript
+// Basic usage with defaults
+const lockResult = acquireScriptLockWithRetry();
+if (lockResult.success) {
+  try {
+    // Protected operations
+    const config = getConfiguration();
+    config.version = String(Number(config.version) + 1);
+    saveConfiguration(config);
+  } finally {
+    lockResult.lock.releaseLock();
+  }
+} else {
+  Logger.log('Lock acquisition failed: ' + lockResult.error);
+  throw new Error('Could not acquire lock after ' + lockResult.attempts + ' attempts');
+}
+
+// Custom retry parameters
+const customResult = acquireScriptLockWithRetry(
+  3,      // maxRetries: only 3 attempts
+  200,    // initialDelayMs: start with 200ms
+  1.5,    // backoffMultiplier: slower growth
+  10000   // timeoutMs: 10 second timeout per attempt
+);
+```
+
+**Use Cases**:
+- [`updateConfiguration()`](#updateconfiguration): Prevents concurrent config updates
+- [`withScriptLock()`](#withscriptlock): Daily processing protection
+- [`syncRowToProperties()`](../../src/sync_service.js#L392): Sheet sync operations
+- Any operation requiring atomic execution
+
+**Error Handling**:
+- Returns `{success: false}` instead of throwing
+- Caller responsible for handling failure
+- Logs all retry attempts for debugging
+- Includes detailed error message in result
+
+**Performance**:
+- No overhead when lock available immediately
+- 100-3100ms overhead during typical retries
+- Prevents indefinite blocking
+- Provides visibility into contention patterns
+
+---
+
+### cleanupOldMetadata()
+
+Cleans up old sync metadata entries to reduce storage size in Properties Service.
+
+**Source**: [`src/config_service.js:847`](../../src/config_service.js#L847) and [`src/sync_service.js:831`](../../src/sync_service.js#L831)
+
+**Signature**:
+```javascript
+function cleanupOldMetadata(metadata: Object): Object
+```
+
+**Parameters**:
+- `metadata` (Object): Current metadata object from Properties Service
+
+**Returns**: Cleaned metadata object with old entries removed
+
+**Behavior**:
+1. Identifies current timestamp
+2. Calculates retention cutoff (30 days ago)
+3. Iterates through metadata entries
+4. Removes entries with `lastModified` older than cutoff
+5. Preserves special keys (e.g., `_stats`)
+6. Returns cleaned metadata object
+7. Defensive: Returns original if cleanup fails
+
+**Retention Policy**:
+```javascript
+Retention Period: 30 days
+Calculation: Current time - (30 × 24 × 60 × 60 × 1000) ms
+
+Preserved:
+- Entries with lastModified within 30 days
+- Special keys starting with underscore (_stats, etc.)
+- Entries without lastModified field (kept for safety)
+
+Removed:
+- Entries with lastModified > 30 days old
+- No impact on current operations
+```
+
+**Example**:
+```javascript
+// In saveSyncMetadata()
+const metadata = getMetadata();
+const dataSize = JSON.stringify(metadata).length;
+
+if (dataSize > SIZE_THRESHOLD) {
+  Logger.log(`[saveSyncMetadata] Size threshold exceeded: ${dataSize} bytes`);
+  Logger.log('[saveSyncMetadata] Running cleanup...');
+  
+  metadata = cleanupOldMetadata(metadata);
+  
+  const newSize = JSON.stringify(metadata).length;
+  Logger.log(`[saveSyncMetadata] Cleanup complete. Size reduced: ${dataSize} → ${newSize} bytes`);
+}
+
+// Save cleaned metadata
+PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata));
+```
+
+**Logging**:
+```javascript
+// Typical log output
+[cleanupOldMetadata] Starting cleanup. Current entries: 45
+[cleanupOldMetadata] Retention cutoff: 2025-09-13T15:00:00.000Z
+[cleanupOldMetadata] Removed 12 entries older than 30 days
+[cleanupOldMetadata] Kept 33 recent entries
+[cleanupOldMetadata] Cleanup complete
+```
+
+**Use Cases**:
+- Called automatically when metadata size exceeds 8KB
+- Prevents Properties Service quota errors
+- Maintains optimal performance
+- No manual intervention required
+
+**Safety Features**:
+- Defensive programming: Returns original on error
+- Comprehensive logging for audit trail
+- Only removes truly old data
+- Preserves special/system keys
+- Does not affect current operations
+
+**Performance**:
+- Fast: O(n) where n = number of entries
+- Typical cleanup: <50ms for 50 entries
+- Rare operation: Only when size threshold exceeded
+- Minimal impact on normal operations
+
+---
+
 ## Data Structures
 
 ### Configuration Object

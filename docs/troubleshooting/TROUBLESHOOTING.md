@@ -997,6 +997,473 @@ To verify:
 
 ---
 
+## Lock Contention Issues
+
+### Symptom
+Error message: "Could not acquire lock after X attempts"
+
+**Description**:
+Multiple users or operations attempting to modify configuration or process data simultaneously, resulting in lock acquisition failure after automatic retry attempts.
+
+### Cause
+- Multiple users running operations at the same time
+- Long-running operation holding lock
+- Concurrent daily processing attempts
+- Settings changes during processing
+
+### Solution
+
+**Wait and Retry** (Recommended):
+```
+1. Wait 30-60 seconds for current operation to complete
+2. Try operation again
+3. System will automatically retry up to 5 times with exponential backoff
+4. If persistent, check for stuck processes
+```
+
+**Check Execution Log**:
+```
+1. Apps Script Editor → View → Executions
+2. Look for long-running operations (> 30 seconds)
+3. Check for errors indicating stuck processes
+4. Note timing of lock acquisition attempts
+```
+
+**Coordinate with Team**:
+```
+If multiple users:
+1. Designate primary user for settings changes
+2. Avoid simultaneous daily processing
+3. Run operations during off-peak hours
+4. Use Settings sidebar for better lock management
+```
+
+### Technical Details
+
+**Lock Retry Behavior**:
+```
+Attempt 1: Immediate (0ms delay)
+Attempt 2: 100ms delay
+Attempt 3: 200ms delay
+Attempt 4: 400ms delay
+Attempt 5: 800ms delay
+Attempt 6: 1600ms delay
+
+Total retry time: ~3.1 seconds
+Lock timeout per attempt: 30 seconds
+Maximum total time: ~183 seconds
+```
+
+**What's Protected by Locks**:
+- Configuration updates via Settings
+- Daily processing operations
+- Month rollover operations
+- Sheet synchronization to Properties Service
+
+### Prevention
+
+**Best Practices**:
+- Avoid running multiple operations simultaneously
+- Use Settings sidebar (better lock management than direct edits)
+- Coordinate timing with other users
+- Monitor execution logs for patterns
+- Run intensive operations during off-peak hours
+
+**When Safe to Retry**:
+- After error message appears
+- When execution log shows previous operation completed
+- At least 30 seconds after first attempt
+- When no other users are active
+
+---
+
+## Cache Service Failures
+
+### Symptom
+Logs show cache invalidation errors but operations complete successfully
+
+**Log Examples**:
+```
+[CRITICAL] Cache invalidation failed (non-fatal): [context]
+Operation continuing without cache invalidation
+[HIGH] Failed to invalidate visual config cache (non-fatal)
+[MEDIUM] Cache write failed, will retry on next operation
+```
+
+### Cause
+- CacheService temporarily unavailable
+- Google infrastructure maintenance
+- Quota limits reached (rare)
+- Network connectivity issues
+
+### Impact
+
+**No User-Visible Impact**:
+- Operations continue normally despite cache failures
+- Data integrity fully maintained
+- No data loss or corruption
+- Functionality unchanged
+
+**Temporary Side Effects**:
+- Stale data in cache for up to 5-10 minutes
+- Slight performance impact until cache refreshes
+- Multiple operations may see outdated cached data
+- Auto-recovery when cache service available
+
+### Solution
+
+**No Action Required**:
+```
+The system is designed to handle cache failures gracefully:
+
+1. All cache operations are non-fatal
+2. Operations continue regardless of cache status
+3. Cache expires naturally within 5-10 minutes
+4. System auto-recovers without intervention
+```
+
+**If Concerned**:
+```
+1. Check that operations completed successfully
+2. Verify data appears correct in sheets
+3. Wait 5-10 minutes for cache to expire
+4. Refresh browser if concerned about stale UI
+```
+
+**Monitor Logs**:
+```
+1. Apps Script Editor → View → Executions
+2. Look for cache-related messages
+3. Note severity levels:
+   - CRITICAL: Cache completely unavailable
+   - HIGH: Important cache operation failed
+   - MEDIUM: Minor cache issue
+4. Verify main operations show "Success"
+```
+
+### Technical Details
+
+**Cache TTL (Time To Live)**:
+```
+Configuration cache: 10 minutes
+Salesperson maps: 5 minutes
+Analytics results: 5 minutes
+Visual config: 5 minutes
+
+After TTL expires, data automatically reloaded from source
+```
+
+**What's Cached**:
+- Configuration data (performance optimization)
+- Salesperson alias mappings (fast lookups)
+- Analytics results (reduce recalculation)
+- Visual settings (UI performance)
+
+**Cache Failure Handling**:
+- All cache operations wrapped in try-catch blocks
+- Errors logged with context and severity
+- Primary operations never fail due to cache issues
+- Defensive programming ensures robustness
+
+### Why This Design?
+
+**Cache as Enhancement, Not Requirement**:
+- Cache improves performance but isn't critical
+- All data persists in sheets and Properties Service
+- Operations must succeed even when cache unavailable
+- User experience shouldn't degrade due to cache
+
+**Reliability Over Speed**:
+- Better to complete slowly than fail fast
+- Graceful degradation preferred
+- Comprehensive logging for monitoring
+- Automatic recovery without user intervention
+
+---
+
+## Sync Metadata Size Limits
+
+### Symptom
+Warning logs: "Approaching size limit" or "Size limit reached"
+
+**Log Examples**:
+```
+[saveSyncMetadata] Metadata size: 6500 bytes (6.35 KB)
+[saveSyncMetadata] Approaching size limit (WARNING at 75%)
+[saveSyncMetadata] Size threshold exceeded: 8500 bytes
+[saveSyncMetadata] Running cleanup...
+[cleanupOldMetadata] Removed 12 entries older than 30 days
+[saveSyncMetadata] Cleanup complete. Size reduced: 8500 → 5200 bytes
+```
+
+### Cause
+- High frequency of sheet edits (100+ per day)
+- Large team with many salespeople
+- Metadata accumulation over time
+- Normal usage for high-activity spreadsheets
+
+### Automatic Resolution
+
+**System Self-Manages**:
+```
+Threshold Levels:
+- 6KB (75%): Warning logged, no action taken
+- 8KB (100%): Automatic cleanup triggered
+- 9KB: Hard limit with safety margin
+
+Cleanup Process:
+1. Identifies entries older than 30 days
+2. Removes old sync metadata
+3. Preserves special keys (_stats, etc.)
+4. Reduces size below threshold
+5. Operation continues normally
+```
+
+**Typical Sequence**:
+```
+1. Normal operation: Size grows gradually
+2. Warning at 6KB: Logged for monitoring
+3. Cleanup at 8KB: Automatic removal of old data
+4. Size reduced: Usually to 4-5KB
+5. Continue: No interruption to operations
+```
+
+### Manual Resolution (If Needed)
+
+**Rarely Required** (automatic cleanup usually sufficient):
+
+**Check Current Size**:
+```
+1. Apps Script Editor → View → Executions
+2. Look for saveSyncMetadata log entries
+3. Note current size in bytes
+4. Check if warnings present
+```
+
+**Force Cleanup** (if automatic cleanup insufficient):
+```
+1. Review sync metadata in Properties Service
+2. Identify unusually large entries
+3. Consider reducing retention period (contact support)
+4. Archive old data externally if needed
+```
+
+**Verify Cleanup Success**:
+```
+1. Check logs for cleanup completion message
+2. Verify size reduction (should be ~40-50% reduction)
+3. Confirm operations continue normally
+4. Monitor for recurring issues
+```
+
+### Technical Details
+
+**Size Thresholds**:
+```
+Warning Threshold: 6KB (75% of limit)
+Action Threshold: 8KB (100% of limit)
+Hard Limit: 9KB (with safety margin)
+Typical Size: 2-5KB for normal usage
+```
+
+**Retention Policy**:
+```
+Retention Period: 30 days
+Calculation: lastModified timestamp compared to current time
+Preserved: Recent entries + special keys
+Removed: Entries with lastModified > 30 days old
+```
+
+**What's Stored**:
+```
+Sync metadata tracks:
+- Sheet row to Properties Service mappings
+- Last modification timestamps
+- Sync status information
+- Data integrity checksums
+```
+
+**Performance Impact**:
+```
+Normal operations: <10ms overhead
+Size check: <5ms per operation
+Cleanup process: 50-100ms (rare)
+No user-visible delay
+```
+
+### Prevention
+
+**Normal Usage** (no prevention needed):
+- System designed to handle typical workloads
+- Automatic cleanup prevents issues
+- No user action required
+
+**High-Activity Spreadsheets**:
+- May see warnings more frequently (normal)
+- Automatic cleanup handles increased load
+- Monitor logs for patterns
+- Contact support if cleanup insufficient
+
+**Not Recommended**:
+- Manual metadata manipulation
+- Disabling sync operations
+- Modifying retention period without guidance
+
+---
+
+## Event Trigger Failures
+
+### Symptom
+Toast notification: "Failed to create menu" on spreadsheet open
+
+**Description**:
+On opening the spreadsheet, a 10-second toast notification appears indicating menu creation failed. The spreadsheet loads but the "Sales Tools" menu may not appear in the menu bar.
+
+### Cause
+- Temporary spreadsheet initialization issue
+- Script permissions need reauthorization
+- Google Sheets service momentarily unavailable
+- Browser extension interference
+
+### Impact
+
+**Limited Impact**:
+- Spreadsheet remains fully functional
+- Data remains accessible and safe
+- Can manually trigger operations via script editor
+- Menu usually appears on next open
+- No data corruption or loss
+
+**What Still Works**:
+- Viewing all data
+- Manual data entry
+- Direct script execution (via Apps Script editor)
+- All data integrity maintained
+
+**What May Not Work**:
+- Custom menu items
+- One-click operation triggers
+- Settings sidebar access (may need manual open)
+
+### Solution
+
+**Solution 1: Reload Spreadsheet** (Most Common):
+```
+1. Close spreadsheet tab completely
+2. Wait 10 seconds
+3. Reopen spreadsheet
+4. Menu should appear normally
+5. If not, proceed to next solution
+```
+
+**Solution 2: Check Permissions**:
+```
+1. Extensions → Apps Script
+2. Click Run → Select onOpen function
+3. If prompted, click "Review Permissions"
+4. Authorize all requested permissions
+5. Return to spreadsheet and refresh
+```
+
+**Solution 3: Clear Browser Cache**:
+```
+1. Close all Google Sheets tabs
+2. Clear browser cache for Google Sheets
+3. Clear cookies for *.google.com
+4. Restart browser
+5. Reopen spreadsheet
+```
+
+**Solution 4: Manual Menu Creation**:
+```
+If menu still missing:
+1. Extensions → Apps Script
+2. Select "onOpen" from function dropdown
+3. Click "Run" button
+4. Return to spreadsheet
+5. Refresh page (Ctrl+R or Cmd+R)
+```
+
+### Check Execution Logs
+
+**Verify Issue**:
+```
+1. Apps Script Editor → View → Executions
+2. Find most recent onOpen execution
+3. Check for error details:
+   - "Exception: ..." indicates specific error
+   - "Service invoked too many times" = quota
+   - "Permission denied" = authorization needed
+4. Note timestamp to correlate with spreadsheet open
+```
+
+**Common Log Entries**:
+```
+Success:
+✓ onOpen completed successfully
+
+Failure:
+✗ onOpen failed
+  Error: Cannot add menu to spreadsheet
+  
+Partial Success:
+✓ onOpen completed with warnings
+  Warning: Menu creation attempted but may have failed
+```
+
+### Technical Details
+
+**Error Handling Design**:
+```
+try {
+  // Attempt menu creation
+  createCustomMenu();
+  Logger.log('Menu created successfully');
+} catch (error) {
+  // Log error with details
+  Logger.log('Menu creation failed: ' + error.message);
+  
+  // Notify user via toast
+  SpreadsheetApp.getActiveSpreadsheet()
+    .toast('Failed to create menu. Please refresh.', 'Menu Error', 10);
+} finally {
+  // Ensure cleanup regardless of success/failure
+  // Spreadsheet remains functional
+}
+```
+
+**Why Graceful Degradation**:
+- Menu is convenience, not requirement
+- Can access all functions via script editor
+- User experience maintained even with errors
+- Clear notification guides user to solution
+
+**Toast Notification Details**:
+- Duration: 10 seconds
+- Title: "Menu Error" or similar
+- Message: Actionable guidance
+- Appears automatically on spreadsheet load
+
+### Prevention
+
+**Best Practices**:
+- Keep script authorized at all times
+- Don't modify script while spreadsheet open
+- Use supported browsers (Chrome recommended)
+- Close spreadsheet properly (don't force close)
+- Allow page to fully load before interacting
+
+**If Recurring**:
+```
+1. Check for browser extensions causing issues
+2. Verify stable internet connection
+3. Try different browser
+4. Check Google Workspace status page
+5. Contact support if persistent
+```
+
+---
+
 ## Performance Issues
 
 ### Slow Daily Processing

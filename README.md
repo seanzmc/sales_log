@@ -1,6 +1,6 @@
 # 📊 Sales Log Pro
 
-[![Version](https://img.shields.io/badge/version-8.0.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-8.1.0-blue.svg)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Google%20Apps%20Script-green.svg)](https://developers.google.com/apps-script)
 [![License](https://img.shields.io/badge/license-Commercial-orange.svg)](LICENSE)
 
@@ -157,9 +157,17 @@ sales-log-pro/
 
 ## 📋 Version Information
 
-**Current Version:** 8.0.0
+**Current Version:** 8.1.0
 **Release Date:** October 2025
 **Status:** Production-Ready
+
+### What's New in 8.1.0
+
+- 🔄 **Automatic Lock Retry** — Exponential backoff handles concurrent access gracefully
+- 🛡️ **Robust Error Handling** — Non-fatal cache operations and graceful degradation
+- 📊 **Smart Storage Management** — Automatic cleanup of old metadata prevents quota issues
+- 🎯 **Enhanced Reliability** — Operations continue successfully even when auxiliary services fail
+- 📝 **Comprehensive Logging** — Detailed diagnostics with severity levels for better monitoring
 
 ### What's New in 8.0.0
 
@@ -202,7 +210,7 @@ Ready to transform your dealership's sales tracking? Install **Sales Log Pro** a
 
 <div align="center">
 
-**Sales Log Pro v8.0.0** — Transform Your Sales Tracking Today
+**Sales Log Pro v8.1.0** — Transform Your Sales Tracking Today
 
 [![Get Started](https://img.shields.io/badge/Get%20Started-Quick%20Start%20Guide-brightgreen?style=for-the-badge)](QUICKSTART.md)
 [![Documentation](https://img.shields.io/badge/Read-Documentation-blue?style=for-the-badge)](docs/guides/USER_GUIDE.md)

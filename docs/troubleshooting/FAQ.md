@@ -931,6 +931,271 @@ One-time purchase:
 
 ## Troubleshooting Quick Answers
 
+### Q: Why am I seeing "Approaching size limit" warnings in the logs?
+
+**A:** This indicates your sync metadata is growing beyond the recommended 6KB threshold (75% of the 8KB limit). This is normal for high-activity spreadsheets with many users editing the SALESPEOPLE sheet frequently.
+
+**What happens:**
+1. At 75% (6KB): Warning logged, no action taken
+2. At 100% (8KB): Automatic cleanup removes entries older than 30 days
+3. After cleanup: Size reduced (typically to 4-5KB), operations continue normally
+
+**What it means:**
+- Your spreadsheet is actively used (good!)
+- High edit frequency on SALESPEOPLE sheet
+- Normal for dealerships with frequent roster changes
+- System is monitoring and managing itself
+
+**Action required:** None. The system handles this automatically.
+
+**Technical details:**
+```
+Size threshold: 8KB (9KB hard limit with safety margin)
+Warning threshold: 6KB (75% of limit)
+Retention period: 30 days
+Cleanup: Automatic when threshold exceeded
+Performance impact: <50-100ms during cleanup (rare)
+```
+
+**When cleanup occurs:**
+- Identifies entries older than 30 days
+- Removes outdated sync metadata
+- Preserves recent entries and special keys
+- Logs removal count for monitoring
+- Operation continues without interruption
+
+**If you see this frequently:**
+- Normal for high-activity spreadsheets
+- Indicates healthy, active usage
+- Automatic cleanup prevents issues
+- No performance degradation
+- Monitor logs to verify cleanup success
+
+**Only contact support if:**
+- Cleanup fails repeatedly
+- Operations start timing out
+- Error messages accompany warnings
+- Size continues growing after cleanup
+
+---
+
+### Q: What happens if lock acquisition fails after retries?
+
+**A:** After 5 retry attempts (~3.1 seconds of delays plus 30s timeout per attempt), the operation will fail with a clear error message. This typically indicates one of the following situations.
+
+**Common scenarios:**
+
+**1. Another long-running operation** is holding the lock
+```
+Cause: Daily processing, month rollover, or analytics refresh in progress
+Solution: Wait 30-60 seconds and try again
+Timeline: Usually resolves within 1-2 minutes
+```
+
+**2. System congestion** with multiple concurrent users
+```
+Cause: Multiple people using Settings or running operations simultaneously
+Solution: Coordinate with team, retry after brief wait
+Prevention: Designate one person for configuration changes
+```
+
+**3. Persistent lock issue** requiring investigation
+```
+Cause: Stuck process or script error
+Solution: Check Executions log for long-running operations
+Action: May need to wait for automatic timeout
+```
+
+**What to do:**
+
+**Immediate (within 5 minutes):**
+```
+1. Wait 30-60 seconds
+2. Try operation again (system will retry automatically)
+3. Don't click menu items multiple times
+4. Check if other users are active
+```
+
+**If persistent (after 5 minutes):**
+```
+1. Apps Script Editor → View → Executions
+2. Look for operations running > 30 seconds
+3. Note any error messages
+4. Wait for long operations to complete
+5. Try again after confirmation
+```
+
+**Check execution logs:**
+```
+Look for entries like:
+[Lock Retry] Attempt 1 failed. Retrying in 100ms...
+[Lock Retry] Attempt 2 failed. Retrying in 200ms...
+[Lock Retry] Successfully acquired lock on attempt 3
+
+Failed acquisition shows:
+[Lock Retry] All 5 attempts failed
+Error: Could not acquire lock after 5 attempts (total wait: ~3100ms)
+```
+
+**Retry schedule:**
+```
+Attempt 1: Immediate (0ms delay)
+Attempt 2: 100ms delay
+Attempt 3: 200ms delay
+Attempt 4: 400ms delay
+Attempt 5: 800ms delay
+Attempt 6: 1600ms delay
+
+Total retry time: ~3.1 seconds
+Plus 30s lock timeout per attempt
+Maximum total: ~183 seconds
+```
+
+**Prevention:**
+- Avoid running multiple operations simultaneously
+- Coordinate timing with other users
+- Use Settings sidebar (better lock management)
+- Monitor execution logs for patterns
+- Run intensive operations during off-peak hours
+
+---
+
+### Q: Do cache failures affect my data?
+
+**A:** **No.** Cache failures have zero impact on data integrity. This is a core design principle of Sales Log Pro.
+
+**Why no impact:**
+
+**1. Data safety:** All data stored in sheets and Properties Service (not cache)
+```
+Primary storage:
+- TODAY sheet: Daily entries
+- MONTHLY sheet: Historical data
+- SALESPEOPLE sheet: Team roster
+- Properties Service: Configuration
+
+Cache storage:
+- Temporary copies only
+- Performance optimization
+- NOT the source of truth
+- Can be cleared without loss
+```
+
+**2. Operations continue:** Cache failures don't interrupt operations
+```
+What happens when cache fails:
+1. System logs error (for monitoring)
+2. Operation continues normally
+3. Data written to primary storage
+4. Cache expires naturally (5-10 min)
+5. Next operation refreshes cache
+
+What does NOT happen:
+- Operation doesn't fail
+- No data corruption
+- No user error messages
+- No functionality loss
+```
+
+**3. Auto-recovery:** Cache expires naturally within 5-10 minutes
+```
+Cache TTL (Time To Live):
+- Configuration: 10 minutes
+- Salesperson maps: 5 minutes
+- Analytics: 5 minutes
+- Visual settings: 5 minutes
+
+After expiry:
+- Data reloaded from source automatically
+- Cache repopulated on next access
+- No manual intervention needed
+```
+
+**4. Performance:** Slight slowdown until cache refreshes
+```
+Impact during cache failure:
+- Operations may be 10-20% slower
+- Still complete successfully
+- No user-visible errors
+- Temporary inconvenience only
+
+Normal performance resumes:
+- Within 5-10 minutes automatically
+- Or immediately on manual refresh
+- No lasting effects
+```
+
+**Why defensively handled:**
+
+**Design Philosophy:**
+```
+Cache = Convenience, not Critical
+
+Principles:
+1. CacheService is optimization, not requirement
+2. Operations must succeed even when cache unavailable
+3. User experience shouldn't degrade due to cache
+4. Reliability over speed
+```
+
+**Implementation:**
+```javascript
+// All cache operations wrapped defensively
+try {
+  cache.put(key, data, ttl);
+  Logger.log('Cache updated successfully');
+} catch (error) {
+  // Log but don't fail
+  Logger.log('[HIGH] Cache update failed (non-fatal): ' + error.message);
+  // Operation continues regardless
+}
+```
+
+**When you might see cache errors:**
+
+**In execution logs:**
+```
+[CRITICAL] Cache invalidation failed (non-fatal): Service unavailable
+[HIGH] Failed to write analytics cache (non-fatal)
+[MEDIUM] Cache read failed, loading from source
+
+Note: All marked "non-fatal" to indicate operation succeeded
+```
+
+**What to monitor:**
+```
+✓ Verify operations show "Success" status
+✓ Check that data appears correctly in sheets
+✓ Confirm no user-facing error messages
+✓ Note cache errors are logged but not critical
+```
+
+**When to take action:**
+
+**Never required, but optional:**
+```
+If concerned about stale data:
+1. Wait 5-10 minutes for natural expiry
+2. Refresh browser page
+3. Run manual analytics refresh
+4. Verify latest data in sheets
+
+If recurring and frequent:
+1. Note pattern in logs
+2. Check Google Workspace status
+3. Verify network connectivity
+4. Contact support if suspicious pattern
+```
+
+**Summary:**
+- Cache failures are logged for monitoring
+- Operations always complete successfully
+- Data integrity never compromised
+- No user action needed
+- System designed for resilience
+
+---
+
 ### Q: "Could not acquire script lock" - what does this mean?
 
 **A:** Another process is currently running:

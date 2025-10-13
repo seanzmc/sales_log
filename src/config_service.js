@@ -187,11 +187,23 @@ function getConfiguration() {
  * @throws {Error} If validation fails or update operation fails
  */
 function updateConfiguration(updates) {
-  const lock = LockService.getScriptLock();
+  // Acquire lock with exponential backoff retry logic
+  const lockResult = acquireScriptLockWithRetry();
+  
+  // Check if lock acquisition was successful
+  if (!lockResult.success) {
+    const errorMsg = 'Failed to acquire lock for configuration update after ' +
+                     lockResult.attempts + ' attempts (' + lockResult.totalTime + 'ms). ' +
+                     'Another operation may be in progress. Please try again.';
+    logError('updateConfiguration', new Error(errorMsg), {
+      lockAttempts: lockResult.attempts,
+      lockTotalTime: lockResult.totalTime
+    });
+    throw new Error(errorMsg);
+  }
   
   try {
-    // Wait up to 30 seconds for lock
-    lock.waitLock(30000);
+    Logger.log('Configuration update lock acquired on attempt ' + lockResult.attempts);
     
     // Get current configuration
     const currentConfig = getConfiguration();
@@ -215,12 +227,32 @@ function updateConfiguration(updates) {
     props.setProperty(CONFIG_PROPERTY_KEY, JSON.stringify(updatedConfig));
     props.setProperty(CONFIG_VERSION_KEY, updatedConfig.version);
     
-    // Invalidate cache
-    CacheService.getScriptCache().remove(CONFIG_CACHE_KEY);
+    // Invalidate cache with defensive error handling
+    try {
+      CacheService.getScriptCache().remove(CONFIG_CACHE_KEY);
+    } catch (error) {
+      logError('updateConfiguration', error, {
+        severity: 'CRITICAL',
+        operation: 'cache_invalidation',
+        cacheKey: CONFIG_CACHE_KEY,
+        impact: 'Stale config data may be served until cache expires naturally (10 minutes)'
+      });
+      // Continue execution - configuration save succeeded, cache invalidation is non-fatal
+    }
     
     // Invalidate visual config cache if visual settings were updated
     if (updates.visual) {
-      CacheService.getScriptCache().remove('visualConfig');
+      try {
+        CacheService.getScriptCache().remove('visualConfig');
+      } catch (error) {
+        logError('updateConfiguration', error, {
+          severity: 'CRITICAL',
+          operation: 'cache_invalidation',
+          cacheKey: 'visualConfig',
+          impact: 'Stale visual config may be served until cache expires naturally (5 minutes)'
+        });
+        // Continue execution - configuration save succeeded, cache invalidation is non-fatal
+      }
     }
     
     // Sync salespeople to sheet for backward compatibility
@@ -236,7 +268,8 @@ function updateConfiguration(updates) {
     logError('updateConfiguration', e);
     throw e;
   } finally {
-    lock.releaseLock();
+    // Always release lock, even if operation failed
+    lockResult.lock.releaseLock();
   }
 }
 
@@ -812,17 +845,129 @@ function getSyncMetadataFromProperties() {
 }
 
 /**
- * Saves sync metadata to Properties Service
+ * Cleans up old sync metadata entries to reduce size.
+ * Removes entries older than 30 days and orphaned entries.
  *
- * @param {Object} metadata - Sync metadata to save
+ * @param {Object} metadata - Current metadata object
+ * @returns {Object} Cleaned metadata object
+ */
+function cleanupOldMetadata(metadata) {
+  try {
+    const RETENTION_DAYS = 30;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - RETENTION_DAYS);
+    const cutoffTime = cutoffDate.getTime();
+    
+    const cleaned = {};
+    let removedCount = 0;
+    let keptCount = 0;
+    
+    // Preserve _stats if it exists
+    if (metadata._stats) {
+      cleaned._stats = metadata._stats;
+    }
+    
+    // Filter metadata entries
+    for (const key in metadata) {
+      if (!metadata.hasOwnProperty(key)) continue;
+      
+      // Skip special keys
+      if (key === '_stats') continue;
+      
+      const value = metadata[key];
+      
+      // Check if entry has lastModified timestamp
+      if (value && value.lastModified) {
+        const entryTime = new Date(value.lastModified).getTime();
+        
+        // Keep if within retention period
+        if (entryTime >= cutoffTime) {
+          cleaned[key] = value;
+          keptCount++;
+        } else {
+          removedCount++;
+        }
+      } else {
+        // Keep entries without timestamp (shouldn't happen, but defensive)
+        cleaned[key] = value;
+        keptCount++;
+      }
+    }
+    
+    Logger.log('[cleanupOldMetadata] Removed ' + removedCount + ' old entries, kept ' + keptCount + ' entries');
+    
+    return cleaned;
+    
+  } catch (error) {
+    logWarning('cleanupOldMetadata', 'Error during cleanup', { error: error.toString() });
+    // Return original metadata if cleanup fails
+    return metadata;
+  }
+}
+
+/**
+ * Saves sync metadata to Properties Service with size validation.
+ * Performs automatic cleanup of old metadata if size limit is approached.
+ *
+ * @param {Object} metadata - Sync metadata structure to save
+ * @throws {Error} If metadata exceeds size limits even after cleanup
  */
 function saveSyncMetadata(metadata) {
   try {
     const props = PropertiesService.getDocumentProperties();
-    props.setProperty('SALES_LOG_SYNC_META', JSON.stringify(metadata));
-  } catch (e) {
-    logError('saveSyncMetadata', e);
-    throw e;
+    
+    // Convert to JSON for size checking
+    let metadataJson = JSON.stringify(metadata);
+    let metadataSize = metadataJson.length;
+    
+    // Size validation: 8KB threshold (9KB hard limit with safety margin)
+    const SIZE_LIMIT = 8192;  // 8KB in bytes
+    const SIZE_WARNING = 6144; // 6KB (75% of limit)
+    
+    // If approaching or exceeding limit, attempt cleanup
+    if (metadataSize >= SIZE_WARNING) {
+      Logger.log('[saveSyncMetadata] Metadata size: ' + metadataSize + ' bytes (' + (metadataSize/1024).toFixed(2) + ' KB)');
+      
+      if (metadataSize >= SIZE_LIMIT) {
+        // Attempt automatic cleanup
+        Logger.log('[saveSyncMetadata] Size limit reached. Attempting cleanup...');
+        metadata = cleanupOldMetadata(metadata);
+        metadataJson = JSON.stringify(metadata);
+        metadataSize = metadataJson.length;
+        
+        // If still too large after cleanup, throw error
+        if (metadataSize >= SIZE_LIMIT) {
+          throw new Error(
+            'Sync metadata exceeds size limit: ' + metadataSize + ' bytes (max: ' + SIZE_LIMIT + '). ' +
+            'Consider reducing retention period or implementing chunking.'
+          );
+        }
+        
+        Logger.log('[saveSyncMetadata] After cleanup: ' + metadataSize + ' bytes (' + (metadataSize/1024).toFixed(2) + ' KB)');
+      } else {
+        // Warning level - log but continue
+        logWarning('saveSyncMetadata', 'Approaching size limit', {
+          currentSize: metadataSize,
+          limit: SIZE_LIMIT,
+          percentUsed: ((metadataSize / SIZE_LIMIT) * 100).toFixed(1) + '%'
+        });
+      }
+    }
+    
+    // Write to Properties Service
+    props.setProperty('SALES_LOG_SYNC_META', metadataJson);
+    
+    // Log successful write with size info
+    if (metadataSize >= SIZE_WARNING) {
+      Logger.log('[saveSyncMetadata] Successfully saved metadata (' + metadataSize + ' bytes)');
+    }
+    
+  } catch (error) {
+    logError('saveSyncMetadata', error, {
+      operation: 'properties_write',
+      attemptedSize: metadataJson ? metadataJson.length : 'unknown'
+    });
+    throw error;
   }
 }
 
@@ -979,7 +1124,18 @@ function syncToSalespeopleSheet(config) {
     Logger.log('Synced ' + salespeople.length + ' salespeople to SALESPEOPLE sheet');
     
     // Invalidate the salesperson maps cache to force refresh
-    CacheService.getScriptCache().remove('salespersonMaps');
+    try {
+      CacheService.getScriptCache().remove('salespersonMaps');
+    } catch (error) {
+      logError('syncToSalespeopleSheet', error, {
+        severity: 'HIGH',
+        operation: 'cache_invalidation',
+        cacheKey: 'salespersonMaps',
+        impact: 'Stale salesperson maps may be served until cache expires naturally (5 minutes)',
+        context: 'After syncing salespeople to SALESPEOPLE sheet'
+      });
+      // Continue execution - sheet sync succeeded, cache invalidation is non-fatal
+    }
     
   } catch (e) {
     logWarning('syncToSalespeopleSheet', 'Error syncing to SALESPEOPLE sheet', { error: e.toString(), count: config?.salespeople?.length });
