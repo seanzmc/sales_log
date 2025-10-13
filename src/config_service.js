@@ -534,8 +534,8 @@ function updateLeaderboard() {
         // Add salesperson with preserved MTD and 3-month average
         newLeaderboardData.push([
           salespeople[i],                    // Column P: NAME
-          leaderboardData[i][1] || '',       // Column Q: MTD SALES (preserve existing)
-          leaderboardData[i][2] || ''        // Column R: 3mo. AVERAGE (preserve existing)
+          leaderboardData[i][1] ?? '',       // Column Q: MTD SALES (preserve existing, including 0)
+          leaderboardData[i][2] ?? ''        // Column R: 3mo. AVERAGE (preserve existing, including 0)
         ]);
       } else {
         // Fill remaining rows with empty data (should not happen with correct count)
