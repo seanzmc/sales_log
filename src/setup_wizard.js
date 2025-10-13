@@ -287,7 +287,7 @@ function checkAndCreateTodaySheet(ss, results) {
         if (lastRow > 1) {
           // Get FULL NAMEs from column A, starting from row 2
           const fullNames = salesSheet.getRange(2, 1, lastRow - 1, 1).getValues();
-          
+
           // Filter to get only non-empty names
           const validNames = fullNames
             .map(row => String(row[0]).trim())
@@ -297,7 +297,7 @@ function checkAndCreateTodaySheet(ss, results) {
           const salespersonCount = Math.min(Math.max(1, validNames.length), 200);
           const endRow = salespersonCount + 1; // +1 because start row is 2
           const leaderboardRangeA1 = `P2:R${endRow}`;
-          
+
           // Prepare data for leaderboard (only for actual salespeople)
           const leaderboardData = [];
           for (let i = 0; i < salespersonCount; i++) {
@@ -327,13 +327,15 @@ function checkAndCreateTodaySheet(ss, results) {
     // Set font to configured font for entire sheet
     sheet.getRange("A:R").setFontFamily(headerFont);
     sheet.getRange("A:R").setFontWeight("bold");
+    sheet.getRange("A:R").setHorizontalAlignment("center");
+
 
 
     // Set text wrapping for specific columns
-    sheet.getRange("F:F").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // NewCar TRADE STK#
-    sheet.getRange("M:M").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // UsedCar TRADE STK#
-    sheet.getRange("Q:Q").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // MTD SALES
-    sheet.getRange("R:R").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // 3mo. AVERAGE
+    sheet.getRange("F1").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // NewCar TRADE STK#
+    sheet.getRange("M1").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // UsedCar TRADE STK#
+    sheet.getRange("Q1").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // MTD SALES
+    sheet.getRange("R1").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP); // 3mo. AVERAGE
 
     // Set font sizes per documentation
     // A:N = 18pt
@@ -545,11 +547,11 @@ function checkAndCreateMonthlySheet(ss, results) {
     // New car sales [A:G], separator [H], Used car sales [I:N], separator [O], Leaderboard [P:R], Analytics [S:X]
     const headers = [
       [
-        "#", "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // A:G
+        "#", "CUSTOMER", "FI", "NEW MODEL", "STOCK #", "TRADE STK#", "SALESPERSON", // A:G
         "", // H - separator
-        "CUSTOMER", "FI", "MODEL", "STOCK #", "TRADE STK#", "SALES PERSON", // I:N
+        "CUSTOMER", "FI", "USED MODEL", "STOCK #", "TRADE STK#", "SALESPERSON", // I:N
         "", // O - separator
-        "SALESPERSON", "SALES", "3mo. AVG", // P:R
+        "LEADERBOARD", "SALES", "3mo. AVG", // P:R
         "MONTHLY ANALYTICS", "", "", "", "", "" // S:X (will be merged)
       ]
     ];
@@ -742,6 +744,9 @@ function checkAndCreateDepositsSheet(ss, results) {
     // Set font to Calibri, 10pt for entire sheet
     sheet.getRange("A:N").setFontFamily("Calibri");
     sheet.getRange("A:N").setFontSize(10);
+    sheet.getRange("A:N").setVerticalAlignment("center");
+    sheet.getRange("A:N").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
+    sheet.getRange("A:N").setHorizontalAlignment("center");
 
     // Set column widths for better display
     sheet.setColumnWidth(1, 100);  // A: DATE
