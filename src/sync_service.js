@@ -60,6 +60,12 @@ function onEditSalespeopleSheet(e) {
       return;
     }
     
+    // Skip formatting-only changes (where value hasn't actually changed)
+    if (e.oldValue !== undefined && e.value !== undefined && e.oldValue === e.value) {
+      Logger.log('[Sync] Formatting-only change detected (oldValue === value) - ignoring');
+      return;
+    }
+    
     Logger.log('[Sync] Edit detected in SALESPEOPLE sheet - Row: ' + row + ', Col: ' + col);
     
     // Get the complete row data
