@@ -209,3 +209,11 @@ Fix critical issue # from @qual:
 
 Document: what was changed, why, and what was tested.
 ```
+
+Major Issue #7 requires special handling because it's a cross-cutting refactoring task affecting multiple files, not a single function fix. For this issue specifically, you'd want to modify the prompt to:
+
+1. Create a centralized constants file first
+2. Search ALL files for magic number patterns (not just one file)
+3. Group constants logically (timeouts, TTLs, thresholds)
+4. Replace instances systematically across the codebase
+5. Verify each file independently

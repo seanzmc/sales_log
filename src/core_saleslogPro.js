@@ -619,6 +619,237 @@ function createTimeoutManager(thresholdMinutes = 5.0) {
   };
 }
 
+// ============================================================================
+// CHECKPOINT & RECOVERY SYSTEM
+// ============================================================================
+
+/**
+ * Checkpoint system for atomic operations in processDaily()
+ * Stores operation state to enable recovery if analytics fail
+ */
+
+const CHECKPOINT_KEY = 'DAILY_OPERATION_CHECKPOINT';
+const CHECKPOINT_RETENTION_HOURS = 24; // Keep checkpoints for 24 hours
+
+/**
+ * Creates a checkpoint before modifying MONTHLY sheet
+ * @param {Object} operationData - Data about the operation being performed
+ */
+function createOperationCheckpoint(operationData) {
+  try {
+    const checkpoint = {
+      timestamp: new Date().toISOString(),
+      dateProcessed: operationData.dateStr,
+      rowCount: operationData.rowCount,
+      status: 'STARTED',
+      phase: 'PRE_MONTHLY_WRITE',
+      dataHash: generateDataHash(operationData.rows)
+    };
+    
+    PropertiesService.getScriptProperties().setProperty(
+      CHECKPOINT_KEY,
+      JSON.stringify(checkpoint)
+    );
+    
+    Logger.log(`✓ Checkpoint created for ${operationData.dateStr} (${operationData.rowCount} rows)`);
+    return true;
+  } catch (e) {
+    Logger.log(`⚠️ Failed to create checkpoint: ${e.toString()}`);
+    return false; // Non-fatal - operation can continue
+  }
+}
+
+/**
+ * Updates checkpoint status as operation progresses
+ * @param {string} phase - Current phase (MONTHLY_WRITTEN, ANALYTICS_PENDING, COMPLETE, ANALYTICS_FAILED)
+ * @param {Object} additionalData - Optional additional data to store
+ */
+function updateCheckpoint(phase, additionalData = {}) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const checkpointStr = props.getProperty(CHECKPOINT_KEY);
+    
+    if (!checkpointStr) {
+      Logger.log('⚠️ No checkpoint found to update');
+      return false;
+    }
+    
+    const checkpoint = JSON.parse(checkpointStr);
+    checkpoint.phase = phase;
+    checkpoint.lastUpdate = new Date().toISOString();
+    
+    // Merge additional data
+    Object.assign(checkpoint, additionalData);
+    
+    props.setProperty(CHECKPOINT_KEY, JSON.stringify(checkpoint));
+    Logger.log(`✓ Checkpoint updated: ${phase}`);
+    return true;
+  } catch (e) {
+    Logger.log(`⚠️ Failed to update checkpoint: ${e.toString()}`);
+    return false;
+  }
+}
+
+/**
+ * Marks operation as complete and clears checkpoint
+ */
+function clearOperationCheckpoint() {
+  try {
+    PropertiesService.getScriptProperties().deleteProperty(CHECKPOINT_KEY);
+    Logger.log('✓ Checkpoint cleared - operation complete');
+    return true;
+  } catch (e) {
+    Logger.log(`⚠️ Failed to clear checkpoint: ${e.toString()}`);
+    return false;
+  }
+}
+
+/**
+ * Retrieves current checkpoint if it exists
+ * @returns {Object|null} Checkpoint object or null
+ */
+function getOperationCheckpoint() {
+  try {
+    const checkpointStr = PropertiesService.getScriptProperties().getProperty(CHECKPOINT_KEY);
+    if (!checkpointStr) return null;
+    
+    const checkpoint = JSON.parse(checkpointStr);
+    
+    // Check if checkpoint is too old
+    const checkpointAge = Date.now() - new Date(checkpoint.timestamp).getTime();
+    const maxAge = CHECKPOINT_RETENTION_HOURS * 60 * 60 * 1000;
+    
+    if (checkpointAge > maxAge) {
+      Logger.log(`⚠️ Checkpoint is ${(checkpointAge / 3600000).toFixed(1)}h old - discarding`);
+      clearOperationCheckpoint();
+      return null;
+    }
+    
+    return checkpoint;
+  } catch (e) {
+    Logger.log(`⚠️ Failed to retrieve checkpoint: ${e.toString()}`);
+    return null;
+  }
+}
+
+/**
+ * Generates a simple hash of row data for verification
+ * @param {Array} rows - Array of row data
+ * @returns {string} Hash string
+ */
+function generateDataHash(rows) {
+  try {
+    // Simple hash: rowCount + first/last row checksums
+    const rowCount = rows.length;
+    const firstRow = rows[0] ? JSON.stringify(rows[0]).slice(0, 50) : '';
+    const lastRow = rows[rows.length - 1] ? JSON.stringify(rows[rows.length - 1]).slice(0, 50) : '';
+    return `${rowCount}|${firstRow}|${lastRow}`;
+  } catch (e) {
+    return 'hash_error';
+  }
+}
+
+/**
+ * Checks for incomplete operations on startup and offers recovery
+ * Called from onOpen() or can be invoked manually
+ */
+function checkAndRecoverIncompleteOperations() {
+  try {
+    const checkpoint = getOperationCheckpoint();
+    
+    if (!checkpoint) {
+      Logger.log('✓ No incomplete operations found');
+      return;
+    }
+    
+    // Found incomplete operation
+    const age = ((Date.now() - new Date(checkpoint.timestamp).getTime()) / 60000).toFixed(0);
+    Logger.log(`⚠️ Found incomplete operation: ${checkpoint.dateProcessed} (${age}m ago, phase: ${checkpoint.phase})`);
+    
+    // If analytics phase failed or is pending
+    if (checkpoint.phase === 'ANALYTICS_PENDING' || checkpoint.phase === 'ANALYTICS_FAILED') {
+      // Offer recovery via UI if available
+      try {
+        const ui = SpreadsheetApp.getUi();
+        const response = ui.alert(
+          'Incomplete Operation Detected',
+          `An incomplete daily processing operation was detected:\n\n` +
+          `Date: ${checkpoint.dateProcessed}\n` +
+          `Phase: ${checkpoint.phase}\n` +
+          `Time: ${age} minutes ago\n\n` +
+          `The daily data was successfully saved to MONTHLY, but analytics may not have been calculated.\n\n` +
+          `Would you like to recalculate analytics now?`,
+          ui.ButtonSet.YES_NO
+        );
+        
+        if (response === ui.Button.YES) {
+          recoverAnalyticsForCheckpoint(checkpoint);
+        } else {
+          Logger.log('User declined recovery - clearing checkpoint');
+          clearOperationCheckpoint();
+          toastInfo('Checkpoint cleared. Use "Refresh Analytics" if needed.', 'Recovery Skipped');
+        }
+      } catch (uiError) {
+        // UI not available - log and continue
+        Logger.log('UI not available for recovery prompt: ' + uiError);
+      }
+    } else {
+      // Other phases - just clear stale checkpoint
+      Logger.log('Clearing stale checkpoint from phase: ' + checkpoint.phase);
+      clearOperationCheckpoint();
+    }
+  } catch (e) {
+    Logger.log('Error in checkAndRecoverIncompleteOperations: ' + e.toString());
+  }
+}
+
+/**
+ * Recovers analytics for a checkpoint operation
+ * @param {Object} checkpoint - The checkpoint to recover from
+ */
+function recoverAnalyticsForCheckpoint(checkpoint) {
+  try {
+    toastInfo('Recovering analytics...', 'Recovery In Progress');
+    Logger.log(`Starting analytics recovery for ${checkpoint.dateProcessed}`);
+    
+    const sheets = getSheets();
+    invalidateAnalyticsCache();
+    const analyticsData = calculateMonthlyAnalytics();
+    
+    if (analyticsData) {
+      writeAnalyticsToMonthly(analyticsData, sheets.monthly);
+      clearOperationCheckpoint();
+      
+      toastInfo(
+        `Analytics successfully recovered for ${checkpoint.dateProcessed}`,
+        'Recovery Complete'
+      );
+      Logger.log('✓ Analytics recovery successful');
+      return true;
+    } else {
+      updateCheckpoint('ANALYTICS_FAILED', { recoveryAttempts: (checkpoint.recoveryAttempts || 0) + 1 });
+      alertError(
+        'Analytics recovery failed. You can try again using "Refresh Analytics" from the menu.',
+        'Recovery Failed'
+      );
+      Logger.log('✗ Analytics recovery failed - no data generated');
+      return false;
+    }
+  } catch (e) {
+    Logger.log('Error in recoverAnalyticsForCheckpoint: ' + e.toString() + (e.stack ? '\nStack: ' + e.stack : ''));
+    updateCheckpoint('ANALYTICS_FAILED', {
+      error: e.toString(),
+      recoveryAttempts: (checkpoint.recoveryAttempts || 0) + 1
+    });
+    alertError('Error during analytics recovery: ' + e.toString(), 'Recovery Error');
+    return false;
+  }
+}
+
+// ============================================================================
+// MAIN FLOWS
+// ============================================================================
+
 // Main flows
 function processDaily() {
   withScriptLock(() => {
@@ -675,14 +906,20 @@ function processDaily() {
         return; // Exit before any changes
       }
 
+      // CREATE OPERATION CHECKPOINT before any modifications
+      const dateStr = formatDateOffset(1);
+      createOperationCheckpoint({
+        dateStr: dateStr,
+        rowCount: rowsToLogToMonthly.length,
+        rows: rowsToLogToMonthly
+      });
+
       // Modify Column A
       rowsToLogToMonthly = rowsToLogToMonthly.map((row, index) => {
         row[0] = index + 1;
         return row;
       });
       // Note: fontColorsToLogToMonthly does not need Column A modified, it's just colors.
-
-      const dateStr = formatDateOffset(1);
 
       // MODIFIED: Use the new function to find the last row specifically within columns A:N
       const lastRowMonthly = findLastRowInCols(sheets.monthly, 1, 14);
@@ -718,6 +955,12 @@ function processDaily() {
 
       errorSheetRows = applyMonthlyRowFormatting(sheets.monthly, rowsToLogToMonthly, dataInsertRow, aliasMap);
 
+      // Update checkpoint: MONTHLY data written successfully
+      updateCheckpoint('MONTHLY_WRITTEN', {
+        monthlyInsertRow: dataInsertRow,
+        rowsInserted: numRowsToInsert
+      });
+
       const sidesToTally = [
         { fiIdx: 2, saleIdx: 6 },
         { fiIdx: 9, saleIdx: 13 },
@@ -744,9 +987,13 @@ function processDaily() {
       dailyClearRange.setBackground(null);
       dailyClearRange.setFontColor(null); // *** NEW: Reset font color to default ***
       
+      // Update checkpoint: Core operations complete, analytics pending
+      updateCheckpoint('ANALYTICS_PENDING');
+      
       // CHECKPOINT 2: Before optional analytics (after critical operations)
       if (!timer.checkTime("Before analytics calculation")) {
         Logger.log("⚠️ Skipping analytics due to time constraints");
+        updateCheckpoint('ANALYTICS_FAILED', { reason: 'timeout_prevention' });
         analyticsSkipped = true;
       } else {
         // Try analytics
@@ -757,9 +1004,18 @@ function processDaily() {
           if (analyticsData) {
             writeAnalyticsToMonthly(analyticsData, sheets.monthly);
             Logger.log("✓ Monthly analytics calculation successful");
+            // Clear checkpoint - operation fully complete
+            clearOperationCheckpoint();
+          } else {
+            updateCheckpoint('ANALYTICS_FAILED', { reason: 'no_data_generated' });
+            analyticsSkipped = true;
           }
         } catch (analyticsError) {
           Logger.log("Analytics calculation failed (non-critical): " + analyticsError.toString());
+          updateCheckpoint('ANALYTICS_FAILED', {
+            reason: 'exception',
+            error: analyticsError.toString()
+          });
           analyticsSkipped = true;
         }
       }
@@ -1172,6 +1428,14 @@ function onOpen() {
       // Continue with menu creation even if migration fails
     }
     
+    // Check for incomplete operations and offer recovery
+    try {
+      checkAndRecoverIncompleteOperations();
+    } catch (recoveryError) {
+      Logger.log('Recovery check failed (non-critical): ' + recoveryError);
+      // Continue with menu creation even if recovery check fails
+    }
+    
     // Create menu with configuration option
     SpreadsheetApp.getUi()
       .createMenu("Sales Tools")
@@ -1181,6 +1445,7 @@ function onOpen() {
       .addSeparator()
       .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
       .addItem("🔄 Refresh Analytics", "refreshAnalyticsManually")
+      .addItem("🔧 Check for Incomplete Operations", "checkAndRecoverIncompleteOperations")
       .addSeparator()
       .addItem("Start New Month (Rollover)", "rolloverMonth")
       .addSeparator()
