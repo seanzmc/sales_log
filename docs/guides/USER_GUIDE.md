@@ -47,7 +47,9 @@ Sales Log Pro uses four main sheets, each serving a specific purpose in your sal
 [Screenshot: TODAY sheet showing data entry area and leaderboard]
 
 **Layout**:
+
 - **Columns A-G**: New car sales entry
+
   - A: Sequence # (auto-generated during processing)
   - B: Customer Name
   - C: Finance Indicator (FI) - single letter A-Z for delivered
@@ -68,6 +70,7 @@ Sales Log Pro uses four main sheets, each serving a specific purpose in your sal
   - R: 3-Month Average
 
 **Key Features**:
+
 - Conditional formatting highlights duplicate stock numbers
 - Deposit matches flagged automatically
 - Pace indicators show performance (green/yellow/red)
@@ -80,6 +83,7 @@ Sales Log Pro uses four main sheets, each serving a specific purpose in your sal
 [Screenshot: MONTHLY sheet showing date headers and analytics columns]
 
 **Layout**:
+
 - **Columns A-N**: Same structure as TODAY sheet
 - **Column O**: Blank separator
 - **Columns P-R**: Final leaderboard (copied during rollover)
@@ -92,6 +96,7 @@ Sales Log Pro uses four main sheets, each serving a specific purpose in your sal
   - X: Rank
 
 **Key Features**:
+
 - Date headers separate each day's entries (format: M/D)
 - Red highlights indicate non-delivered deals
 - Light red highlights show salesperson code errors
@@ -105,17 +110,20 @@ Sales Log Pro uses four main sheets, each serving a specific purpose in your sal
 [Screenshot: SALESPEOPLE sheet with example data]
 
 **Layout**:
+
 - **Column A**: Full Name (e.g., "John Smith")
 - **Column B**: Aliases (comma-separated, e.g., "JS, Johnny, John")
 - **Column C**: Display Code (2-4 characters, e.g., "JS")
 
 **Key Features**:
+
 - Maps all name variations to one person
 - Case-insensitive matching
 - Syncs with configuration system
 - Managed through Settings UI
 
 **Example Entry**:
+
 ```
 Full Name: John Smith
 Aliases: JS, Johnny, John
@@ -129,6 +137,7 @@ Display Code: JS
 [Screenshot: DEPOSITS sheet with deposit tracking]
 
 **Layout** (Columns A-N):
+
 - A: Date
 - B: New/Used
 - C: Year
@@ -145,6 +154,7 @@ Display Code: JS
 - N: Notes
 
 **Key Features**:
+
 - Stock numbers automatically flagged on TODAY sheet
 - Prevents double-counting deposited vehicles
 - Conditional formatting highlights matches
@@ -219,6 +229,7 @@ The wizard creates all four sheets with proper formatting and structure.
 **Where**: TODAY sheet
 
 **Steps**:
+
 1. Open the TODAY sheet
 2. Enter new car sales in columns B-G
 3. Enter used car sales in columns I-N
@@ -227,6 +238,7 @@ The wizard creates all four sheets with proper formatting and structure.
 [Screenshot: Entering sales data on TODAY sheet]
 
 **Important Notes**:
+
 - **Finance Indicator (FI)**: Enter single letter A-Z for delivered deals
 - **Stock Numbers**: System auto-detects duplicates (yellow-green highlight)
 - **Deposit Matches**: Auto-flagged if stock in DEPOSITS sheet
@@ -252,6 +264,7 @@ Used Car Sale (same pattern in columns I-N)
 **When**: End of business day (or next morning)
 
 **What It Does**:
+
 - Transfers TODAY entries to MONTHLY
 - Generates sequential numbering
 - Updates leaderboard
@@ -260,6 +273,7 @@ Used Car Sale (same pattern in columns I-N)
 - Clears TODAY sheet
 
 **Steps**:
+
 1. Click **Sales Tools** → **Log Yesterday's Sales**
 2. Review the summary dialog:
    - New/Used/Total delivered counts
@@ -271,6 +285,7 @@ Used Car Sale (same pattern in columns I-N)
 [Screenshot: Daily processing summary dialog]
 
 **Summary Dialog Example**:
+
 ```
 Daily Sales Logged: 10/10
 
@@ -291,6 +306,7 @@ SALESPERSON CODE ERRORS: 0
 ### 3. Review Results
 
 **Check MONTHLY Sheet**:
+
 - Verify date header inserted (format: M/D)
 - Confirm all sales transferred correctly
 - Check analytics in columns S-X
@@ -299,6 +315,7 @@ SALESPERSON CODE ERRORS: 0
 [Screenshot: MONTHLY sheet after processing]
 
 **Check TODAY Sheet**:
+
 - Verify data cleared (columns B-N)
 - Review updated leaderboard
 - Check pace indicators (colors)
@@ -306,7 +323,9 @@ SALESPERSON CODE ERRORS: 0
 ### 4. Handle Errors
 
 **Red Highlights on MONTHLY**:
+
 - **Non-Delivered Deals**: Missing or invalid FI flag
+
   - Fix: Enter single letter A-Z in FI column
   - Will auto-clear on next recalculation
 
@@ -316,6 +335,7 @@ SALESPERSON CODE ERRORS: 0
   - Fix option 3: Add alias to existing person
 
 **Steps to Fix Salesperson Errors**:
+
 1. Note the unrecognized name from error message
 2. Click **Sales Tools** → **⚙️ Settings**
 3. Either add new person or add alias to existing
@@ -329,7 +349,9 @@ SALESPERSON CODE ERRORS: 0
 **Where**: MONTHLY sheet, columns S-X
 
 **What to Review**:
+
 - **Team Totals** (rows 3-6):
+
   - Total Delivered
   - New/Used breakdown
   - Selling days elapsed
@@ -344,6 +366,7 @@ SALESPERSON CODE ERRORS: 0
 [Screenshot: Analytics section on MONTHLY sheet]
 
 **Manual Refresh** (if needed):
+
 1. Click **Sales Tools** → **🔄 Refresh Analytics**
 2. Confirm the refresh
 3. Review updated summary dialog
@@ -361,6 +384,7 @@ Click **Sales Tools** → **⚙️ Settings** to open the sidebar.
 ### Tab 1: 👥 Sales Team Management
 
 **Adding a Salesperson**:
+
 1. Click **Add Salesperson** button
 2. Fill in the form:
    - **Full Name**: Complete name (required)
@@ -370,6 +394,7 @@ Click **Sales Tools** → **⚙️ Settings** to open the sidebar.
 4. Click **Save Changes**
 
 **Editing a Salesperson**:
+
 1. Find the person in the list
 2. Click **Edit** button
 3. Modify fields as needed
@@ -377,18 +402,21 @@ Click **Sales Tools** → **⚙️ Settings** to open the sidebar.
 5. Click **Save Changes**
 
 **Deleting a Salesperson**:
+
 1. Find the person in the list
 2. Click **Delete** button
 3. Confirm deletion
 4. Click **Save Changes**
 
 **Alias Best Practices**:
+
 - Include common misspellings
 - Add nicknames team uses
 - Include initials
 - Example: "John Smith" → Aliases: "JS, Johnny, John, Smitty"
 
 **Validation Rules**:
+
 - No duplicate full names
 - No duplicate aliases across team
 - Display codes must be 2-4 alphanumeric characters
@@ -401,18 +429,22 @@ Click **Sales Tools** → **⚙️ Settings** to open the sidebar.
 Each color can be customized using the color picker:
 
 1. **Non-Delivered Deal Color** (default: #FF0000)
+
    - Highlights rows missing valid FI flag
    - Applied to MONTHLY sheet
 
 2. **Salesperson Error Color** (default: #FFEBEE)
+
    - Highlights unrecognized salesperson inputs
    - Light red for easy identification
 
 3. **Duplicate Stock Fill Color** (default: #b4ff0c)
+
    - Background color for duplicate stocks
    - Applied to TODAY sheet
 
 4. **Duplicate Stock Text Color** (default: #ff0000)
+
    - Text color for duplicate stocks
    - High contrast with fill color
 
@@ -423,13 +455,15 @@ Each color can be customized using the color picker:
 **Pace Thresholds**:
 
 Configure performance indicator thresholds:
+
 - **Green (Excellent)**: Default ≥10 units/month
-- **Yellow (Good)**: Default 8-10 units/month  
+- **Yellow (Good)**: Default 8-10 units/month
 - **Red (Needs Attention)**: Default <8 units/month
 
 Formula: `(MTD Sales / Days Elapsed) * Total Days in Month`
 
 **Reset to Defaults**:
+
 - Click **Reset to Defaults** button
 - Confirms before resetting
 - Restores all original colors and thresholds
@@ -437,16 +471,19 @@ Formula: `(MTD Sales / Days Elapsed) * Total Days in Month`
 ### Tab 3: 📅 Date Settings
 
 **Skip Sundays** (default: enabled):
+
 - ☑ Enabled: Sundays excluded from selling day calculations
 - ☐ Disabled: Sundays counted as selling days
 - Affects pace calculations and averages
 
 **Monday Logs Saturday** (default: enabled):
+
 - ☑ Enabled: Monday processing defaults to Saturday date
 - ☐ Disabled: Monday processing uses Sunday date
 - Useful for closed-Sunday dealerships
 
 **Archive Format** (default: M/YY):
+
 - **M/YY**: "5/25" (most compact)
 - **MM/YY**: "05/25" (zero-padded)
 - **MMM/YY**: "May/25" (month name)
@@ -461,6 +498,7 @@ Formula: `(MTD Sales / Days Elapsed) * Total Days in Month`
 Analytics automatically calculate after each daily processing and provide comprehensive insights into team performance.
 
 **Calculation Process**:
+
 1. System reads all MONTHLY sheet data
 2. Identifies delivered deals (FI flag = A-Z)
 3. Separates new vs. used inventory
@@ -478,6 +516,7 @@ Analytics automatically calculate after each daily processing and provide compre
 **Row 1**: "MONTHLY ANALYTICS" header (merged S1:X1)
 
 **Rows 2-6**: Summary data
+
 ```
 Metric                Value       Metric              Value
 Total Delivered       45          Selling Days        15
@@ -487,6 +526,7 @@ Last Updated          10/10/2025 2:00:00 PM
 ```
 
 **Key Metrics**:
+
 - **Total Delivered**: All delivered units (new + used)
 - **New/Used Breakdown**: Separate inventory counts
 - **Selling Days**: Days elapsed (respects Sunday setting)
@@ -497,11 +537,13 @@ Last Updated          10/10/2025 2:00:00 PM
 [Screenshot: Salesperson analytics section]
 
 **Row 8**: Column headers
+
 ```
 Salesperson | New | Used | Total | % of Team | Rank
 ```
 
 **Rows 9+**: Individual data (sorted by total sales)
+
 ```
 JS    12.5   8.0   20.5   45.6%   1
 SJ    10.0   6.5   16.5   36.7%   2
@@ -510,6 +552,7 @@ RW     0.0   0.5    0.5    1.1%   4
 ```
 
 **Understanding the Data**:
+
 - **Split Sales**: Shown as decimals (0.5 for each person)
 - **% of Team**: Individual contribution to total
 - **Rank**: Performance ranking (1 = highest)
@@ -518,11 +561,13 @@ RW     0.0   0.5    0.5    1.1%   4
 ### Manual Analytics Refresh
 
 **When to Use**:
+
 - After manual data edits
 - To verify calculations
 - After correcting errors
 
 **Steps**:
+
 1. Click **Sales Tools** → **🔄 Refresh Analytics**
 2. Confirm the refresh
 3. Review summary dialog showing:
@@ -535,6 +580,7 @@ RW     0.0   0.5    0.5    1.1%   4
 ### Analytics in Archives
 
 During month rollover, analytics are:
+
 1. Recalculated for final accuracy
 2. Included in archived month sheet
 3. Preserved in columns S-X
@@ -549,6 +595,7 @@ During month rollover, analytics are:
 **Timing**: First business day of new month
 
 **Prerequisites**:
+
 - All previous month sales processed
 - Analytics reviewed and verified
 - Any errors corrected
@@ -559,6 +606,7 @@ During month rollover, analytics are:
 
 1. Click **Sales Tools** → **Start New Month (Rollover)**
 2. Review confirmation dialog:
+
    ```
    This will:
    1. Archive the current "MONTHLY" sheet (e.g., as "5/25")
@@ -566,9 +614,10 @@ During month rollover, analytics are:
    3. Clear the "MONTHLY" sheet for the new month
    4. Clear MTD sales (Column Q) on the "TODAY" sheet
    5. Recalculate 3-Month Rolling Averages (Column R) on "TODAY"
-   
+
    Are you sure you want to proceed?
    ```
+
 3. Click **Yes** to proceed
 
 [Screenshot: Rollover confirmation dialog]
@@ -590,18 +639,21 @@ The system automatically:
 #### Step 3: Verify Results
 
 **Check Archive Sheet**:
+
 - New sheet created with date name (e.g., "5/25")
 - All MONTHLY data preserved
 - Leaderboard copied correctly
 - Analytics included (columns S-X)
 
 **Check MONTHLY Sheet**:
+
 - Data cleared (rows 2+)
 - Headers intact
 - Formatting preserved
 - Ready for new entries
 
 **Check TODAY Sheet**:
+
 - MTD column cleared (all zeros)
 - Averages recalculated (3-month rolling)
 - Leaderboard sorted correctly
@@ -609,6 +661,7 @@ The system automatically:
 #### Step 4: Completion
 
 Success dialog displays:
+
 ```
 Month Rollover Complete!
 "5/25" created. "MONTHLY" & MTD reset. Averages updated.
@@ -619,6 +672,7 @@ Month Rollover Complete!
 ### Understanding Rolling Averages
 
 **Calculation**:
+
 1. System looks back 3 months from current
 2. Finds archived sheets (e.g., "4/25", "3/25", "2/25")
 3. Retrieves each person's MTD from archives
@@ -626,16 +680,18 @@ Month Rollover Complete!
 5. Rounds to nearest 0.5
 
 **Example**:
+
 ```
 John Smith monthly sales:
 - April: 15 units
-- March: 12 units  
+- March: 12 units
 - February: 18 units
 
 Rolling Average = (15 + 12 + 18) ÷ 3 = 15.0
 ```
 
 **Missing Months**:
+
 - If archive doesn't exist, that month skipped
 - Average calculated from available months only
 - If no archives found, average = 0
@@ -651,6 +707,7 @@ Rolling Average = (15 + 12 + 18) ÷ 3 = 15.0
 **Format**: "Person1/Person2" in salesperson field
 
 **Example**:
+
 ```
 TODAY Sheet, Column G:
 John/Sarah
@@ -662,6 +719,7 @@ Result:
 ```
 
 **Rules**:
+
 - Use forward slash (/) separator
 - No spaces around slash recommended
 - Both names must be valid (exist in SALESPEOPLE)
@@ -675,17 +733,20 @@ Result:
 **Purpose**: Visual coding for special deals or notes
 
 **How It Works**:
+
 1. Apply any font color on TODAY sheet
 2. Color transfers during daily processing
 3. Preserved on MONTHLY sheet
 4. Useful for tracking special deals
 
 **Important Notes**:
+
 - Only transfers during [`processDaily()`](../../src/core_saleslogPro.js:511)
 - Manual color changes on MONTHLY don't sync back
 - Colors cleared with TODAY sheet after processing
 
 **Example Uses**:
+
 - Blue: Internet leads
 - Green: Repeat customers
 - Purple: Special financing
@@ -698,11 +759,13 @@ Result:
 **Purpose**: Visual performance tracking on leaderboard
 
 **Colors**:
+
 - 🟢 **Green**: On pace or ahead (excellent)
 - 🟡 **Yellow**: Slightly behind (good)
 - 🔴 **Red**: Significantly behind (needs attention)
 
 **Calculation**:
+
 ```
 Current Pace = (MTD Sales ÷ Days Elapsed) × Total Days in Month
 
@@ -714,11 +777,13 @@ Example:
 ```
 
 **Threshold Application**:
+
 - If Pace ≥ Green threshold → Green background
 - If Pace ≥ Yellow threshold → Yellow background
 - If Pace < Yellow threshold → Red background
 
 **Special Case**: All MTD = 0
+
 - Light blue background applied
 - Indicates start of month (no sales yet)
 
@@ -727,16 +792,19 @@ Example:
 ### Duplicate Detection
 
 **Stock Number Duplicates**:
+
 - Detected within TODAY sheet
 - Highlighted with yellow-green fill, red text
 - Checks both new (column E) and used (column L)
 
 **Deposit Matches**:
+
 - Checks against DEPOSITS sheet column G
 - Same visual highlighting
 - Prevents double-counting deposited units
 
 **How to Handle**:
+
 1. Review highlighted stock number
 2. Verify it's truly a duplicate
 3. Options:
@@ -749,6 +817,7 @@ Example:
 ### Conditional Formatting Rules
 
 **TODAY Sheet Rules**:
+
 1. Duplicate stocks in new section (E column)
 2. Duplicate stocks in used section (L column)
 3. New stocks in DEPOSITS sheet
@@ -756,12 +825,14 @@ Example:
 5. Leaderboard pace indicators
 
 **MONTHLY Sheet Formatting**:
+
 - Applied during processing
 - Red = Non-delivered deals
 - Light red = Salesperson errors
 - Auto-clears when corrected
 
 **Maintenance**:
+
 - Rules reapplied after each processing
 - Managed by [`reapplyCF()`](../../src/core_saleslogPro.js:665) function
 - User cannot accidentally delete rules
@@ -773,18 +844,21 @@ Example:
 ### Data Entry
 
 **Consistency**:
+
 - ✅ Use configured aliases consistently
 - ✅ Enter stock numbers in same format
 - ✅ Use single-letter FI flags (A-Z)
 - ❌ Don't mix formats mid-month
 
 **Accuracy**:
+
 - Double-check stock numbers (duplicates flagged)
 - Verify salesperson names (unknowns highlighted)
 - Confirm FI flags before processing
 - Review deposit sheet regularly
 
 **Efficiency**:
+
 - Enter sales throughout day
 - Process once daily (end of business)
 - Use aliases for faster entry
@@ -793,6 +867,7 @@ Example:
 ### Team Management
 
 **Alias Configuration**:
+
 ```
 Good Alias Setup:
 Full Name: Michael Johnson
@@ -807,6 +882,7 @@ Covers:
 ```
 
 **Regular Maintenance**:
+
 - Review team roster monthly
 - Add new hires immediately
 - Update aliases based on usage patterns
@@ -815,6 +891,7 @@ Covers:
 ### Month-End Process
 
 **Best Practices**:
+
 1. **Verify Final Day**: Ensure last day processed
 2. **Review Analytics**: Check totals make sense
 3. **Fix Errors**: Correct any red highlights
@@ -823,6 +900,7 @@ Covers:
 6. **Verify Archive**: Confirm creation and data
 
 **Checklist**:
+
 ```
 ☐ All sales for previous month entered
 ☐ Daily processing completed through month end
@@ -837,12 +915,14 @@ Covers:
 ### Performance Optimization
 
 **Keep System Fast**:
+
 - Don't exceed 500 rows in MONTHLY
 - Archive monthly (prevents bloat)
 - Clear old archives (keep 12 months)
 - Limit SALESPEOPLE to active team
 
 **Avoid Common Issues**:
+
 - Don't manually edit MONTHLY Column A (sequence #)
 - Don't delete date headers on MONTHLY
 - Don't modify analytics columns (S-X) manually
@@ -851,18 +931,21 @@ Covers:
 ### Backup Strategy
 
 **What to Backup**:
+
 1. Entire spreadsheet (File → Download → Excel/PDF)
 2. SALESPEOPLE sheet (export to CSV)
 3. Current month archives
 4. Configuration settings
 
 **Backup Schedule**:
+
 - Daily: Quick spreadsheet download
 - Weekly: Full backup with all sheets
 - Monthly: Archive month + configuration
 - Quarterly: Complete system backup
 
 **Recovery Plan**:
+
 1. Identify what was lost
 2. Restore from most recent backup
 3. Re-enter missing data
@@ -876,88 +959,107 @@ Covers:
 ### Daily Processing Issues
 
 **Problem**: "No sales activity found"
+
 - **Cause**: TODAY sheet empty or no valid data
 - **Solution**: Verify data in columns B-N, ensure at least one sale entered
 
 **Problem**: "Unknown salesperson" warnings
+
 - **Cause**: Name not in SALESPEOPLE sheet or alias map
 - **Solution**: Add person or add alias via Settings
 
 **Problem**: Font colors not transferring
+
 - **Cause**: Colors added after processing
 - **Solution**: Apply colors before running daily process
 
 **Problem**: Wrong date in MONTHLY header
+
 - **Cause**: Date settings or timing issue
 - **Solution**: Check Date Settings (Monday logs Saturday option)
 
 ### Analytics Issues
 
 **Problem**: Analytics not updating
+
 - **Cause**: Cache or calculation error
 - **Solution**: Click **Sales Tools** → **🔄 Refresh Analytics**
 
 **Problem**: Wrong salesperson counts
+
 - **Cause**: Alias mapping issue or FI flags
 - **Solution**: Verify aliases in SALESPEOPLE, check FI columns
 
 **Problem**: Missing analytics section
+
 - **Cause**: Sheet lacks columns S-X
 - **Solution**: Re-run setup wizard or add columns manually
 
 **Problem**: Ranks not sorting correctly
+
 - **Cause**: Tie in total sales
 - **Solution**: Normal behavior - tied ranks allowed
 
 ### Settings Issues
 
 **Problem**: Settings won't open
+
 - **Cause**: Script error or permissions
 - **Solution**: Refresh sheet, check Apps Script permissions
 
 **Problem**: Changes not saving
+
 - **Cause**: Script lock or validation error
 - **Solution**: Wait 30 seconds, verify all required fields filled
 
 **Problem**: Alias conflicts
+
 - **Cause**: Duplicate alias across team
 - **Solution**: Review conflict message, choose unique aliases
 
 **Problem**: Colors not applying
+
 - **Cause**: Invalid color code or format
 - **Solution**: Use color picker, verify hex format (#RRGGBB)
 
 ### Rollover Issues
 
 **Problem**: Archive already exists
+
 - **Cause**: Rollover run twice same month
 - **Solution**: Delete duplicate archive or rename existing
 
 **Problem**: Rollover fails mid-process
+
 - **Cause**: Permission or lock issue
 - **Solution**: Check for manual edits, try again after 30 seconds
 
 **Problem**: Averages incorrect after rollover
+
 - **Cause**: Missing archive sheets
 - **Solution**: Verify previous 3 months archived, recalculate manually
 
 **Problem**: Analytics missing from archive
+
 - **Cause**: Analytics failed before archive
 - **Solution**: Manually refresh analytics, copy columns S-X to archive
 
 ### Error Highlights
 
 **Red Highlights on MONTHLY**:
+
 1. Check FI column (should be single letter A-Z)
 2. Fix invalid or missing FI flags
 3. Run **Recalculate MTD** to clear highlights
 
 **Light Red Highlights**:
+
 1. Note unrecognized salesperson name
 2. Add to SALESPEOPLE or fix spelling
 3. Run **Recalculate MTD** to update
 
 **Duplicate Highlights on TODAY**:
+
 1. Verify stock numbers
 2. Check DEPOSITS sheet
 3. Remove duplicate or correct entry
@@ -968,50 +1070,53 @@ Covers:
 
 ### Menu Commands
 
-| Command | Location | Purpose |
-|---------|----------|---------|
-| 🚀 Run Setup Wizard | Sales Tools | Create required sheets |
-| Log Yesterday's Sales | Sales Tools | Process daily entries |
-| Recalculate MTD | Sales Tools | Rebuild MTD from MONTHLY |
-| 🔄 Refresh Analytics | Sales Tools | Recalculate all metrics |
-| Start New Month | Sales Tools | Month-end rollover |
-| ⚙️ Settings | Sales Tools | Configuration UI |
+| Command               | Location    | Purpose                  |
+| --------------------- | ----------- | ------------------------ |
+| 🚀 Run Setup Wizard   | Sales Tools | Create required sheets   |
+| Log Yesterday's Sales | Sales Tools | Process daily entries    |
+| Recalculate MTD       | Sales Tools | Rebuild MTD from MONTHLY |
+| 🔄 Refresh Analytics  | Sales Tools | Recalculate all metrics  |
+| Start New Month       | Sales Tools | Month-end rollover       |
+| ⚙️ Settings           | Sales Tools | Configuration UI         |
 
 ### Keyboard Shortcuts
 
-| Action | Shortcut |
-|--------|----------|
-| Open menu | Alt+/ (Windows) or Option+/ (Mac) |
-| Navigate cells | Arrow keys |
-| Select range | Shift+Arrow keys |
-| Fill down | Ctrl+D (Windows) or Cmd+D (Mac) |
-| Find | Ctrl+F (Windows) or Cmd+F (Mac) |
+| Action         | Shortcut                          |
+| -------------- | --------------------------------- |
+| Open menu      | Alt+/ (Windows) or Option+/ (Mac) |
+| Navigate cells | Arrow keys                        |
+| Select range   | Shift+Arrow keys                  |
+| Fill down      | Ctrl+D (Windows) or Cmd+D (Mac)   |
+| Find           | Ctrl+F (Windows) or Cmd+F (Mac)   |
 
 ### Color Meanings
 
-| Color | Location | Meaning |
-|-------|----------|---------|
-| Red | MONTHLY | Non-delivered deal |
-| Light Red | MONTHLY | Salesperson error |
-| Yellow-green | TODAY | Duplicate stock |
-| Green | Leaderboard | Excellent pace |
-| Yellow | Leaderboard | Good pace |
-| Red | Leaderboard | Needs attention |
-| Light Blue | Leaderboard | Start of month |
+| Color        | Location    | Meaning            |
+| ------------ | ----------- | ------------------ |
+| Red          | MONTHLY     | Non-delivered deal |
+| Light Red    | MONTHLY     | Salesperson error  |
+| Yellow-green | TODAY       | Duplicate stock    |
+| Green        | Leaderboard | Excellent pace     |
+| Yellow       | Leaderboard | Good pace          |
+| Red          | Leaderboard | Needs attention    |
+| Light Blue   | Leaderboard | Start of month     |
 
 ### Important Formulas
 
 **Pace Calculation**:
+
 ```
 (MTD Sales ÷ Days Elapsed) × Total Days in Month
 ```
 
 **Rolling Average**:
+
 ```
 (Month1 + Month2 + Month3) ÷ Number of Months
 ```
 
 **Split Sale**:
+
 ```
 "John/Jane" = 0.5 units each
 ```
@@ -1038,12 +1143,14 @@ Covers:
 ### Training Resources
 
 **New Users**:
+
 1. Read "Getting Started" section
 2. Complete first-time setup
 3. Practice daily workflow with test data
 4. Review best practices
 
 **Advanced Users**:
+
 1. Explore advanced features
 2. Customize visual settings
 3. Optimize team aliases
@@ -1051,4 +1158,4 @@ Covers:
 
 ---
 
-*Sales Log Pro v8.0 | Last Updated: 2025-10-10*
+_Sales Log Pro v8.0 | Last Updated: 2025-10-10_

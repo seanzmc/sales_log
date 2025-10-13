@@ -22,6 +22,7 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 ### What's New in v8.0
 
 **Major Changes**:
+
 - ✨ Easy Setup Wizard for one-click installation
 - ⚙️ Settings Sidebar UI (replaces code editing)
 - 📊 Analytics Dashboard with comprehensive metrics
@@ -31,9 +32,11 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 - 📅 Configurable date settings
 
 **Breaking Changes**:
+
 - None - v8.0 is fully backward compatible with v7.x data
 
 **New Requirements**:
+
 - Additional HTML files for Settings UI
 - Updated OAuth scopes in appsscript.json
 - Properties Service for configuration storage
@@ -45,6 +48,7 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 ### Scenario 1: v7.x to v8.0 Upgrade
 
 **Characteristics**:
+
 - Already using Sales Log Pro
 - Existing data in proper format
 - Configuration currently hardcoded
@@ -59,6 +63,7 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 ### Scenario 2: Manual Spreadsheet to v8.0
 
 **Characteristics**:
+
 - Tracking sales in Excel or basic Sheets
 - Custom column structure
 - No automation currently
@@ -73,6 +78,7 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 ### Scenario 3: Other System to v8.0
 
 **Characteristics**:
+
 - Using different tracking software
 - Exporting to CSV/Excel format
 - Data structure completely different
@@ -103,6 +109,7 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 #### Phase 1: Preparation (15 minutes)
 
 **Step 1: Create Backup**
+
 ```
 1. File → Make a copy
 2. Name: "Sales Log Pro v7.x - BACKUP - [Date]"
@@ -112,6 +119,7 @@ This guide provides step-by-step instructions for migrating to Sales Log Pro v8.
 ```
 
 **Step 2: Document Current Configuration**
+
 ```
 Document from existing code:
 ☐ Salesperson list (from SALESPEOPLE sheet)
@@ -122,6 +130,7 @@ Document from existing code:
 ```
 
 **Step 3: Export Current Data**
+
 ```
 Optional but recommended:
 1. File → Download → Microsoft Excel
@@ -132,6 +141,7 @@ Optional but recommended:
 #### Phase 2: Code Update (15 minutes)
 
 **Step 1: Update Script Files**
+
 ```
 In Apps Script Editor:
 
@@ -160,6 +170,7 @@ In Apps Script Editor:
 ```
 
 **Step 2: Update appsscript.json**
+
 ```json
 {
   "timeZone": "America/New_York",
@@ -175,6 +186,7 @@ In Apps Script Editor:
 ```
 
 **Step 3: Verify File Structure**
+
 ```
 Apps Script Project Files:
 ☐ Code.gs (core_saleslogPro.js)
@@ -190,6 +202,7 @@ Apps Script Project Files:
 #### Phase 3: Configuration Migration (15 minutes)
 
 **Step 1: Run Auto-Migration**
+
 ```
 1. Close and reopen spreadsheet
 2. Wait for "Sales Tools" menu to appear
@@ -199,6 +212,7 @@ Apps Script Project Files:
 ```
 
 **What Auto-Migration Does**:
+
 ```
 ✓ Creates Properties Service configuration
 ✓ Migrates SALESPEOPLE sheet to configuration
@@ -209,6 +223,7 @@ Apps Script Project Files:
 ```
 
 **Step 2: Verify Migration**
+
 ```
 In Settings sidebar:
 
@@ -228,6 +243,7 @@ In Settings sidebar:
 ```
 
 **Step 3: Customize Settings**
+
 ```
 If previous configuration was customized:
 
@@ -241,6 +257,7 @@ If previous configuration was customized:
 #### Phase 4: Verification (15 minutes)
 
 **Test 1: Data Integrity**
+
 ```
 ☐ Open each sheet and verify data intact
 ☐ Check TODAY sheet structure unchanged
@@ -250,6 +267,7 @@ If previous configuration was customized:
 ```
 
 **Test 2: Functionality**
+
 ```
 1. Enter test data on TODAY
 2. Run: Sales Tools → Log Yesterday's Sales
@@ -261,6 +279,7 @@ If previous configuration was customized:
 ```
 
 **Test 3: New Features**
+
 ```
 1. Analytics Dashboard:
    ☐ Columns S-X populated
@@ -280,6 +299,7 @@ If previous configuration was customized:
 #### Phase 5: User Communication (As needed)
 
 **Notification to Users**:
+
 ```
 Subject: Sales Log Pro Upgraded to v8.0
 
@@ -307,6 +327,7 @@ Questions? Contact [Administrator]
 ### Post-Migration Tasks
 
 **Day 1 After Migration**:
+
 ```
 ☐ Monitor for issues
 ☐ Check execution logs
@@ -316,6 +337,7 @@ Questions? Contact [Administrator]
 ```
 
 **Week 1 After Migration**:
+
 ```
 ☐ Validate analytics accuracy
 ☐ Compare with manual calculations
@@ -325,6 +347,7 @@ Questions? Contact [Administrator]
 ```
 
 **Month 1: First Rollover**
+
 ```
 ☐ Test month rollover with new analytics
 ☐ Verify analytics preserved in archive
@@ -339,6 +362,7 @@ Questions? Contact [Administrator]
 ### Assessment Phase
 
 **Step 1: Analyze Current System**
+
 ```
 Document current spreadsheet:
 ☐ Column headers and their meanings
@@ -350,6 +374,7 @@ Document current spreadsheet:
 ```
 
 **Step 2: Data Mapping**
+
 ```
 Map old columns to Sales Log Pro structure:
 
@@ -367,6 +392,7 @@ Create mapping document for reference
 ```
 
 **Step 3: Identify Gaps**
+
 ```
 ☐ Fields in old system not in new
 ☐ Fields in new system not in old
@@ -378,6 +404,7 @@ Create mapping document for reference
 ### Migration Strategy Selection
 
 **Option A: Fresh Start** (Recommended for most)
+
 ```
 Timeline: 1-2 days
 Complexity: Low
@@ -397,6 +424,7 @@ Best for:
 ```
 
 **Option B: Historical Import**
+
 ```
 Timeline: 3-5 days
 Complexity: Medium
@@ -415,6 +443,7 @@ Best for:
 ```
 
 **Option C: Complete Migration**
+
 ```
 Timeline: 1-2 weeks
 Complexity: High
@@ -438,6 +467,7 @@ Best for:
 #### Step 1: Prepare Data
 
 **Export from Old System**:
+
 ```
 1. Select all data
 2. File → Download → CSV or Excel
@@ -445,6 +475,7 @@ Best for:
 ```
 
 **Clean Data**:
+
 ```
 ☐ Standardize salesperson names
 ☐ Format dates consistently
@@ -457,6 +488,7 @@ Best for:
 #### Step 2: Transform Data
 
 **Column Alignment**:
+
 ```
 Create new columns matching Sales Log Pro:
 A: Sequence # (leave blank, will auto-number)
@@ -476,6 +508,7 @@ N: Salesperson (Used)
 ```
 
 **Example Transformation**:
+
 ```
 Old Format:
 Date | Customer | Stock | Salesperson | Type | Delivered
@@ -490,6 +523,7 @@ New Format (if Used):
 #### Step 3: Import Historical Data
 
 **For Each Historical Month**:
+
 ```
 1. Create archive sheet (e.g., "4/25")
 2. Copy transformed data to sheet
@@ -503,6 +537,7 @@ New Format (if Used):
 ```
 
 **Leaderboard Data** (if available):
+
 ```
 For each historical month's archive:
 Column P: Salesperson names
@@ -515,6 +550,7 @@ This enables rolling average calculation.
 #### Step 4: Verify Import
 
 **Data Quality Checks**:
+
 ```
 ☐ Row counts match original
 ☐ Salesperson names consistent
@@ -526,6 +562,7 @@ This enables rolling average calculation.
 ```
 
 **Calculation Verification**:
+
 ```
 ☐ Manual count vs. imported count
 ☐ Salesperson totals match
@@ -540,6 +577,7 @@ This enables rolling average calculation.
 ### From Hardcoded Configuration
 
 **v7.x Hardcoded Settings**:
+
 ```javascript
 // Old v7.x style (in code)
 const SKIP_SUNDAYS = true;
@@ -549,6 +587,7 @@ const NON_DELIVERED_COLOR = "#FF0000";
 ```
 
 **Migration to v8.0**:
+
 ```
 Automatic via auto-migration:
 1. First Settings open triggers migration
@@ -565,6 +604,7 @@ No manual action required!
 **If You Customized v7.x Code**:
 
 **Step 1: Document Custom Settings**
+
 ```
 Before upgrade, note:
 ☐ Custom color values
@@ -574,6 +614,7 @@ Before upgrade, note:
 ```
 
 **Step 2: Reapply via Settings UI**
+
 ```
 After migration:
 1. Sales Tools → ⚙️ Settings
@@ -587,6 +628,7 @@ After migration:
 ```
 
 **Step 3: Verify Custom Features**
+
 ```
 If you added custom functionality:
 ☐ Review new code structure
@@ -598,25 +640,27 @@ If you added custom functionality:
 ### Exporting Configuration
 
 **Create Configuration Backup**:
+
 ```javascript
 // Run in Apps Script Editor
 function exportMyConfiguration() {
   const config = getConfiguration();
   const backup = JSON.stringify(config, null, 2);
   Logger.log(backup);
-  
+
   // Copy from logs and save to file
 }
 ```
 
 **Importing Configuration**:
+
 ```javascript
 // To restore configuration
 function importMyConfiguration() {
   const configJSON = `{
     // Paste your backed-up configuration here
   }`;
-  
+
   const config = JSON.parse(configJSON);
   updateConfiguration(config);
 }
@@ -629,6 +673,7 @@ function importMyConfiguration() {
 ### Comprehensive Test Plan
 
 #### Test 1: Data Integrity
+
 ```
 ☐ All sheets present and accessible
 ☐ Data counts match pre-migration
@@ -639,6 +684,7 @@ function importMyConfiguration() {
 ```
 
 #### Test 2: Core Functionality
+
 ```
 ☐ Daily processing works:
   - Enter test data
@@ -658,6 +704,7 @@ function importMyConfiguration() {
 ```
 
 #### Test 3: New Features
+
 ```
 ☐ Analytics Dashboard:
   - Columns S-X populated
@@ -678,6 +725,7 @@ function importMyConfiguration() {
 ```
 
 #### Test 4: Month Rollover
+
 ```
 ☐ Create test data spanning month
 ☐ Run rollover process
@@ -691,6 +739,7 @@ function importMyConfiguration() {
 ```
 
 #### Test 5: Error Handling
+
 ```
 ☐ Invalid data highlights correctly
 ☐ Unknown salesperson flagged
@@ -702,6 +751,7 @@ function importMyConfiguration() {
 ### Acceptance Criteria
 
 **Migration Successful If**:
+
 ```
 ✓ All data present and accurate
 ✓ Core functions work correctly
@@ -713,6 +763,7 @@ function importMyConfiguration() {
 ```
 
 **Migration Needs Remediation If**:
+
 ```
 ✗ Data missing or corrupted
 ✗ Core functions fail
@@ -729,12 +780,14 @@ function importMyConfiguration() {
 ### When to Rollback
 
 **Critical Issues**:
+
 - Data corruption or loss
 - Core functions completely broken
 - Performance degradation severe
 - Unable to resolve within 4 hours
 
 **Non-Critical Issues**:
+
 - Minor feature bugs (don't rollback)
 - Cosmetic issues (don't rollback)
 - User training gaps (don't rollback)
@@ -790,6 +843,7 @@ function importMyConfiguration() {
 ### Post-Rollback Actions
 
 **Immediate**:
+
 ```
 ☐ Verify backup functional
 ☐ Confirm users can access
@@ -799,6 +853,7 @@ function importMyConfiguration() {
 ```
 
 **Within 24 Hours**:
+
 ```
 ☐ Analyze failure cause
 ☐ Determine fix approach
@@ -808,6 +863,7 @@ function importMyConfiguration() {
 ```
 
 **Before Re-Attempting**:
+
 ```
 ☐ Root cause identified and addressed
 ☐ Test plan enhanced
@@ -823,6 +879,7 @@ function importMyConfiguration() {
 ### Performance Tuning
 
 **Week 1 Optimizations**:
+
 ```
 ☐ Monitor processing times
 ☐ Identify slow operations
@@ -832,6 +889,7 @@ function importMyConfiguration() {
 ```
 
 **Month 1 Optimizations**:
+
 ```
 ☐ Archive old test data
 ☐ Streamline configuration
@@ -843,6 +901,7 @@ function importMyConfiguration() {
 ### User Adoption
 
 **Track Adoption Metrics**:
+
 ```
 ☐ % users entering data daily
 ☐ % users running processing
@@ -852,6 +911,7 @@ function importMyConfiguration() {
 ```
 
 **Increase Adoption**:
+
 ```
 ☐ Additional training sessions
 ☐ One-on-one support
@@ -863,6 +923,7 @@ function importMyConfiguration() {
 ### Continuous Improvement
 
 **Monthly Reviews**:
+
 ```
 ☐ Review analytics accuracy
 ☐ Evaluate performance metrics
@@ -872,6 +933,7 @@ function importMyConfiguration() {
 ```
 
 **Quarterly Assessments**:
+
 ```
 ☐ Comprehensive system review
 ☐ ROI evaluation
@@ -889,11 +951,13 @@ function importMyConfiguration() {
 **Symptoms**: Settings open but configuration not migrated
 
 **Causes**:
+
 - Properties Service access denied
 - Script permissions insufficient
 - SALESPEOPLE sheet corrupted
 
 **Solutions**:
+
 ```
 1. Check Apps Script permissions
 2. Reauthorize if needed
@@ -910,11 +974,13 @@ function importMyConfiguration() {
 **Symptoms**: Columns S-X empty after processing
 
 **Causes**:
+
 - MONTHLY sheet column count insufficient
 - Analytics module not loaded
 - Cache corruption
 
 **Solutions**:
+
 ```
 1. Verify MONTHLY has 26 columns (A-Z)
 2. Run manual analytics refresh:
@@ -930,11 +996,13 @@ function importMyConfiguration() {
 **Symptoms**: Settings revert after closing sidebar
 
 **Causes**:
+
 - Properties Service write failure
 - Validation errors (silent)
 - Concurrent modification
 
 **Solutions**:
+
 ```
 1. Check for validation error messages
 2. Save in smaller batches
@@ -950,11 +1018,13 @@ function importMyConfiguration() {
 **Symptoms**: Imported data looks wrong or broken
 
 **Causes**:
+
 - Incorrect column mapping
 - Date format mismatch
 - FI flags invalid
 
 **Solutions**:
+
 ```
 1. Verify column alignment (A-N structure)
 2. Check FI flags are single letters
@@ -970,11 +1040,13 @@ function importMyConfiguration() {
 **Symptoms**: Processing very slow compared to v7.x
 
 **Causes**:
+
 - Large MONTHLY sheet
 - Too many salespeople
 - Excess conditional formatting
 
 **Solutions**:
+
 ```
 1. Run month rollover to clear MONTHLY
 2. Remove inactive salespeople
@@ -997,12 +1069,14 @@ function importMyConfiguration() {
 ### Getting Help
 
 **Self-Service**:
+
 1. Check this migration guide
 2. Review troubleshooting documentation
 3. Search FAQ for similar issues
 4. Check execution logs
 
 **Support Escalation**:
+
 1. Contact system administrator
 2. Provide detailed error information
 3. Include screenshots if applicable
@@ -1053,4 +1127,4 @@ Return on Investment:
 
 ---
 
-*Sales Log Pro Migration Guide v8.0 | Last Updated: 2025-10-10*
+_Sales Log Pro Migration Guide v8.0 | Last Updated: 2025-10-10_

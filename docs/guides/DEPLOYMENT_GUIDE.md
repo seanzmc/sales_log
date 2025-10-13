@@ -41,6 +41,7 @@ Week 2:
 ### Deployment Prerequisites
 
 **Technical Requirements**:
+
 - ✅ Google Workspace or Gmail account
 - ✅ Apps Script permissions
 - ✅ Google Sheets access
@@ -48,6 +49,7 @@ Week 2:
 - ✅ Stable internet connection
 
 **Organizational Requirements**:
+
 - ✅ Current sales team roster
 - ✅ Historical sales data (if migrating)
 - ✅ Process documentation
@@ -61,6 +63,7 @@ Week 2:
 ### Planning Phase
 
 **☐ Define Scope**
+
 ```
 - Number of users: _______
 - Number of locations: _______
@@ -70,6 +73,7 @@ Week 2:
 ```
 
 **☐ Gather Information**
+
 ```
 Sales Team:
 - Full names list
@@ -85,6 +89,7 @@ Current Process:
 ```
 
 **☐ Technical Assessment**
+
 ```
 - Google Workspace or Gmail?
 - Admin approval required?
@@ -94,6 +99,7 @@ Current Process:
 ```
 
 **☐ Stakeholder Alignment**
+
 ```
 - Management approval: ☐
 - IT/Admin approval: ☐
@@ -105,6 +111,7 @@ Current Process:
 ### Resource Preparation
 
 **☐ Personnel**
+
 ```
 - System administrator: _______
 - Primary trainer: _______
@@ -113,6 +120,7 @@ Current Process:
 ```
 
 **☐ Documentation**
+
 ```
 - User guide distributed: ☐
 - Quick reference cards: ☐
@@ -121,6 +129,7 @@ Current Process:
 ```
 
 **☐ Environment**
+
 ```
 - Test spreadsheet created: ☐
 - Production spreadsheet ready: ☐
@@ -137,6 +146,7 @@ Current Process:
 **Best For**: Single dealership, small team (<10 users)
 
 **Steps**:
+
 1. Create new Google Sheet
 2. Install Apps Script code
 3. Run setup wizard
@@ -155,6 +165,7 @@ Current Process:
 **Best For**: Dealership groups, multiple locations, standardization needed
 
 **Steps**:
+
 1. Create master template spreadsheet
 2. Configure with best practices
 3. Test thoroughly
@@ -173,6 +184,7 @@ Current Process:
 **Best For**: Large organizations, IT-managed deployments
 
 **Steps**:
+
 1. IT creates shared template in Drive
 2. Deploy via organizational unit
 3. Configure with Google Workspace Admin
@@ -201,6 +213,7 @@ Current Process:
 ```
 
 **Sharing Permissions**:
+
 - Owner: System administrator
 - Editors: Sales managers, data entry staff
 - Viewers: Management, reporting staff
@@ -211,7 +224,7 @@ Current Process:
 1. In spreadsheet: Extensions → Apps Script
 2. Delete default Code.gs content
 3. Create file structure:
-   
+
    Files to Create:
    ☐ Code.gs (from core_saleslogPro.js)
    ☐ config_service.gs (from config_service.js)
@@ -227,6 +240,7 @@ Current Process:
 ```
 
 **File Creation Tips**:
+
 - Use consistent naming
 - Verify all content copied
 - Check for paste errors
@@ -250,6 +264,7 @@ See [OAuth Scopes Configuration](#oauth-scopes-configuration) section below.
 ```
 
 **Required Permissions**:
+
 - View and manage spreadsheets
 - Display and run third-party web content
 - Connect to external services
@@ -263,7 +278,7 @@ See [OAuth Scopes Configuration](#oauth-scopes-configuration) section below.
 4. Review creation summary
 5. Verify all sheets created:
    ☐ TODAY
-   ☐ MONTHLY  
+   ☐ MONTHLY
    ☐ SALESPEOPLE
    ☐ DEPOSITS
 ```
@@ -290,6 +305,7 @@ For each salesperson:
 ```
 
 **Alias Strategy**:
+
 ```
 Best Practice Example:
 Full Name: John Michael Smith
@@ -322,6 +338,7 @@ Covers:
 ```
 
 **Color Recommendations**:
+
 - Use high contrast for visibility
 - Consider color-blind users
 - Match dealership branding if desired
@@ -332,10 +349,10 @@ Covers:
 ```
 1. In Settings, go to 📅 Date Settings tab
 2. Configure options:
-   
+
    ☐ Skip Sundays (if dealership closed Sunday)
    ☐ Monday Logs Saturday (if closed Sunday)
-   
+
    Archive Format:
    ○ M/YY (e.g., "5/25") - Most compact
    ○ MM/YY (e.g., "05/25") - Zero-padded
@@ -451,17 +468,20 @@ Update `appsscript.json` with required OAuth scopes:
 ### Scope Explanations
 
 **`spreadsheets`**:
+
 - Read and write sheet data
 - Create and modify sheets
 - Apply formatting
 - Manage conditional formatting
 
 **`script.container.ui`**:
+
 - Create custom menus
 - Show dialogs and sidebars
 - Display alerts and prompts
 
 **`script.scriptapp`** (optional):
+
 - Access script properties
 - Create time-driven triggers (if needed)
 
@@ -483,6 +503,7 @@ Update `appsscript.json` with required OAuth scopes:
 #### Week Before Go-Live: Full System Test
 
 **Day 1-2: Data Entry Testing**
+
 ```
 Test Cases:
 ☐ Normal sales entry
@@ -496,6 +517,7 @@ Test Cases:
 ```
 
 **Day 3: Processing Testing**
+
 ```
 Test Cases:
 ☐ Daily processing with various data
@@ -506,6 +528,7 @@ Test Cases:
 ```
 
 **Day 4: Analytics Testing**
+
 ```
 Test Cases:
 ☐ Analytics accuracy verification
@@ -516,6 +539,7 @@ Test Cases:
 ```
 
 **Day 5: Integration Testing**
+
 ```
 Test Cases:
 ☐ Complete month simulation
@@ -529,12 +553,14 @@ Test Cases:
 ### User Acceptance Testing (UAT)
 
 **UAT Participants**:
+
 - Sales manager (power user)
 - Data entry staff (daily user)
 - Finance manager (reporting user)
 - IT administrator (technical user)
 
 **UAT Checklist**:
+
 ```
 ☐ Can enter sales data easily
 ☐ Understanding of daily workflow
@@ -555,6 +581,7 @@ Test Cases:
 **Week Before Go-Live**:
 
 **Session 1: Administrators (2 hours)**
+
 ```
 Audience: System admins, managers
 Content:
@@ -572,6 +599,7 @@ Materials:
 ```
 
 **Session 2: Daily Users (1.5 hours)**
+
 ```
 Audience: Sales managers, data entry
 Content:
@@ -589,6 +617,7 @@ Materials:
 ```
 
 **Session 3: Reporting Users (1 hour)**
+
 ```
 Audience: Finance, management
 Content:
@@ -607,6 +636,7 @@ Materials:
 ### Training Materials
 
 **Quick Reference Card**:
+
 ```
 Daily Workflow:
 1. Enter sales on TODAY sheet
@@ -623,6 +653,7 @@ Common Tasks:
 ```
 
 **Video Tutorials** (Recommended):
+
 - 5-min: Basic data entry
 - 5-min: Daily processing
 - 10-min: Settings configuration
@@ -687,6 +718,7 @@ Week 3:
 ### Phased Rollout Strategy
 
 **Phase 1: Pilot Location (Week 1-2)**
+
 ```
 - Choose representative location
 - Full deployment and training
@@ -695,6 +727,7 @@ Week 3:
 ```
 
 **Phase 2: Early Adopters (Week 3-4)**
+
 ```
 - 2-3 additional locations
 - Apply lessons from pilot
@@ -703,6 +736,7 @@ Week 3:
 ```
 
 **Phase 3: General Rollout (Week 5+)**
+
 ```
 - Remaining locations
 - Staggered deployment
@@ -713,6 +747,7 @@ Week 3:
 ### Multi-Location Support Model
 
 **Support Tiers**:
+
 ```
 Tier 1: Location Administrator
 - Daily user support
@@ -742,6 +777,7 @@ Tier 3: System Administrator
 #### Daily Backups
 
 **Automated Version History**:
+
 ```
 Google Sheets automatically saves:
 - Every change tracked
@@ -755,6 +791,7 @@ Create named versions daily:
 ```
 
 **Manual Downloads**:
+
 ```
 Daily (automated via script):
 - Export to Excel format
@@ -770,23 +807,27 @@ Weekly (manual):
 #### Configuration Backups
 
 **Export Configuration**:
+
 ```javascript
 // Run monthly or after changes
 function backupConfiguration() {
   const config = getConfiguration();
   const backup = JSON.stringify(config, null, 2);
-  
+
   // Log to console - copy manually
   console.log(backup);
-  
+
   // Or save to Drive
   const folder = DriveApp.getFolderById("FOLDER_ID");
-  const fileName = `Config_Backup_${new Date().toISOString().split('T')[0]}.json`;
+  const fileName = `Config_Backup_${
+    new Date().toISOString().split("T")[0]
+  }.json`;
   folder.createFile(fileName, backup, MimeType.PLAIN_TEXT);
 }
 ```
 
 **SALESPEOPLE Sheet Backup**:
+
 ```
 Monthly:
 1. Open SALESPEOPLE sheet
@@ -800,6 +841,7 @@ Monthly:
 #### Scenario 1: Accidental Data Deletion
 
 **Recovery Steps**:
+
 ```
 1. File → Version history → See version history
 2. Find version before deletion
@@ -809,6 +851,7 @@ Monthly:
 ```
 
 **Prevention**:
+
 - Sheet protection for MONTHLY
 - Limited edit permissions
 - Regular backups
@@ -817,6 +860,7 @@ Monthly:
 #### Scenario 2: Corruption or Script Failure
 
 **Recovery Steps**:
+
 ```
 1. Create new spreadsheet
 2. Copy clean data from backup
@@ -829,6 +873,7 @@ Monthly:
 #### Scenario 3: Lost Configuration
 
 **Recovery Steps**:
+
 ```
 1. Check SALESPEOPLE sheet (synced copy)
 2. Open Settings sidebar
@@ -840,6 +885,7 @@ Monthly:
 ### Backup Verification
 
 **Monthly Checklist**:
+
 ```
 ☐ Verify version history accessible
 ☐ Test backup restoration process
@@ -856,6 +902,7 @@ Monthly:
 ### Assessment Phase
 
 **Current State Documentation**:
+
 ```
 Document existing process:
 ☐ Current tracking method (Excel, paper, etc.)
@@ -867,6 +914,7 @@ Document existing process:
 ```
 
 **Data Inventory**:
+
 ```
 ☐ Current month data location
 ☐ Historical data availability
@@ -907,6 +955,7 @@ Process:
 ```
 
 **Steps**:
+
 ```
 For each historical month:
 1. Create sheet named per archive format (e.g., "4/25")
@@ -931,6 +980,7 @@ Process:
 ```
 
 **Reconciliation Checklist**:
+
 ```
 Daily:
 ☐ Sales counts match
@@ -947,6 +997,7 @@ Weekly:
 ### Data Mapping
 
 **Old to New Column Mapping**:
+
 ```
 Common mappings (adjust as needed):
 
@@ -962,6 +1013,7 @@ Salesperson         → Columns G, N
 ```
 
 **Data Cleanup Before Import**:
+
 ```
 ☐ Standardize salesperson names
 ☐ Format stock numbers consistently
@@ -982,6 +1034,7 @@ Salesperson         → Columns G, N
 **Threshold: >30 sales/day**
 
 **Optimizations**:
+
 ```
 1. Monthly rollover scheduling:
    - Run on 1st business day each month
@@ -1006,6 +1059,7 @@ Salesperson         → Columns G, N
 #### For Multi-Location Deployments
 
 **Optimizations**:
+
 ```
 1. Separate spreadsheets per location
    - Better performance
@@ -1026,6 +1080,7 @@ Salesperson         → Columns G, N
 ### Performance Monitoring
 
 **Metrics to Track**:
+
 ```
 ☐ Daily processing time
 ☐ Analytics calculation time
@@ -1035,6 +1090,7 @@ Salesperson         → Columns G, N
 ```
 
 **Performance Baseline**:
+
 ```
 Acceptable:
 - Daily processing: < 10 seconds
@@ -1056,6 +1112,7 @@ Needs Investigation:
 ### Access Control
 
 **Permission Levels**:
+
 ```
 Owner:
 - System administrator
@@ -1074,6 +1131,7 @@ Viewers:
 ```
 
 **Best Practices**:
+
 ```
 ☐ Minimum necessary permissions
 ☐ Regular access review (quarterly)
@@ -1085,6 +1143,7 @@ Viewers:
 ### Data Protection
 
 **Sensitive Data Handling**:
+
 ```
 ☐ No SSN or sensitive customer data
 ☐ Stock numbers and names only
@@ -1094,6 +1153,7 @@ Viewers:
 ```
 
 **Sheet Protection**:
+
 ```
 Protect these sheets from accidental edits:
 ☐ MONTHLY (history preservation)
@@ -1108,6 +1168,7 @@ Allow editing:
 ### Audit Trail
 
 **Change Tracking**:
+
 ```
 Built-in:
 - Version history (all changes)
@@ -1215,18 +1276,21 @@ Additional:
 ### Support Structure
 
 **Tier 1: User Self-Service**
+
 - User Guide
 - FAQ
 - Quick Reference Cards
 - Video tutorials
 
 **Tier 2: Administrator Support**
+
 - Email support
 - Troubleshooting guide
 - Configuration assistance
 - Basic technical help
 
 **Tier 3: Technical Support**
+
 - Complex issues
 - Code modifications
 - Integration support
@@ -1245,6 +1309,7 @@ Additional:
 ### Support Documentation
 
 **Required Documents**:
+
 ```
 ☐ System overview
 ☐ User guide
@@ -1257,4 +1322,4 @@ Additional:
 
 ---
 
-*Sales Log Pro Deployment Guide v8.0 | Last Updated: 2025-10-10*
+_Sales Log Pro Deployment Guide v8.0 | Last Updated: 2025-10-10_

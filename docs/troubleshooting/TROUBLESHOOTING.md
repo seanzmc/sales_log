@@ -21,11 +21,13 @@
 ### Setup Wizard Fails to Create Sheets
 
 **Symptoms**:
+
 - Setup wizard completes but sheets not created
 - Error message: "Required sheets missing"
 - Partial sheet creation (some created, some not)
 
 **Common Causes**:
+
 1. Insufficient permissions
 2. Script execution timeout
 3. Spreadsheet protection settings
@@ -34,6 +36,7 @@
 **Solutions**:
 
 **Solution 1: Check Permissions**
+
 ```
 1. Open Apps Script editor (Extensions → Apps Script)
 2. Click Run → Select onOpen function
@@ -43,6 +46,7 @@
 ```
 
 **Solution 2: Manual Sheet Creation**
+
 ```
 If wizard fails repeatedly:
 
@@ -57,6 +61,7 @@ If wizard fails repeatedly:
 ```
 
 **Solution 3: Check Sheet Protection**
+
 ```
 1. Right-click sheet tab → "Protect sheet"
 2. If protection exists, remove it
@@ -64,6 +69,7 @@ If wizard fails repeatedly:
 ```
 
 **Solution 4: Verify Quotas**
+
 ```
 1. Apps Script Editor → View → Executions
 2. Check for quota limit errors
@@ -72,6 +78,7 @@ If wizard fails repeatedly:
 ```
 
 **Prevention**:
+
 - Run setup wizard during low-usage hours
 - Ensure account has create sheet permissions
 - Avoid running multiple times simultaneously
@@ -81,11 +88,13 @@ If wizard fails repeatedly:
 ### Menu Not Appearing
 
 **Symptoms**:
+
 - "Sales Tools" menu missing from spreadsheet
 - Menu appears but has no items
 - Menu disappears after page refresh
 
 **Common Causes**:
+
 1. Apps Script not bound to spreadsheet
 2. [`onOpen()`](../../src/core_saleslogPro.js#L1023) function not executing
 3. Script errors preventing menu creation
@@ -94,6 +103,7 @@ If wizard fails repeatedly:
 **Solutions**:
 
 **Solution 1: Refresh and Wait**
+
 ```
 1. Close the spreadsheet tab completely
 2. Wait 10 seconds
@@ -103,6 +113,7 @@ If wizard fails repeatedly:
 ```
 
 **Solution 2: Manually Run onOpen**
+
 ```
 1. Extensions → Apps Script
 2. Select "onOpen" function from dropdown
@@ -112,6 +123,7 @@ If wizard fails repeatedly:
 ```
 
 **Solution 3: Check for Script Errors**
+
 ```
 1. Apps Script Editor → View → Executions
 2. Look for errors in recent executions
@@ -120,6 +132,7 @@ If wizard fails repeatedly:
 ```
 
 **Solution 4: Clear Browser Cache**
+
 ```
 1. Close all spreadsheet tabs
 2. Clear browser cache for Google Sheets
@@ -129,6 +142,7 @@ If wizard fails repeatedly:
 ```
 
 **Prevention**:
+
 - Always authorize script permissions fully
 - Don't modify script files while spreadsheet is open
 - Use supported browsers (Chrome, Firefox, Safari, Edge)
@@ -138,11 +152,13 @@ If wizard fails repeatedly:
 ### Authorization Issues
 
 **Symptoms**:
+
 - "Authorization Required" dialog appears repeatedly
 - "This app isn't verified" warning
 - Script won't run after authorization
 
 **Common Causes**:
+
 1. OAuth scope changes
 2. Google security review required
 3. Account permissions insufficient
@@ -151,6 +167,7 @@ If wizard fails repeatedly:
 **Solutions**:
 
 **Solution 1: Complete Authorization**
+
 ```
 1. Click "Review Permissions" in dialog
 2. Select your Google account
@@ -161,6 +178,7 @@ If wizard fails repeatedly:
 ```
 
 **Solution 2: Check Required Scopes**
+
 ```
 Verify appsscript.json includes:
 - https://www.googleapis.com/auth/spreadsheets
@@ -170,6 +188,7 @@ If missing, add them and reauthorize.
 ```
 
 **Solution 3: Organization Restrictions**
+
 ```
 If in a workspace with restrictions:
 
@@ -180,6 +199,7 @@ If in a workspace with restrictions:
 ```
 
 **Solution 4: Remove and Re-Add Authorization**
+
 ```
 1. Go to myaccount.google.com/permissions
 2. Find "Sales Log Pro" or script project
@@ -195,11 +215,13 @@ If in a workspace with restrictions:
 ### "No Sales Activity Found" Error
 
 **Symptoms**:
+
 - Daily processing completes but says no activity
 - TODAY sheet has data but not processed
 - Empty MONTHLY sheet after processing
 
 **Common Causes**:
+
 1. Data in wrong columns
 2. TODAY sheet renamed or missing
 3. Data outside expected range (A2:N51)
@@ -208,6 +230,7 @@ If in a workspace with restrictions:
 **Solutions**:
 
 **Solution 1: Verify Data Location**
+
 ```
 Check data is in correct columns:
 - New car sales: Columns B-G
@@ -217,6 +240,7 @@ Check data is in correct columns:
 ```
 
 **Solution 2: Check for Content**
+
 ```
 Valid data requires:
 - At least one cell in B-G OR I-N with content
@@ -228,6 +252,7 @@ B: "John Doe"  C: "F"  D: "Camry"  E: "12345"
 ```
 
 **Solution 3: Verify Sheet Name**
+
 ```
 1. Sheet must be named exactly "TODAY"
 2. Case-sensitive (not "today" or "Today")
@@ -236,6 +261,7 @@ B: "John Doe"  C: "F"  D: "Camry"  E: "12345"
 ```
 
 **Solution 4: Move Data Into Range**
+
 ```
 If data is below row 51:
 
@@ -249,12 +275,14 @@ If data is below row 51:
 ### Daily Processing Doesn't Work
 
 **Symptoms**:
+
 - Processing starts but fails
 - Error dialog appears
 - Data not transferred to MONTHLY
 - TODAY sheet not cleared
 
 **Common Causes**:
+
 1. Script lock timeout (concurrent execution)
 2. Missing required sheets
 3. Invalid FI flags
@@ -263,6 +291,7 @@ If data is below row 51:
 **Solutions**:
 
 **Solution 1: Wait and Retry**
+
 ```
 If error: "Could not acquire script lock"
 
@@ -273,6 +302,7 @@ If error: "Could not acquire script lock"
 ```
 
 **Solution 2: Verify All Sheets Exist**
+
 ```
 Required sheets (case-sensitive):
 ☐ TODAY
@@ -286,6 +316,7 @@ If any missing:
 ```
 
 **Solution 3: Check MONTHLY Columns**
+
 ```
 MONTHLY sheet must have at least 14 columns (A-N)
 
@@ -296,6 +327,7 @@ To verify:
 ```
 
 **Solution 4: Check Apps Script Logs**
+
 ```
 1. Apps Script Editor → View → Executions
 2. Find most recent execution
@@ -309,11 +341,13 @@ To verify:
 ### Font Colors Not Transferring
 
 **Symptoms**:
+
 - Font colors applied on TODAY sheet
 - Colors don't appear on MONTHLY sheet
 - Only default black text in MONTHLY
 
 **Common Causes**:
+
 1. Colors applied after processing
 2. Using background color instead of font color
 3. TODAY sheet formatting corrupted
@@ -321,6 +355,7 @@ To verify:
 **Solutions**:
 
 **Solution 1: Apply Before Processing**
+
 ```
 Correct workflow:
 1. Enter data on TODAY sheet
@@ -331,6 +366,7 @@ Font colors only transfer during processing.
 ```
 
 **Solution 2: Verify Font Color (Not Background)**
+
 ```
 1. Select cell on TODAY sheet
 2. Click text color button (A with underline)
@@ -339,6 +375,7 @@ Font colors only transfer during processing.
 ```
 
 **Solution 3: Re-Enter and Process**
+
 ```
 If colors already applied but not transferred:
 
@@ -356,11 +393,13 @@ If colors already applied but not transferred:
 ### Wrong Date in MONTHLY Header
 
 **Symptoms**:
+
 - Date header shows unexpected date
 - Monday shows Sunday date (or vice versa)
 - Off by one day consistently
 
 **Common Causes**:
+
 1. Monday logs Saturday setting
 2. Timezone differences
 3. Processing run at wrong time
@@ -368,6 +407,7 @@ If colors already applied but not transferred:
 **Solutions**:
 
 **Solution 1: Check Date Settings**
+
 ```
 1. Sales Tools → ⚙️ Settings
 2. Go to 📅 Date Settings tab
@@ -378,6 +418,7 @@ If colors already applied but not transferred:
 ```
 
 **Solution 2: Verify Sunday Skip Setting**
+
 ```
 1. In Date Settings tab
 2. Check "Skip Sundays" setting
@@ -386,6 +427,7 @@ If colors already applied but not transferred:
 ```
 
 **Solution 3: Manual Date Correction**
+
 ```
 If wrong date already inserted:
 
@@ -402,11 +444,13 @@ If wrong date already inserted:
 ### Analytics Not Updating
 
 **Symptoms**:
+
 - Analytics columns (S-X) empty or outdated
 - Analytics don't reflect recent sales
 - "Last Updated" timestamp old
 
 **Common Causes**:
+
 1. Analytics calculation disabled or failed
 2. Cache not invalidated
 3. Insufficient columns on MONTHLY sheet
@@ -415,6 +459,7 @@ If wrong date already inserted:
 **Solutions**:
 
 **Solution 1: Manual Refresh**
+
 ```
 1. Sales Tools → 🔄 Refresh Analytics
 2. Click "Yes" to confirm
@@ -423,6 +468,7 @@ If wrong date already inserted:
 ```
 
 **Solution 2: Verify Column Count**
+
 ```
 MONTHLY sheet needs 26 columns (A-Z) for analytics
 
@@ -434,6 +480,7 @@ To check:
 ```
 
 **Solution 3: Check for Calculation Errors**
+
 ```
 1. Apps Script Editor → View → Executions
 2. Look for "calculateMonthlyAnalytics" entries
@@ -444,6 +491,7 @@ To check:
 ```
 
 **Solution 4: Invalidate Cache and Recalculate**
+
 ```
 1. Run daily processing (even if no new sales)
    This forces cache invalidation
@@ -456,11 +504,13 @@ To check:
 ### Incorrect Salesperson Counts
 
 **Symptoms**:
+
 - Analytics show wrong counts for salespeople
 - Numbers don't match manual count
 - Split sales counted incorrectly
 
 **Common Causes**:
+
 1. Salesperson name not in SALESPEOPLE sheet
 2. FI flags missing or invalid
 3. Split sales formatted incorrectly
@@ -469,6 +519,7 @@ To check:
 **Solutions**:
 
 **Solution 1: Verify Salesperson Names**
+
 ```
 1. Check MONTHLY sheet salesperson columns (G, N)
 2. Verify names exist in SALESPEOPLE sheet
@@ -477,6 +528,7 @@ To check:
 ```
 
 **Solution 2: Check FI Flags**
+
 ```
 Analytics only count delivered sales (FI = A-Z)
 
@@ -489,6 +541,7 @@ To verify:
 ```
 
 **Solution 3: Verify Split Sale Format**
+
 ```
 Correct format: "John/Jane"
 Incorrect: "John, Jane" or "John & Jane"
@@ -502,6 +555,7 @@ To fix:
 ```
 
 **Solution 4: Manual Recalculation**
+
 ```
 1. Sales Tools → Recalculate MTD & Check Monthly Errors/Formats
 2. This rebuilds counts from MONTHLY data
@@ -514,11 +568,13 @@ To fix:
 ### Analytics Missing from Archive
 
 **Symptoms**:
+
 - Month rollover completed
 - Archive sheet created
 - Analytics columns (S-X) empty in archive
 
 **Common Causes**:
+
 1. Analytics not calculated before rollover
 2. Archive created manually (not via rollover)
 3. Columns not copied during rollover
@@ -526,6 +582,7 @@ To fix:
 **Solutions**:
 
 **Solution 1: Manual Analytics Copy**
+
 ```
 1. Open current MONTHLY sheet
 2. Run analytics refresh to ensure current
@@ -537,6 +594,7 @@ To fix:
 ```
 
 **Solution 2: Recalculate for Archive Month**
+
 ```
 This requires manual process:
 
@@ -549,6 +607,7 @@ Note: Complex - only if analytics critical for that month
 ```
 
 **Prevention**:
+
 - Always use rollover function (don't create archives manually)
 - Verify analytics refresh before rollover
 - Check columns S-X included when rollover completes
@@ -560,11 +619,13 @@ Note: Complex - only if analytics critical for that month
 ### Settings UI Won't Open
 
 **Symptoms**:
+
 - Clicking Settings menu item does nothing
 - Settings sidebar doesn't appear
 - Error message when opening settings
 
 **Common Causes**:
+
 1. HTML file missing or corrupted
 2. Permission issues
 3. Script error during sidebar creation
@@ -573,6 +634,7 @@ Note: Complex - only if analytics critical for that month
 **Solutions**:
 
 **Solution 1: Refresh and Retry**
+
 ```
 1. Refresh spreadsheet (Ctrl+R or Cmd+R)
 2. Wait 10 seconds for scripts to load
@@ -581,6 +643,7 @@ Note: Complex - only if analytics critical for that month
 ```
 
 **Solution 2: Check HTML Files**
+
 ```
 In Apps Script Editor, verify files exist:
 ☐ config_sidebar.html
@@ -594,6 +657,7 @@ If missing:
 ```
 
 **Solution 3: Check Execution Log**
+
 ```
 1. Apps Script Editor → View → Executions
 2. Find "openConfigurationSidebar" execution
@@ -605,6 +669,7 @@ If missing:
 ```
 
 **Solution 4: Browser Issues**
+
 ```
 1. Try different browser (Chrome recommended)
 2. Disable browser extensions temporarily
@@ -617,11 +682,13 @@ If missing:
 ### Settings Changes Not Saving
 
 **Symptoms**:
+
 - Settings appear to save
 - Changes revert after closing sidebar
 - Configuration unchanged after save
 
 **Common Causes**:
+
 1. Validation errors (silent failures)
 2. Concurrent modification
 3. Properties Service write failure
@@ -630,6 +697,7 @@ If missing:
 **Solutions**:
 
 **Solution 1: Check for Validation Errors**
+
 ```
 Common validation issues:
 - Display code not 2-4 characters
@@ -641,6 +709,7 @@ Fix validation issues and retry save.
 ```
 
 **Solution 2: Wait and Retry**
+
 ```
 If error: "Could not acquire lock"
 
@@ -652,6 +721,7 @@ If error: "Could not acquire lock"
 ```
 
 **Solution 3: Save in Smaller Batches**
+
 ```
 Instead of:
 - Adding 10 salespeople at once
@@ -664,6 +734,7 @@ Try:
 ```
 
 **Solution 4: Verify Properties Service Access**
+
 ```
 1. Apps Script Editor → View → Executions
 2. Look for "updateConfiguration" entries
@@ -676,11 +747,13 @@ Try:
 ### Alias Conflicts
 
 **Symptoms**:
+
 - Error: "Alias already used"
 - Can't add new salesperson
 - Update fails with conflict message
 
 **Common Causes**:
+
 1. Alias already assigned to another person
 2. Alias matches another person's full name
 3. Alias matches another person's display code
@@ -688,6 +761,7 @@ Try:
 **Solutions**:
 
 **Solution 1: Choose Different Alias**
+
 ```
 If "JS" already used:
 - Try "JMS" (add middle initial)
@@ -696,6 +770,7 @@ If "JS" already used:
 ```
 
 **Solution 2: Find Conflicting Person**
+
 ```
 1. Review current salespeople list in Settings
 2. Search for the conflicting alias
@@ -705,6 +780,7 @@ If "JS" already used:
 ```
 
 **Solution 3: Use Full Name Instead**
+
 ```
 System automatically maps full names even without aliases.
 
@@ -721,11 +797,13 @@ If can't resolve conflict:
 ### Archive Already Exists Error
 
 **Symptoms**:
+
 - Rollover fails immediately
 - Error: "Archive already exists"
 - Cannot proceed with rollover
 
 **Common Causes**:
+
 1. Rollover already run this month
 2. Manual sheet created with same name
 3. Previous rollover attempt failed mid-process
@@ -733,6 +811,7 @@ If can't resolve conflict:
 **Solutions**:
 
 **Solution 1: Verify Current Month**
+
 ```
 1. Check if you're already in new month
 2. Look at existing archive sheets
@@ -740,6 +819,7 @@ If can't resolve conflict:
 ```
 
 **Solution 2: Rename Existing Archive**
+
 ```
 If archive is incomplete or test:
 
@@ -750,6 +830,7 @@ If archive is incomplete or test:
 ```
 
 **Solution 3: Delete Partial Archive**
+
 ```
 If previous rollover failed:
 
@@ -760,6 +841,7 @@ If previous rollover failed:
 ```
 
 **Prevention**:
+
 - Only run rollover once per month
 - Run on first business day of new month
 - Don't manually create sheets with date names
@@ -769,11 +851,13 @@ If previous rollover failed:
 ### Rollover Fails Mid-Process
 
 **Symptoms**:
+
 - Rollover starts but doesn't complete
 - Archive created but MONTHLY not cleared
 - Error message during processing
 
 **Common Causes**:
+
 1. Permission errors
 2. Sheet protection
 3. Script timeout
@@ -782,6 +866,7 @@ If previous rollover failed:
 **Solutions**:
 
 **Solution 1: Check Archive Creation**
+
 ```
 If archive created but process failed:
 
@@ -794,6 +879,7 @@ If archive created but process failed:
 ```
 
 **Solution 2: Manual MTD Reset**
+
 ```
 If MONTHLY cleared but TODAY not reset:
 
@@ -804,6 +890,7 @@ If MONTHLY cleared but TODAY not reset:
 ```
 
 **Solution 3: Check Sheet Protection**
+
 ```
 1. Right-click MONTHLY tab → Protect sheet
 2. If protected, remove protection
@@ -811,6 +898,7 @@ If MONTHLY cleared but TODAY not reset:
 ```
 
 **Solution 4: Complete Rollover Manually**
+
 ```
 If automatic rollover impossible:
 
@@ -827,11 +915,13 @@ If automatic rollover impossible:
 ### Incorrect Averages After Rollover
 
 **Symptoms**:
+
 - 3-month averages wrong
 - Averages show 0 when should have values
 - Some salespeople have averages, others don't
 
 **Common Causes**:
+
 1. Archive sheets missing or incorrectly named
 2. Salesperson name changed
 3. Previous 3 months don't have data
@@ -839,6 +929,7 @@ If automatic rollover impossible:
 **Solutions**:
 
 **Solution 1: Verify Archive Names**
+
 ```
 Archives must use configured format (M/YY, MM/YY, or MMM/YY)
 
@@ -850,6 +941,7 @@ If archives exist but wrong format:
 ```
 
 **Solution 2: Check Archive Content**
+
 ```
 For each of previous 3 months:
 
@@ -860,6 +952,7 @@ For each of previous 3 months:
 ```
 
 **Solution 3: Manual Average Calculation**
+
 ```
 Formula for 3-month average:
 (Month1_MTD + Month2_MTD + Month3_MTD) ÷ Number_of_Months
@@ -874,6 +967,7 @@ Enter in Column R of TODAY sheet.
 ```
 
 **Solution 4: Missing Previous Months**
+
 ```
 If fewer than 3 previous months exist:
 
@@ -892,11 +986,13 @@ This is normal for new deployments.
 ### Duplicates Not Highlighting
 
 **Symptoms**:
+
 - Duplicate stock numbers not highlighted
 - Yellow-green color not appearing
 - Conditional formatting not working
 
 **Common Causes**:
+
 1. Conditional formatting rules deleted
 2. Stock numbers in wrong column
 3. Rules overridden by manual formatting
@@ -904,6 +1000,7 @@ This is normal for new deployments.
 **Solutions**:
 
 **Solution 1: Reapply Formatting**
+
 ```
 1. Run daily processing
 2. Formatting rules automatically reapplied
@@ -911,6 +1008,7 @@ This is normal for new deployments.
 ```
 
 **Solution 2: Verify Stock Number Columns**
+
 ```
 Stock numbers must be in:
 - Column E for new cars
@@ -922,6 +1020,7 @@ If in different columns:
 ```
 
 **Solution 3: Manual Rule Creation**
+
 ```
 If automatic doesn't work:
 
@@ -934,6 +1033,7 @@ If automatic doesn't work:
 ```
 
 **Solution 4: Check for Overrides**
+
 ```
 Manual formatting overrides conditional:
 
@@ -948,11 +1048,13 @@ Manual formatting overrides conditional:
 ### Deposits Not Flagging Stocks
 
 **Symptoms**:
+
 - Stocks in DEPOSITS not highlighted on TODAY
 - Deposit conditional formatting not working
 - No error but no highlighting
 
 **Common Causes**:
+
 1. Stock numbers in wrong column on DEPOSITS
 2. DEPOSITS sheet renamed
 3. Formula reference broken
@@ -960,6 +1062,7 @@ Manual formatting overrides conditional:
 **Solutions**:
 
 **Solution 1: Verify DEPOSITS Column**
+
 ```
 Stock numbers MUST be in Column G of DEPOSITS sheet.
 
@@ -971,6 +1074,7 @@ To verify:
 ```
 
 **Solution 2: Verify Sheet Name**
+
 ```
 1. Sheet must be named exactly "DEPOSITS"
 2. Case-sensitive
@@ -979,6 +1083,7 @@ To verify:
 ```
 
 **Solution 3: Test Formula Manually**
+
 ```
 1. On TODAY sheet, select a cell in column E
 2. Enter formula: =COUNTIF(DEPOSITS!G:G,E2)
@@ -987,6 +1092,7 @@ To verify:
 ```
 
 **Solution 4: Recreate Rule**
+
 ```
 1. Format → Conditional formatting
 2. Apply to range: A2:G101
@@ -1000,12 +1106,14 @@ To verify:
 ## Lock Contention Issues
 
 ### Symptom
+
 Error message: "Could not acquire lock after X attempts"
 
 **Description**:
 Multiple users or operations attempting to modify configuration or process data simultaneously, resulting in lock acquisition failure after automatic retry attempts.
 
 ### Cause
+
 - Multiple users running operations at the same time
 - Long-running operation holding lock
 - Concurrent daily processing attempts
@@ -1014,6 +1122,7 @@ Multiple users or operations attempting to modify configuration or process data 
 ### Solution
 
 **Wait and Retry** (Recommended):
+
 ```
 1. Wait 30-60 seconds for current operation to complete
 2. Try operation again
@@ -1022,6 +1131,7 @@ Multiple users or operations attempting to modify configuration or process data 
 ```
 
 **Check Execution Log**:
+
 ```
 1. Apps Script Editor → View → Executions
 2. Look for long-running operations (> 30 seconds)
@@ -1030,6 +1140,7 @@ Multiple users or operations attempting to modify configuration or process data 
 ```
 
 **Coordinate with Team**:
+
 ```
 If multiple users:
 1. Designate primary user for settings changes
@@ -1041,6 +1152,7 @@ If multiple users:
 ### Technical Details
 
 **Lock Retry Behavior**:
+
 ```
 Attempt 1: Immediate (0ms delay)
 Attempt 2: 100ms delay
@@ -1055,6 +1167,7 @@ Maximum total time: ~183 seconds
 ```
 
 **What's Protected by Locks**:
+
 - Configuration updates via Settings
 - Daily processing operations
 - Month rollover operations
@@ -1063,6 +1176,7 @@ Maximum total time: ~183 seconds
 ### Prevention
 
 **Best Practices**:
+
 - Avoid running multiple operations simultaneously
 - Use Settings sidebar (better lock management than direct edits)
 - Coordinate timing with other users
@@ -1070,6 +1184,7 @@ Maximum total time: ~183 seconds
 - Run intensive operations during off-peak hours
 
 **When Safe to Retry**:
+
 - After error message appears
 - When execution log shows previous operation completed
 - At least 30 seconds after first attempt
@@ -1080,9 +1195,11 @@ Maximum total time: ~183 seconds
 ## Cache Service Failures
 
 ### Symptom
+
 Logs show cache invalidation errors but operations complete successfully
 
 **Log Examples**:
+
 ```
 [CRITICAL] Cache invalidation failed (non-fatal): [context]
 Operation continuing without cache invalidation
@@ -1091,6 +1208,7 @@ Operation continuing without cache invalidation
 ```
 
 ### Cause
+
 - CacheService temporarily unavailable
 - Google infrastructure maintenance
 - Quota limits reached (rare)
@@ -1099,12 +1217,14 @@ Operation continuing without cache invalidation
 ### Impact
 
 **No User-Visible Impact**:
+
 - Operations continue normally despite cache failures
 - Data integrity fully maintained
 - No data loss or corruption
 - Functionality unchanged
 
 **Temporary Side Effects**:
+
 - Stale data in cache for up to 5-10 minutes
 - Slight performance impact until cache refreshes
 - Multiple operations may see outdated cached data
@@ -1113,6 +1233,7 @@ Operation continuing without cache invalidation
 ### Solution
 
 **No Action Required**:
+
 ```
 The system is designed to handle cache failures gracefully:
 
@@ -1123,6 +1244,7 @@ The system is designed to handle cache failures gracefully:
 ```
 
 **If Concerned**:
+
 ```
 1. Check that operations completed successfully
 2. Verify data appears correct in sheets
@@ -1131,6 +1253,7 @@ The system is designed to handle cache failures gracefully:
 ```
 
 **Monitor Logs**:
+
 ```
 1. Apps Script Editor → View → Executions
 2. Look for cache-related messages
@@ -1144,6 +1267,7 @@ The system is designed to handle cache failures gracefully:
 ### Technical Details
 
 **Cache TTL (Time To Live)**:
+
 ```
 Configuration cache: 10 minutes
 Salesperson maps: 5 minutes
@@ -1154,12 +1278,14 @@ After TTL expires, data automatically reloaded from source
 ```
 
 **What's Cached**:
+
 - Configuration data (performance optimization)
 - Salesperson alias mappings (fast lookups)
 - Analytics results (reduce recalculation)
 - Visual settings (UI performance)
 
 **Cache Failure Handling**:
+
 - All cache operations wrapped in try-catch blocks
 - Errors logged with context and severity
 - Primary operations never fail due to cache issues
@@ -1168,12 +1294,14 @@ After TTL expires, data automatically reloaded from source
 ### Why This Design?
 
 **Cache as Enhancement, Not Requirement**:
+
 - Cache improves performance but isn't critical
 - All data persists in sheets and Properties Service
 - Operations must succeed even when cache unavailable
 - User experience shouldn't degrade due to cache
 
 **Reliability Over Speed**:
+
 - Better to complete slowly than fail fast
 - Graceful degradation preferred
 - Comprehensive logging for monitoring
@@ -1184,9 +1312,11 @@ After TTL expires, data automatically reloaded from source
 ## Sync Metadata Size Limits
 
 ### Symptom
+
 Warning logs: "Approaching size limit" or "Size limit reached"
 
 **Log Examples**:
+
 ```
 [saveSyncMetadata] Metadata size: 6500 bytes (6.35 KB)
 [saveSyncMetadata] Approaching size limit (WARNING at 75%)
@@ -1197,6 +1327,7 @@ Warning logs: "Approaching size limit" or "Size limit reached"
 ```
 
 ### Cause
+
 - High frequency of sheet edits (100+ per day)
 - Large team with many salespeople
 - Metadata accumulation over time
@@ -1205,6 +1336,7 @@ Warning logs: "Approaching size limit" or "Size limit reached"
 ### Automatic Resolution
 
 **System Self-Manages**:
+
 ```
 Threshold Levels:
 - 6KB (75%): Warning logged, no action taken
@@ -1220,6 +1352,7 @@ Cleanup Process:
 ```
 
 **Typical Sequence**:
+
 ```
 1. Normal operation: Size grows gradually
 2. Warning at 6KB: Logged for monitoring
@@ -1233,6 +1366,7 @@ Cleanup Process:
 **Rarely Required** (automatic cleanup usually sufficient):
 
 **Check Current Size**:
+
 ```
 1. Apps Script Editor → View → Executions
 2. Look for saveSyncMetadata log entries
@@ -1241,6 +1375,7 @@ Cleanup Process:
 ```
 
 **Force Cleanup** (if automatic cleanup insufficient):
+
 ```
 1. Review sync metadata in Properties Service
 2. Identify unusually large entries
@@ -1249,6 +1384,7 @@ Cleanup Process:
 ```
 
 **Verify Cleanup Success**:
+
 ```
 1. Check logs for cleanup completion message
 2. Verify size reduction (should be ~40-50% reduction)
@@ -1259,6 +1395,7 @@ Cleanup Process:
 ### Technical Details
 
 **Size Thresholds**:
+
 ```
 Warning Threshold: 6KB (75% of limit)
 Action Threshold: 8KB (100% of limit)
@@ -1267,6 +1404,7 @@ Typical Size: 2-5KB for normal usage
 ```
 
 **Retention Policy**:
+
 ```
 Retention Period: 30 days
 Calculation: lastModified timestamp compared to current time
@@ -1275,6 +1413,7 @@ Removed: Entries with lastModified > 30 days old
 ```
 
 **What's Stored**:
+
 ```
 Sync metadata tracks:
 - Sheet row to Properties Service mappings
@@ -1284,6 +1423,7 @@ Sync metadata tracks:
 ```
 
 **Performance Impact**:
+
 ```
 Normal operations: <10ms overhead
 Size check: <5ms per operation
@@ -1294,17 +1434,20 @@ No user-visible delay
 ### Prevention
 
 **Normal Usage** (no prevention needed):
+
 - System designed to handle typical workloads
 - Automatic cleanup prevents issues
 - No user action required
 
 **High-Activity Spreadsheets**:
+
 - May see warnings more frequently (normal)
 - Automatic cleanup handles increased load
 - Monitor logs for patterns
 - Contact support if cleanup insufficient
 
 **Not Recommended**:
+
 - Manual metadata manipulation
 - Disabling sync operations
 - Modifying retention period without guidance
@@ -1314,12 +1457,14 @@ No user-visible delay
 ## Event Trigger Failures
 
 ### Symptom
+
 Toast notification: "Failed to create menu" on spreadsheet open
 
 **Description**:
 On opening the spreadsheet, a 10-second toast notification appears indicating menu creation failed. The spreadsheet loads but the "Sales Tools" menu may not appear in the menu bar.
 
 ### Cause
+
 - Temporary spreadsheet initialization issue
 - Script permissions need reauthorization
 - Google Sheets service momentarily unavailable
@@ -1328,6 +1473,7 @@ On opening the spreadsheet, a 10-second toast notification appears indicating me
 ### Impact
 
 **Limited Impact**:
+
 - Spreadsheet remains fully functional
 - Data remains accessible and safe
 - Can manually trigger operations via script editor
@@ -1335,12 +1481,14 @@ On opening the spreadsheet, a 10-second toast notification appears indicating me
 - No data corruption or loss
 
 **What Still Works**:
+
 - Viewing all data
 - Manual data entry
 - Direct script execution (via Apps Script editor)
 - All data integrity maintained
 
 **What May Not Work**:
+
 - Custom menu items
 - One-click operation triggers
 - Settings sidebar access (may need manual open)
@@ -1348,6 +1496,7 @@ On opening the spreadsheet, a 10-second toast notification appears indicating me
 ### Solution
 
 **Solution 1: Reload Spreadsheet** (Most Common):
+
 ```
 1. Close spreadsheet tab completely
 2. Wait 10 seconds
@@ -1357,6 +1506,7 @@ On opening the spreadsheet, a 10-second toast notification appears indicating me
 ```
 
 **Solution 2: Check Permissions**:
+
 ```
 1. Extensions → Apps Script
 2. Click Run → Select onOpen function
@@ -1366,6 +1516,7 @@ On opening the spreadsheet, a 10-second toast notification appears indicating me
 ```
 
 **Solution 3: Clear Browser Cache**:
+
 ```
 1. Close all Google Sheets tabs
 2. Clear browser cache for Google Sheets
@@ -1375,6 +1526,7 @@ On opening the spreadsheet, a 10-second toast notification appears indicating me
 ```
 
 **Solution 4: Manual Menu Creation**:
+
 ```
 If menu still missing:
 1. Extensions → Apps Script
@@ -1387,6 +1539,7 @@ If menu still missing:
 ### Check Execution Logs
 
 **Verify Issue**:
+
 ```
 1. Apps Script Editor → View → Executions
 2. Find most recent onOpen execution
@@ -1398,6 +1551,7 @@ If menu still missing:
 ```
 
 **Common Log Entries**:
+
 ```
 Success:
 ✓ onOpen completed successfully
@@ -1405,7 +1559,7 @@ Success:
 Failure:
 ✗ onOpen failed
   Error: Cannot add menu to spreadsheet
-  
+
 Partial Success:
 ✓ onOpen completed with warnings
   Warning: Menu creation attempted but may have failed
@@ -1414,6 +1568,7 @@ Partial Success:
 ### Technical Details
 
 **Error Handling Design**:
+
 ```
 try {
   // Attempt menu creation
@@ -1422,7 +1577,7 @@ try {
 } catch (error) {
   // Log error with details
   Logger.log('Menu creation failed: ' + error.message);
-  
+
   // Notify user via toast
   SpreadsheetApp.getActiveSpreadsheet()
     .toast('Failed to create menu. Please refresh.', 'Menu Error', 10);
@@ -1433,12 +1588,14 @@ try {
 ```
 
 **Why Graceful Degradation**:
+
 - Menu is convenience, not requirement
 - Can access all functions via script editor
 - User experience maintained even with errors
 - Clear notification guides user to solution
 
 **Toast Notification Details**:
+
 - Duration: 10 seconds
 - Title: "Menu Error" or similar
 - Message: Actionable guidance
@@ -1447,6 +1604,7 @@ try {
 ### Prevention
 
 **Best Practices**:
+
 - Keep script authorized at all times
 - Don't modify script while spreadsheet open
 - Use supported browsers (Chrome recommended)
@@ -1454,6 +1612,7 @@ try {
 - Allow page to fully load before interacting
 
 **If Recurring**:
+
 ```
 1. Check for browser extensions causing issues
 2. Verify stable internet connection
@@ -1469,11 +1628,13 @@ try {
 ### Slow Daily Processing
 
 **Symptoms**:
+
 - Processing takes > 30 seconds
 - "Working..." toast appears for long time
 - Script timeout errors
 
 **Common Causes**:
+
 1. Large MONTHLY sheet (> 1000 rows)
 2. Too many salespeople (> 50)
 3. Concurrent executions
@@ -1482,6 +1643,7 @@ try {
 **Solutions**:
 
 **Solution 1: Archive Old Data**
+
 ```
 If MONTHLY sheet very large:
 
@@ -1492,6 +1654,7 @@ If MONTHLY sheet very large:
 ```
 
 **Solution 2: Optimize Salespeople**
+
 ```
 1. Review SALESPEOPLE sheet
 2. Remove inactive/former employees
@@ -1500,6 +1663,7 @@ If MONTHLY sheet very large:
 ```
 
 **Solution 3: Wait for Completion**
+
 ```
 Don't:
 - Click menu items while processing
@@ -1513,6 +1677,7 @@ Do:
 ```
 
 **Solution 4: Network Connection**
+
 ```
 1. Check internet connection speed
 2. Avoid processing on slow connections
@@ -1525,11 +1690,13 @@ Do:
 ### Settings UI Slow to Load
 
 **Symptoms**:
+
 - Settings sidebar takes long time to open
 - Salesperson list loads slowly
 - Saving takes excessive time
 
 **Common Causes**:
+
 1. Large number of salespeople (> 30)
 2. Browser extensions interfering
 3. Cached data corruption
@@ -1537,6 +1704,7 @@ Do:
 **Solutions**:
 
 **Solution 1: Reduce Roster Size**
+
 ```
 1. Archive former employees from SALESPEOPLE
 2. Keep only active team
@@ -1544,6 +1712,7 @@ Do:
 ```
 
 **Solution 2: Clear Browser Data**
+
 ```
 1. Close all Google Sheets tabs
 2. Clear browser cache for Google Sheets
@@ -1553,6 +1722,7 @@ Do:
 ```
 
 **Solution 3: Use Chrome**
+
 ```
 Google Apps Script optimized for Chrome:
 
@@ -1568,6 +1738,7 @@ Google Apps Script optimized for Chrome:
 ### Accidentally Cleared TODAY Sheet
 
 **Symptoms**:
+
 - TODAY sheet data cleared
 - Data not yet processed to MONTHLY
 - Need to recover data
@@ -1575,6 +1746,7 @@ Google Apps Script optimized for Chrome:
 **Solutions**:
 
 **Solution 1: Use Version History**
+
 ```
 1. File → Version history → See version history
 2. Find version before data cleared
@@ -1584,6 +1756,7 @@ Google Apps Script optimized for Chrome:
 ```
 
 **Solution 2: Undo**
+
 ```
 Immediately after clearing:
 
@@ -1593,6 +1766,7 @@ Immediately after clearing:
 ```
 
 **Solution 3: Copy from Email**
+
 ```
 If you emailed yourself summary:
 
@@ -1603,6 +1777,7 @@ If you emailed yourself summary:
 ```
 
 **Prevention**:
+
 - Run daily processing as soon as data entered
 - Take screenshot of TODAY before processing
 - Keep backup copy in different sheet
@@ -1612,6 +1787,7 @@ If you emailed yourself summary:
 ### Accidentally Deleted MONTHLY Data
 
 **Symptoms**:
+
 - MONTHLY sheet data deleted
 - Month's sales history lost
 - Need to recover
@@ -1619,6 +1795,7 @@ If you emailed yourself summary:
 **Solutions**:
 
 **Solution 1: Version History (Best Option)**
+
 ```
 1. File → Version history → See version history
 2. Navigate to version before deletion
@@ -1627,6 +1804,7 @@ If you emailed yourself summary:
 ```
 
 **Solution 2: Named Versions**
+
 ```
 If you created named versions:
 
@@ -1636,6 +1814,7 @@ If you created named versions:
 ```
 
 **Solution 3: Reconstruct from TODAY**
+
 ```
 If today's data still in TODAY:
 
@@ -1645,6 +1824,7 @@ If today's data still in TODAY:
 ```
 
 **Prevention**:
+
 - Create named version daily or weekly
 - Don't manually edit MONTHLY rows
 - Use sheet protection for MONTHLY
@@ -1654,11 +1834,13 @@ If today's data still in TODAY:
 ### Lost Configuration
 
 **Symptoms**:
+
 - Settings reset to defaults
 - Salespeople list empty
 - Visual settings reverted
 
 **Common Causes**:
+
 1. Properties Service data cleared
 2. Migration re-run
 3. Script redeployed
@@ -1666,6 +1848,7 @@ If today's data still in TODAY:
 **Solutions**:
 
 **Solution 1: Check SALESPEOPLE Sheet**
+
 ```
 Configuration syncs to SALESPEOPLE sheet:
 
@@ -1677,6 +1860,7 @@ Configuration syncs to SALESPEOPLE sheet:
 ```
 
 **Solution 2: Restore from Backup**
+
 ```
 If you exported configuration:
 
@@ -1688,6 +1872,7 @@ If you exported configuration:
 ```
 
 **Solution 3: Manual Re-Entry**
+
 ```
 If no backup available:
 
@@ -1698,6 +1883,7 @@ If no backup available:
 ```
 
 **Prevention**:
+
 - Regular configuration exports
 - Keep SALESPEOPLE sheet backed up
 - Document settings in external document
@@ -1711,6 +1897,7 @@ If no backup available:
 **Location**: Apps Script Editor → View → Executions
 
 **What Logs Show**:
+
 - Function executions (name, timestamp)
 - Status (Success, Failed)
 - Execution time
@@ -1718,6 +1905,7 @@ If no backup available:
 - Detailed stack traces
 
 **Steps**:
+
 ```
 1. Open spreadsheet
 2. Extensions → Apps Script
@@ -1729,18 +1917,21 @@ If no backup available:
 ### Understanding Log Entries
 
 **Successful Execution**:
+
 ```
 ✓ onOpen          10/10/2025 2:00 PM    0.5 sec
 ✓ processDaily    10/10/2025 2:05 PM    2.3 sec
 ```
 
 **Failed Execution**:
+
 ```
 ✗ processDaily    10/10/2025 2:10 PM    1.2 sec
   Error: Required sheets missing
 ```
 
 **Click Entry for Details**:
+
 - Full error message
 - Stack trace
 - Specific line numbers
@@ -1749,26 +1940,31 @@ If no backup available:
 ### Common Log Errors
 
 **"Required sheets missing"**
+
 ```
 Solution: Run setup wizard or verify sheet names
 ```
 
 **"Could not acquire script lock"**
+
 ```
 Solution: Wait 30 seconds, don't run multiple times
 ```
 
 **"MONTHLY sheet needs at least 14 columns"**
+
 ```
 Solution: Insert additional columns on MONTHLY
 ```
 
 **"Configuration validation failed"**
+
 ```
 Solution: Check Settings validation messages, fix errors
 ```
 
 **"Exception: Service invoked too many times"**
+
 ```
 Solution: Hit quota limit, wait 24 hours
 ```
@@ -1780,11 +1976,13 @@ Solution: Hit quota limit, wait 24 hours
 ### Script Permissions Revoked
 
 **Symptoms**:
+
 - "Authorization required" every time
 - Script won't run without re-authorizing
 - "This app isn't verified" repeatedly
 
 **Causes**:
+
 1. Manual permission revocation
 2. Automatic security scan
 3. OAuth scope changes
@@ -1792,6 +1990,7 @@ Solution: Hit quota limit, wait 24 hours
 **Solutions**:
 
 **Solution 1: Re-Authorize Fully**
+
 ```
 1. Open spreadsheet
 2. Click any menu item (e.g., Settings)
@@ -1804,6 +2003,7 @@ Solution: Hit quota limit, wait 24 hours
 ```
 
 **Solution 2: Check Account Permissions**
+
 ```
 1. Visit myaccount.google.com/permissions
 2. Find script project
@@ -1812,6 +2012,7 @@ Solution: Hit quota limit, wait 24 hours
 ```
 
 **Solution 3: Remove and Re-Add**
+
 ```
 1. myaccount.google.com/permissions
 2. Remove script access
@@ -1824,11 +2025,13 @@ Solution: Hit quota limit, wait 24 hours
 ### Google Workspace Restrictions
 
 **Symptoms**:
+
 - Can't install or run script
-- "Administrator has disabled"  message
+- "Administrator has disabled" message
 - Installation blocked
 
 **Causes**:
+
 - Workspace policy restrictions
 - Admin blocked Apps Script
 - Domain security settings
@@ -1836,6 +2039,7 @@ Solution: Hit quota limit, wait 24 hours
 **Solutions**:
 
 **Solution 1: Contact Admin**
+
 ```
 1. Note the error message
 2. Contact Google Workspace administrator
@@ -1844,6 +2048,7 @@ Solution: Hit quota limit, wait 24 hours
 ```
 
 **Solution 2: Request Allowlisting**
+
 ```
 Admin needs to:
 1. Admin console → Apps → Google Workspace
@@ -1853,6 +2058,7 @@ Admin needs to:
 ```
 
 **Solution 3: Use Personal Account**
+
 ```
 If workspace restrictions can't be lifted:
 
@@ -1871,21 +2077,25 @@ If workspace restrictions can't be lifted:
 Contact support when:
 
 **Data Corruption**:
+
 - Widespread data loss
 - Formulas broken across sheets
 - Cannot recover from version history
 
 **System-Wide Failures**:
+
 - All functions fail consistently
 - Script completely non-functional
 - Setup wizard won't complete after multiple attempts
 
 **Performance Problems**:
+
 - Consistent timeouts (not quota-related)
 - Processing takes > 5 minutes
 - Spreadsheet crashes frequently
 
 **Configuration Issues**:
+
 - Properties Service completely inaccessible
 - Cannot save any settings
 - Configuration corrupted beyond repair
@@ -1895,6 +2105,7 @@ Contact support when:
 When contacting support, include:
 
 **Spreadsheet Information**:
+
 ```
 - Spreadsheet ID (from URL)
 - Number of salespeople
@@ -1903,6 +2114,7 @@ When contacting support, include:
 ```
 
 **Error Details**:
+
 ```
 - Exact error message
 - Screenshot of error dialog
@@ -1911,6 +2123,7 @@ When contacting support, include:
 ```
 
 **Attempted Solutions**:
+
 ```
 - Solutions already tried
 - Results of each attempt
@@ -1918,6 +2131,7 @@ When contacting support, include:
 ```
 
 **System Information**:
+
 ```
 - Browser and version
 - Google Workspace or personal account
@@ -1939,11 +2153,13 @@ Before contacting support:
 ### Emergency Contacts
 
 For licensed customers:
+
 - Support email: (provided with license)
 - Response time: 24-48 hours
 - Priority support available
 
 For community version:
+
 - GitHub Issues: (repository URL)
 - Community forum: (if applicable)
 - Documentation: This guide
@@ -1972,4 +2188,4 @@ For community version:
 
 ---
 
-*Sales Log Pro Troubleshooting Guide v8.0 | Last Updated: 2025-10-10*
+_Sales Log Pro Troubleshooting Guide v8.0 | Last Updated: 2025-10-10_

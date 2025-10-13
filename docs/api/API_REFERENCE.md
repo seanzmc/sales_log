@@ -21,7 +21,7 @@ Sales Log Pro provides a comprehensive JavaScript API for programmatic interacti
 
 ### Architecture
 
-```
+```typescript
 ┌─────────────────────────────────────────────────┐
 │           Google Sheets Interface               │
 │  (User interactions via TODAY/MONTHLY sheets)   │
@@ -62,6 +62,7 @@ Processes daily sales from TODAY sheet to MONTHLY sheet with sequential numberin
 **Source**: [`src/core_saleslogPro.js:511`](../../src/core_saleslogPro.js#L511)
 
 **Signature**:
+
 ```javascript
 function processDaily(): void
 ```
@@ -71,6 +72,7 @@ function processDaily(): void
 **Returns**: `void`
 
 **Behavior**:
+
 1. Checks if current day is Sunday (skips if configured)
 2. Reads TODAY sheet data (A2:N51)
 3. Filters rows with activity (new or used sections)
@@ -84,12 +86,14 @@ function processDaily(): void
 11. Reapplies conditional formatting
 
 **Error Handling**:
+
 - Validates required sheets exist
 - Uses script lock to prevent concurrent execution
 - Shows user-friendly error dialogs
 - Logs detailed errors to Apps Script Logger
 
 **Side Effects**:
+
 - Modifies MONTHLY sheet (inserts rows)
 - Updates TODAY leaderboard (columns P-R)
 - Clears TODAY data area (B2:N51)
@@ -97,6 +101,7 @@ function processDaily(): void
 - Reapplies conditional formatting rules
 
 **Example Usage**:
+
 ```javascript
 // Called from menu: Sales Tools → Log Yesterday's Sales
 function processDaily() {
@@ -106,22 +111,24 @@ function processDaily() {
       toastInfo("Sunday is configured as a non-sales day.", "Sunday Skip");
       return;
     }
-    
+
     // Process sales...
     const sheets = getSheets();
     const dailyData = sheets.today.getRange(RANGES.dailyData).getValues();
-    
+
     // Filter active rows, transfer to MONTHLY, update analytics...
   });
 }
 ```
 
 **Configuration Dependencies**:
+
 - [`shouldSkipSundays()`](#shouldskipsundays): Sunday handling
 - [`shouldMondayLogSaturday()`](#shouldmondaylogsaturday): Monday date behavior
 - [`getVisualConfig()`](#getvisualconfig): Color configuration
 
 **Related Functions**:
+
 - [`tallyCounts()`](#tallycounts): Counts sales by salesperson
 - [`applyMonthlyRowFormatting()`](#applymonthlyrowformatting): Applies error highlighting
 - [`calculateMonthlyAnalytics()`](#calculatemonthl yanalytics): Computes metrics
@@ -136,6 +143,7 @@ Archives current month and prepares system for new month with confirmation dialo
 **Source**: [`src/core_saleslogPro.js:863`](../../src/core_saleslogPro.js#L863)
 
 **Signature**:
+
 ```javascript
 function rolloverMonth(): void
 ```
@@ -145,6 +153,7 @@ function rolloverMonth(): void
 **Returns**: `void`
 
 **Behavior**:
+
 1. Shows confirmation dialog to user
 2. Recalculates final analytics for accuracy
 3. Creates archive sheet with configured name format
@@ -157,12 +166,14 @@ function rolloverMonth(): void
 10. Shows completion dialog
 
 **Error Handling**:
+
 - Checks if archive sheet already exists
 - Validates sheet creation
 - Handles archive naming conflicts
 - Uses script lock for atomic operation
 
 **Side Effects**:
+
 - Creates new archive sheet (e.g., "5/25")
 - Clears MONTHLY sheet (rows 2+)
 - Clears TODAY MTD column (Q2:Q28)
@@ -170,6 +181,7 @@ function rolloverMonth(): void
 - Preserves all analytics in archive
 
 **Example Usage**:
+
 ```javascript
 // Called from menu: Sales Tools → Start New Month (Rollover)
 function rolloverMonth() {
@@ -180,32 +192,34 @@ function rolloverMonth() {
       "This will archive the current month...",
       SpreadsheetApp.getUi().ButtonSet.YES_NO
     );
-    
+
     if (response !== SpreadsheetApp.getUi().Button.YES) {
       return;
     }
-    
+
     // Calculate archive name based on previous month
     const archiveSheetName = formatArchiveName();
-    
+
     // Recalculate final analytics
     const finalAnalytics = calculateMonthlyAnalytics();
     writeAnalyticsToMonthly(finalAnalytics, sheets.monthly);
-    
+
     // Copy MONTHLY to archive
     const archiveSheet = sheets.monthly.copyTo(SS);
     archiveSheet.setName(archiveSheetName);
-    
+
     // Clear and reset...
   });
 }
 ```
 
 **Configuration Dependencies**:
+
 - Archive format from date settings (M/YY, MM/YY, MMM/YY)
 - Rolling average calculation parameters
 
 **Related Functions**:
+
 - [`calculateMonthlyAnalytics()`](#calculatemonthl yanalytics): Final metrics
 - [`writeAnalyticsToMonthly()`](#writeanalyticstomonthly): Preserves analytics
 - [`roundHalf()`](#roundhalf): Average rounding
@@ -219,6 +233,7 @@ Recalculates MTD totals from MONTHLY sheet data and checks formatting.
 **Source**: [`src/core_saleslogPro.js:778`](../../src/core_saleslogPro.js#L778)
 
 **Signature**:
+
 ```javascript
 function recalcMtdFromMonthly(): void
 ```
@@ -228,6 +243,7 @@ function recalcMtdFromMonthly(): void
 **Returns**: `void`
 
 **Behavior**:
+
 1. Reads all MONTHLY sheet data
 2. Identifies date headers (merged cells)
 3. Extracts data rows (excludes headers)
@@ -239,17 +255,20 @@ function recalcMtdFromMonthly(): void
 9. Reapplies conditional formatting
 
 **Error Handling**:
+
 - Validates MONTHLY sheet has minimum 14 columns
 - Handles empty MONTHLY sheet gracefully
 - Shows error count in completion message
 
 **Side Effects**:
+
 - Updates TODAY MTD column (Q2:Q28)
 - Applies error highlighting to MONTHLY
 - Sorts TODAY leaderboard
 - Reapplies conditional formatting
 
 **Example Usage**:
+
 ```javascript
 // Called from menu: Sales Tools → Recalculate MTD & Check Monthly Errors/Formats
 function recalcMtdFromMonthly() {
@@ -257,10 +276,12 @@ function recalcMtdFromMonthly() {
     const sheets = getSheets();
     const monthlySheet = sheets.monthly;
     const todaySheet = sheets.today;
-    
+
     // Read all MONTHLY data
-    const monthlyValues = monthlySheet.getRange(2, 1, lastRow - 1, 14).getValues();
-    
+    const monthlyValues = monthlySheet
+      .getRange(2, 1, lastRow - 1, 14)
+      .getValues();
+
     // Apply formatting and get error count
     const errorRows = applyMonthlyRowFormatting(
       monthlySheet,
@@ -268,16 +289,16 @@ function recalcMtdFromMonthly() {
       2,
       aliasMap
     );
-    
+
     // Count by salesperson
-    const {counts} = tallyCounts(actualDataRows, aliasMap, sidesToTally);
-    
+    const { counts } = tallyCounts(actualDataRows, aliasMap, sidesToTally);
+
     // Update leaderboard
     const lbValues = todaySheet.getRange(RANGES.leaderboard).getValues();
-    lbValues.forEach(r => {
+    lbValues.forEach((r) => {
       r[1] = counts[r[0]] || 0;
     });
-    
+
     // Sort and apply
     lbValues.sort((a, b) => (b[1] || 0) - (a[1] || 0));
     lbRange.setValues(lbValues);
@@ -286,12 +307,14 @@ function recalcMtdFromMonthly() {
 ```
 
 **Use Cases**:
+
 - After manual MONTHLY data edits
 - To verify MTD calculations
 - To reapply formatting after corruption
 - To identify salesperson code errors
 
 **Related Functions**:
+
 - [`tallyCounts()`](#tallycounts): Sales counting
 - [`applyMonthlyRowFormatting()`](#applymonthlyrowformatting): Error detection
 - [`reapplyCF()`](#reapplycf): Conditional formatting
@@ -307,13 +330,15 @@ Retrieves complete configuration from Properties Service with caching.
 **Source**: [`src/config_service.js:120`](../../src/config_service.js#L120)
 
 **Signature**:
+
 ```javascript
 function getConfiguration(): Object
 ```
 
 **Parameters**: None
 
-**Returns**: 
+**Returns**:
+
 ```javascript
 {
   version: string,              // Configuration version number
@@ -326,6 +351,7 @@ function getConfiguration(): Object
 ```
 
 **Behavior**:
+
 1. Checks script cache (10-minute TTL)
 2. Reads from Properties Service if cache miss
 3. Merges with defaults to ensure all fields present
@@ -333,16 +359,18 @@ function getConfiguration(): Object
 5. Returns complete configuration object
 
 **Example**:
+
 ```javascript
 const config = getConfiguration();
 
-console.log(config.version);           // "5"
+console.log(config.version); // "5"
 console.log(config.salespeople.length); // 12
 console.log(config.visual.nonDeliveredColor); // "#FF0000"
-console.log(config.dates.skipSundays);  // true
+console.log(config.dates.skipSundays); // true
 ```
 
 **Related Functions**:
+
 - [`updateConfiguration()`](#updateconfiguration): Modify settings
 - [`mergeWithDefaults()`](#mergewithdefaults): Ensure completeness
 
@@ -355,11 +383,13 @@ Atomically updates configuration with validation and locking.
 **Source**: [`src/config_service.js:167`](../../src/config_service.js#L167)
 
 **Signature**:
+
 ```javascript
 function updateConfiguration(updates: Object): Object
 ```
 
 **Parameters**:
+
 - `updates` (Object): Partial configuration object with changes
   - Can include any subset of configuration properties
   - Deep merged with existing configuration
@@ -369,6 +399,7 @@ function updateConfiguration(updates: Object): Object
 **Throws**: `Error` if validation fails or lock timeout
 
 **Behavior**:
+
 1. Acquires script lock (30-second timeout)
 2. Retrieves current configuration
 3. Deep merges updates with current config
@@ -380,6 +411,7 @@ function updateConfiguration(updates: Object): Object
 9. Releases lock
 
 **Example**:
+
 ```javascript
 // Update visual settings
 const updated = updateConfiguration({
@@ -388,33 +420,36 @@ const updated = updateConfiguration({
     paceThresholds: {
       green: 12,
       yellow: 9,
-      red: 0
-    }
-  }
+      red: 0,
+    },
+  },
 });
 
 // Update date settings
 const updated = updateConfiguration({
   dates: {
     skipSundays: false,
-    mondayLogsSaturday: true
-  }
+    mondayLogsSaturday: true,
+  },
 });
 ```
 
 **Validation**:
+
 - Color codes must match `#RRGGBB` format
 - Thresholds must be positive numbers
 - Date settings must be booleans
 - Total size must be under 8KB
 
 **Side Effects**:
+
 - Writes to Properties Service
 - Invalidates caches
 - Syncs to SALESPEOPLE sheet
 - Increments version number
 
 **Related Functions**:
+
 - [`validateConfiguration()`](#validateconfiguration): Validation logic
 - [`syncToSalespeopleSheet()`](#synctosalespeoplesheet): Sync mechanism
 
@@ -429,27 +464,30 @@ Returns array of all salespeople from configuration.
 **Source**: [`src/config_service.js:257`](../../src/config_service.js#L257)
 
 **Signature**:
+
 ```javascript
 function getSalespeople(): Array<Object>
 ```
 
 **Returns**:
+
 ```javascript
 [
   {
-    fullName: string,      // "John Smith"
-    aliases: string,       // "JS, Johnny, John"
-    displayCode: string    // "JS"
+    fullName: string, // "John Smith"
+    aliases: string, // "JS, Johnny, John"
+    displayCode: string, // "JS"
   },
   // ...
-]
+];
 ```
 
 **Example**:
+
 ```javascript
 const team = getSalespeople();
 
-team.forEach(person => {
+team.forEach((person) => {
   console.log(`${person.displayCode}: ${person.fullName}`);
   console.log(`  Aliases: ${person.aliases}`);
 });
@@ -470,11 +508,13 @@ Adds new salesperson with validation and duplicate checking.
 **Source**: [`src/config_service.js:275`](../../src/config_service.js#L275)
 
 **Signature**:
+
 ```javascript
 function addSalesperson(data: Object): Object
 ```
 
 **Parameters**:
+
 ```javascript
 {
   fullName: string,      // Required, 2-100 chars
@@ -488,6 +528,7 @@ function addSalesperson(data: Object): Object
 **Throws**: `Error` if validation fails or duplicate found
 
 **Validation Rules**:
+
 - Full name: 2-100 characters, letters/spaces/hyphens/apostrophes only
 - Aliases: 0-200 characters, alphanumeric/commas allowed
 - Display code: 2-4 alphanumeric characters
@@ -495,14 +536,15 @@ function addSalesperson(data: Object): Object
 - No conflicting aliases
 
 **Example**:
+
 ```javascript
 try {
   const result = addSalesperson({
     fullName: "Michael Chen",
     aliases: "MC, Mike, Michael",
-    displayCode: "MC"
+    displayCode: "MC",
   });
-  
+
   console.log("Salesperson added successfully");
 } catch (error) {
   console.error("Failed to add salesperson:", error.message);
@@ -510,6 +552,7 @@ try {
 ```
 
 **Related Functions**:
+
 - [`validateSalesperson()`](#validatesalesperson): Validation
 - [`checkAliasConflict()`](#checkaliasconflict): Duplicate detection
 
@@ -522,11 +565,13 @@ Updates existing salesperson with validation.
 **Source**: [`src/config_service.js:325`](../../src/config_service.js#L325)
 
 **Signature**:
+
 ```javascript
 function updateSalesperson(fullName: string, data: Object): Object
 ```
 
 **Parameters**:
+
 - `fullName` (string): Current full name of person to update
 - `data` (Object): New salesperson data (same structure as `addSalesperson`)
 
@@ -535,12 +580,13 @@ function updateSalesperson(fullName: string, data: Object): Object
 **Throws**: `Error` if person not found or validation fails
 
 **Example**:
+
 ```javascript
 // Update display code and add alias
 const result = updateSalesperson("John Smith", {
   fullName: "John Smith",
-  aliases: "JS, Johnny, John, Smitty",  // Added "Smitty"
-  displayCode: "JSM"                     // Changed code
+  aliases: "JS, Johnny, John, Smitty", // Added "Smitty"
+  displayCode: "JSM", // Changed code
 });
 ```
 
@@ -553,11 +599,13 @@ Removes salesperson from configuration.
 **Source**: [`src/config_service.js:382`](../../src/config_service.js#L382)
 
 **Signature**:
+
 ```javascript
 function deleteSalesperson(fullName: string): Object
 ```
 
 **Parameters**:
+
 - `fullName` (string): Full name of person to delete
 
 **Returns**: Updated configuration object
@@ -565,6 +613,7 @@ function deleteSalesperson(fullName: string): Object
 **Throws**: `Error` if person not found
 
 **Example**:
+
 ```javascript
 const result = deleteSalesperson("John Smith");
 console.log("John Smith removed from roster");
@@ -583,6 +632,7 @@ Checks if Sundays should be excluded from selling day calculations.
 **Source**: [`src/config_service.js:69`](../../src/config_service.js#L69)
 
 **Signature**:
+
 ```javascript
 function shouldSkipSundays(): boolean
 ```
@@ -592,6 +642,7 @@ function shouldSkipSundays(): boolean
 **Default**: `true`
 
 **Example**:
+
 ```javascript
 if (shouldSkipSundays() && today.getDay() === 0) {
   console.log("Sunday - no processing");
@@ -600,6 +651,7 @@ if (shouldSkipSundays() && today.getDay() === 0) {
 ```
 
 **Used By**:
+
 - [`processDaily()`](#processdaily): Skip Sunday processing
 - [`memoizedGetSellingDays()`](#memoizedgetsellingdays): Selling day calculations
 
@@ -612,6 +664,7 @@ Checks if Monday processing should default to Saturday's date.
 **Source**: [`src/config_service.js:84`](../../src/config_service.js#L84)
 
 **Signature**:
+
 ```javascript
 function shouldMondayLogSaturday(): boolean
 ```
@@ -621,16 +674,17 @@ function shouldMondayLogSaturday(): boolean
 **Default**: `true`
 
 **Example**:
+
 ```javascript
 function formatDateOffset(offsetDays = 1) {
   const d = new Date();
   const dayOfWeek = d.getDay();
   let daysToSubtract = offsetDays;
-  
+
   if (shouldMondayLogSaturday() && dayOfWeek === 1 && offsetDays === 1) {
     daysToSubtract = 2; // Log Saturday instead of Sunday
   }
-  
+
   d.setDate(d.getDate() - daysToSubtract);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
@@ -647,11 +701,13 @@ Loads visual configuration (colors and thresholds) with caching.
 **Source**: [`src/core_saleslogPro.js:52`](../../src/core_saleslogPro.js#L52)
 
 **Signature**:
+
 ```javascript
 function getVisualConfig(): Object
 ```
 
 **Returns**:
+
 ```javascript
 {
   nonDeliveredColor: string,          // "#FF0000"
@@ -668,6 +724,7 @@ function getVisualConfig(): Object
 ```
 
 **Example**:
+
 ```javascript
 const visual = getVisualConfig();
 
@@ -683,6 +740,7 @@ const rule = SpreadsheetApp.newConditionalFormatRule()
 **Cache**: 5-minute TTL in script cache
 
 **Related Functions**:
+
 - [`getColor()`](#getcolor): Get specific color
 - [`getPaceThresholds()`](#getpacethresholds): Get threshold values
 
@@ -697,6 +755,7 @@ Calculates comprehensive sales analytics from MONTHLY sheet data.
 **Source**: [`src/sales_analytics.js:41`](../../src/sales_analytics.js#L41)
 
 **Signature**:
+
 ```javascript
 function calculateMonthlyAnalytics(): Object | null
 ```
@@ -706,6 +765,7 @@ function calculateMonthlyAnalytics(): Object | null
 **Returns**: Analytics object or `null` on error
 
 **Return Structure**:
+
 ```javascript
 {
   version: "1.0",
@@ -742,6 +802,7 @@ function calculateMonthlyAnalytics(): Object | null
 ```
 
 **Behavior**:
+
 1. Checks cache (5-minute TTL)
 2. Validates MONTHLY sheet structure
 3. Reads all MONTHLY data (columns A-N)
@@ -754,6 +815,7 @@ function calculateMonthlyAnalytics(): Object | null
 10. Caches output
 
 **Example**:
+
 ```javascript
 const analytics = calculateMonthlyAnalytics();
 
@@ -761,20 +823,26 @@ if (analytics) {
   console.log(`Total Delivered: ${analytics.totals.delivered}`);
   console.log(`Selling Days: ${analytics.teamMetrics.sellingDays}`);
   console.log(`New Per Day: ${analytics.teamMetrics.newPerDay}`);
-  
+
   analytics.salespersonMetrics.forEach((person, index) => {
-    console.log(`${index + 1}. ${person.displayCode}: ${person.totalSales} units (${person.percentOfTeam.toFixed(1)}%)`);
+    console.log(
+      `${index + 1}. ${person.displayCode}: ${
+        person.totalSales
+      } units (${person.percentOfTeam.toFixed(1)}%)`
+    );
   });
 }
 ```
 
 **Edge Cases**:
+
 - Empty MONTHLY sheet returns zero counts
 - Split sales ("John/Jane") count as 0.5 each
 - Unknown salespeople tracked in `dataQuality`
 - Selling days counted where Column A = 1
 
 **Related Functions**:
+
 - [`processMonthlyDataForAnalytics()`](#processmonthlydataforanalytics): Core processing
 - [`formatAnalyticsForDisplay()`](#formatanalyticsfordisplay): Formatting
 - [`validateAnalyticsData()`](#validateanalyticsdata): Validation
@@ -788,6 +856,7 @@ Writes analytics data to MONTHLY sheet columns S-X.
 **Source**: [`src/sales_analytics.js:124`](../../src/sales_analytics.js#L124)
 
 **Signature**:
+
 ```javascript
 function writeAnalyticsToMonthly(
   analyticsData: Object,
@@ -796,6 +865,7 @@ function writeAnalyticsToMonthly(
 ```
 
 **Parameters**:
+
 - `analyticsData`: Output from [`calculateMonthlyAnalytics()`](#calculatemonthl yanalytics)
 - `monthlySheet`: MONTHLY sheet reference
 
@@ -804,6 +874,7 @@ function writeAnalyticsToMonthly(
 **Throws**: `Error` if sheet has insufficient columns or data malformed
 
 **Behavior**:
+
 1. Clears existing analytics (columns S-X)
 2. Builds summary section (rows 1-8)
 3. Writes summary with formatting
@@ -813,6 +884,7 @@ function writeAnalyticsToMonthly(
 7. Flushes changes to sheet
 
 **Summary Section Layout** (Rows 1-8):
+
 ```
 Row 1: "MONTHLY ANALYTICS" (merged S1:X1)
 Row 2: Headers ["Metric", "Value", "Metric", "Value", "", ""]
@@ -825,11 +897,13 @@ Row 8: ["Salesperson", "New", "Used", "Total", "% of Team", "Rank"]
 ```
 
 **Salesperson Data Layout** (Rows 9+):
+
 ```
 Row 9+: [displayCode, newSales, usedSales, totalSales, percentOfTeam, rank]
 ```
 
 **Example**:
+
 ```javascript
 const analytics = calculateMonthlyAnalytics();
 const sheets = getSheets();
@@ -841,6 +915,7 @@ if (analytics) {
 ```
 
 **Formatting Applied**:
+
 - Header: Bold, centered, blue background (#4A86E8)
 - Column headers: Bold, light blue background (#E8F0FE)
 - Data: Calibri font, 10pt, centered
@@ -855,6 +930,7 @@ Manual analytics refresh callable from menu with user confirmation.
 **Source**: [`src/sales_analytics.js:650`](../../src/sales_analytics.js#L650)
 
 **Signature**:
+
 ```javascript
 function refreshAnalyticsManually(): void
 ```
@@ -864,6 +940,7 @@ function refreshAnalyticsManually(): void
 **Returns**: `void`
 
 **Behavior**:
+
 1. Shows confirmation dialog
 2. Displays "Refreshing..." toast
 3. Invalidates analytics cache
@@ -872,6 +949,7 @@ function refreshAnalyticsManually(): void
 6. Shows summary dialog with results
 
 **Summary Dialog Content**:
+
 ```
 Total Delivered: 45
 New: 28
@@ -881,6 +959,7 @@ Top Performer: JS (20.5 units)
 ```
 
 **Example**:
+
 ```javascript
 // Called from menu: Sales Tools → 🔄 Refresh Analytics
 function refreshAnalyticsManually() {
@@ -890,18 +969,19 @@ function refreshAnalyticsManually() {
     "This will recalculate all monthly analytics...",
     ui.ButtonSet.YES_NO
   );
-  
+
   if (response === ui.Button.YES) {
     invalidateAnalyticsCache();
     const analytics = calculateMonthlyAnalytics();
     writeAnalyticsToMonthly(analytics, getSheets().monthly);
-    
+
     // Show results...
   }
 }
 ```
 
 **Use Cases**:
+
 - After manual data edits
 - To verify calculations
 - After correcting salesperson errors
@@ -918,6 +998,7 @@ Creates all required sheets with proper structure and formatting.
 **Source**: [`src/setup_wizard.js:12`](../../src/setup_wizard.js#L12)
 
 **Signature**:
+
 ```javascript
 function runSetupWizard(): void
 ```
@@ -927,6 +1008,7 @@ function runSetupWizard(): void
 **Returns**: `void`
 
 **Behavior**:
+
 1. Validates active spreadsheet exists
 2. Checks and creates TODAY sheet
 3. Checks and creates MONTHLY sheet
@@ -935,6 +1017,7 @@ function runSetupWizard(): void
 6. Shows summary dialog with results
 
 **Summary Dialog**:
+
 ```
 SHEETS CREATED:
 ✓ TODAY
@@ -948,6 +1031,7 @@ Setup complete! Your sales log spreadsheet is ready to use.
 **Idempotent**: Safe to run multiple times - only creates missing sheets
 
 **Example**:
+
 ```javascript
 // Called from menu: Sales Tools → 🚀 Run Setup Wizard
 function runSetupWizard() {
@@ -955,25 +1039,27 @@ function runSetupWizard() {
   const results = {
     existed: [],
     created: [],
-    errors: []
+    errors: [],
   };
-  
+
   checkAndCreateTodaySheet(ss, results);
   checkAndCreateMonthlySheet(ss, results);
   checkAndCreateSalespeopleSheet(ss, results);
   checkAndCreateDepositsSheet(ss, results);
-  
+
   showSetupSummary(results);
 }
 ```
 
 **Sheet Specifications**:
+
 - **TODAY**: Data entry + leaderboard, 18 columns (A-R)
 - **MONTHLY**: Historical data + analytics, 24 columns (A-X)
 - **SALESPEOPLE**: Team roster, 3 columns (A-C), includes examples
 - **DEPOSITS**: Deposit tracking, 14 columns (A-N)
 
 **Related Functions**:
+
 - [`checkAndCreateTodaySheet()`](#checkandcreatetodaysheet)
 - [`checkAndCreateMonthlySheet()`](#checkandcreatemonthlysheet)
 - [`checkAndCreateSalespeopleSheet()`](#checkandcreatesalespeoplesheet)
@@ -988,6 +1074,7 @@ Auto-migration from hardcoded constants to Properties Service configuration.
 **Source**: [`src/config_service.js:609`](../../src/config_service.js#L609)
 
 **Signature**:
+
 ```javascript
 function migrateToConfigUI(): Object
 ```
@@ -995,6 +1082,7 @@ function migrateToConfigUI(): Object
 **Parameters**: None
 
 **Returns**:
+
 ```javascript
 {
   success: boolean,
@@ -1005,6 +1093,7 @@ function migrateToConfigUI(): Object
 ```
 
 **Behavior**:
+
 1. Checks if configuration already exists
 2. If exists, returns early (idempotent)
 3. Creates default configuration structure
@@ -1016,6 +1105,7 @@ function migrateToConfigUI(): Object
 **Idempotent**: Safe to call multiple times - only migrates once
 
 **Example**:
+
 ```javascript
 // Called automatically on first Settings open
 const result = migrateToConfigUI();
@@ -1024,12 +1114,15 @@ if (result.success) {
   if (result.alreadyMigrated) {
     console.log("Configuration already migrated");
   } else {
-    console.log(`Migration complete: ${result.salespeopleCount} salespeople migrated`);
+    console.log(
+      `Migration complete: ${result.salespeopleCount} salespeople migrated`
+    );
   }
 }
 ```
 
 **Migration Source**:
+
 - SALESPEOPLE sheet data → `config.salespeople`
 - Hardcoded constants → `config.visual`
 - Default values → `config.dates`
@@ -1045,11 +1138,13 @@ Retrieves references to required sheets with validation.
 **Source**: [`src/core_saleslogPro.js:125`](../../src/core_saleslogPro.js#L125)
 
 **Signature**:
+
 ```javascript
 function getSheets(): Object
 ```
 
 **Returns**:
+
 ```javascript
 {
   today: GoogleAppsScript.Spreadsheet.Sheet,
@@ -1061,10 +1156,11 @@ function getSheets(): Object
 **Throws**: `Error` if any required sheet is missing
 
 **Example**:
+
 ```javascript
 try {
   const sheets = getSheets();
-  
+
   const todayData = sheets.today.getRange("A2:N51").getValues();
   const monthlyLastRow = sheets.monthly.getLastRow();
   const salespersonCount = sheets.sales.getLastRow() - 1;
@@ -1082,11 +1178,13 @@ Builds and caches alias and display code mappings.
 **Source**: [`src/core_saleslogPro.js:192`](../../src/core_saleslogPro.js#L192)
 
 **Signature**:
+
 ```javascript
 function getSalespersonMaps(): Object
 ```
 
 **Returns**:
+
 ```javascript
 {
   aliasMap: {[alias: string]: string},      // Alias → Full Name
@@ -1095,17 +1193,18 @@ function getSalespersonMaps(): Object
 ```
 
 **Example**:
+
 ```javascript
-const {aliasMap, displayCodeMap} = getSalespersonMaps();
+const { aliasMap, displayCodeMap } = getSalespersonMaps();
 
 // Resolve alias to full name
-const fullName = aliasMap["JS"];  // "John Smith"
+const fullName = aliasMap["JS"]; // "John Smith"
 
 // Get display code
-const code = displayCodeMap["John Smith"];  // "JS"
+const code = displayCodeMap["John Smith"]; // "JS"
 
 // Handle unknown
-const unknown = aliasMap["XYZ"];  // undefined
+const unknown = aliasMap["XYZ"]; // undefined
 if (!unknown) {
   console.log("Unknown salesperson code: XYZ");
 }
@@ -1114,6 +1213,7 @@ if (!unknown) {
 **Cache**: 5-minute TTL in script cache
 
 **Mapping Logic**:
+
 1. Full name → Full name
 2. Display code → Full name
 3. Each alias → Full name
@@ -1128,6 +1228,7 @@ Counts salesperson sales from row data with split sale handling.
 **Source**: [`src/core_saleslogPro.js:320`](../../src/core_saleslogPro.js#L320)
 
 **Signature**:
+
 ```javascript
 function tallyCounts(
   rows: Array<Array>,
@@ -1137,11 +1238,13 @@ function tallyCounts(
 ```
 
 **Parameters**:
+
 - `rows`: 2D array of row data
 - `aliasMap`: Alias to full name mapping
 - `sides`: Array of `{fiIdx, saleIdx}` objects defining columns to check
 
 **Returns**:
+
 ```javascript
 {
   counts: {[fullName: string]: number},  // Sales counts
@@ -1150,19 +1253,20 @@ function tallyCounts(
 ```
 
 **Example**:
+
 ```javascript
 const rows = [
   ["1", "Customer A", "F", "Camry", "12345", "T-789", "JS"],
-  ["2", "Customer B", "F", "Accord", "67890", "NT", "SJ/MC"]  // Split sale
+  ["2", "Customer B", "F", "Accord", "67890", "NT", "SJ/MC"], // Split sale
 ];
 
-const {aliasMap} = getSalespersonMaps();
+const { aliasMap } = getSalespersonMaps();
 const sides = [
-  {fiIdx: 2, saleIdx: 6},  // New car columns
-  {fiIdx: 9, saleIdx: 13}  // Used car columns
+  { fiIdx: 2, saleIdx: 6 }, // New car columns
+  { fiIdx: 9, saleIdx: 13 }, // Used car columns
 ];
 
-const {counts, unknownInputs} = tallyCounts(rows, aliasMap, sides);
+const { counts, unknownInputs } = tallyCounts(rows, aliasMap, sides);
 
 console.log(counts);
 // {
@@ -1171,10 +1275,11 @@ console.log(counts);
 //   "Michael Chen": 0.5
 // }
 
-console.log(unknownInputs);  // []
+console.log(unknownInputs); // []
 ```
 
 **Split Sale Handling**:
+
 - "John/Jane" splits credit 0.5 each
 - "John/Jane/Bob" not supported (use two salespersons max)
 
@@ -1187,6 +1292,7 @@ Applies conditional formatting to MONTHLY rows with error detection.
 **Source**: [`src/core_saleslogPro.js:402`](../../src/core_saleslogPro.js#L402)
 
 **Signature**:
+
 ```javascript
 function applyMonthlyRowFormatting(
   sheet: GoogleAppsScript.Spreadsheet.Sheet,
@@ -1197,6 +1303,7 @@ function applyMonthlyRowFormatting(
 ```
 
 **Parameters**:
+
 - `sheet`: MONTHLY sheet reference
 - `rowsData`: 2D array of row data to format
 - `startSheetRow`: 1-indexed starting row number
@@ -1207,19 +1314,22 @@ function applyMonthlyRowFormatting(
 **Formatting Logic**:
 
 **Non-Delivered Deals** (Red):
+
 - Applied when FI flag not single letter A-Z
 - Highlights columns B-G or I-N (excluding trade columns)
 - Auto-clears when FI corrected
 
 **Salesperson Errors** (Light Red):
+
 - Applied when salesperson not in alias map
 - Highlights column G or N
 - Auto-clears when corrected
 
 **Example**:
+
 ```javascript
 const sheets = getSheets();
-const {aliasMap} = getSalespersonMaps();
+const { aliasMap } = getSalespersonMaps();
 const rowsData = sheets.monthly.getRange(2, 1, 10, 14).getValues();
 
 const errorRows = applyMonthlyRowFormatting(
@@ -1243,6 +1353,7 @@ Reapplies all conditional formatting rules to TODAY sheet.
 **Source**: [`src/core_saleslogPro.js:665`](../../src/core_saleslogPro.js#L665)
 
 **Signature**:
+
 ```javascript
 function reapplyCF(): void
 ```
@@ -1252,6 +1363,7 @@ function reapplyCF(): void
 **Returns**: `void`
 
 **Behavior**:
+
 1. Loads visual configuration
 2. Calculates selling days for pace
 3. Filters existing rules (keeps non-managed)
@@ -1265,12 +1377,13 @@ function reapplyCF(): void
 6. Applies rules to TODAY sheet
 
 **Rules Created**:
+
 ```javascript
 // Rule 1: New duplicate stocks
 Range: A2:G101
 Formula: =COUNTIF($E$2:$E$101,$E2)>1
 
-// Rule 2: Used duplicate stocks  
+// Rule 2: Used duplicate stocks
 Range: I2:N101
 Formula: =COUNTIF($L$2:$L$101,$L2)>1
 
@@ -1288,13 +1401,14 @@ Formulas: Pace >= Green, Yellow <= Pace < Green, Pace < Yellow
 ```
 
 **Example**:
+
 ```javascript
 // Called automatically after processDaily()
 reapplyCF();
 
 // Can also call manually after configuration changes
-updateConfiguration({visual: {paceThresholds: {green: 12}}});
-reapplyCF();  // Reapply with new thresholds
+updateConfiguration({ visual: { paceThresholds: { green: 12 } } });
+reapplyCF(); // Reapply with new thresholds
 ```
 
 ---
@@ -1306,11 +1420,13 @@ Executes function with script lock protection to prevent concurrent execution.
 **Source**: [`src/core_saleslogPro.js:283`](../../src/core_saleslogPro.js#L283)
 
 **Signature**:
+
 ```javascript
 function withScriptLock(fn: Function): any
 ```
 
 **Parameters**:
+
 - `fn`: Function to execute with lock protection
 
 **Returns**: Return value of `fn`
@@ -1318,21 +1434,23 @@ function withScriptLock(fn: Function): any
 **Throws**: `Error` if lock cannot be acquired within 30 seconds
 
 **Example**:
+
 ```javascript
 function criticalOperation() {
   withScriptLock(() => {
     // This code is protected from concurrent execution
     const sheets = getSheets();
     const data = sheets.monthly.getRange("A2:N100").getValues();
-    
+
     // Process data...
-    
+
     sheets.monthly.getRange("A2:N100").setValues(modifiedData);
   });
 }
 ```
 
 **Use Cases**:
+
 - [`processDaily()`](#processdaily): Prevent concurrent daily processing
 - [`rolloverMonth()`](#rollovermonth): Atomic month rollover
 - [`recalcMtdFromMonthly()`](#recalcmtdfrommonthly): MTD recalculation
@@ -1347,6 +1465,7 @@ Acquires a script lock with automatic retry using exponential backoff.
 **Source**: [`src/utilities_locks.js:12`](../../src/utilities_locks.js#L12)
 
 **Signature**:
+
 ```javascript
 function acquireScriptLockWithRetry(
   maxRetries: number = 5,
@@ -1357,12 +1476,14 @@ function acquireScriptLockWithRetry(
 ```
 
 **Parameters**:
+
 - `maxRetries` (number, optional): Maximum number of retry attempts (default: 5)
 - `initialDelayMs` (number, optional): Initial retry delay in milliseconds (default: 100)
 - `backoffMultiplier` (number, optional): Backoff multiplier for each retry (default: 2)
 - `timeoutMs` (number, optional): Maximum time to wait for lock in milliseconds per attempt (default: 30000)
 
 **Returns**:
+
 ```javascript
 {
   success: boolean,        // Whether lock was acquired
@@ -1374,6 +1495,7 @@ function acquireScriptLockWithRetry(
 ```
 
 **Behavior**:
+
 1. Attempts to acquire script lock immediately
 2. If fails, waits initialDelayMs before retry
 3. Each subsequent retry doubles wait time (exponential backoff)
@@ -1382,6 +1504,7 @@ function acquireScriptLockWithRetry(
 6. Logs each retry attempt with timing information
 
 **Retry Schedule** (with defaults):
+
 ```
 Attempt 1: Immediate (0ms delay)
 Attempt 2: 100ms delay
@@ -1395,6 +1518,7 @@ Maximum total time: ~3.1s + (6 × 30s) = ~183s worst case
 ```
 
 **Example**:
+
 ```javascript
 // Basic usage with defaults
 const lockResult = acquireScriptLockWithRetry();
@@ -1408,32 +1532,37 @@ if (lockResult.success) {
     lockResult.lock.releaseLock();
   }
 } else {
-  Logger.log('Lock acquisition failed: ' + lockResult.error);
-  throw new Error('Could not acquire lock after ' + lockResult.attempts + ' attempts');
+  Logger.log("Lock acquisition failed: " + lockResult.error);
+  throw new Error(
+    "Could not acquire lock after " + lockResult.attempts + " attempts"
+  );
 }
 
 // Custom retry parameters
 const customResult = acquireScriptLockWithRetry(
-  3,      // maxRetries: only 3 attempts
-  200,    // initialDelayMs: start with 200ms
-  1.5,    // backoffMultiplier: slower growth
-  10000   // timeoutMs: 10 second timeout per attempt
+  3, // maxRetries: only 3 attempts
+  200, // initialDelayMs: start with 200ms
+  1.5, // backoffMultiplier: slower growth
+  10000 // timeoutMs: 10 second timeout per attempt
 );
 ```
 
 **Use Cases**:
+
 - [`updateConfiguration()`](#updateconfiguration): Prevents concurrent config updates
 - [`withScriptLock()`](#withscriptlock): Daily processing protection
 - [`syncRowToProperties()`](../../src/sync_service.js#L392): Sheet sync operations
 - Any operation requiring atomic execution
 
 **Error Handling**:
+
 - Returns `{success: false}` instead of throwing
 - Caller responsible for handling failure
 - Logs all retry attempts for debugging
 - Includes detailed error message in result
 
 **Performance**:
+
 - No overhead when lock available immediately
 - 100-3100ms overhead during typical retries
 - Prevents indefinite blocking
@@ -1448,16 +1577,19 @@ Cleans up old sync metadata entries to reduce storage size in Properties Service
 **Source**: [`src/config_service.js:847`](../../src/config_service.js#L847) and [`src/sync_service.js:831`](../../src/sync_service.js#L831)
 
 **Signature**:
+
 ```javascript
 function cleanupOldMetadata(metadata: Object): Object
 ```
 
 **Parameters**:
+
 - `metadata` (Object): Current metadata object from Properties Service
 
 **Returns**: Cleaned metadata object with old entries removed
 
 **Behavior**:
+
 1. Identifies current timestamp
 2. Calculates retention cutoff (30 days ago)
 3. Iterates through metadata entries
@@ -1467,6 +1599,7 @@ function cleanupOldMetadata(metadata: Object): Object
 7. Defensive: Returns original if cleanup fails
 
 **Retention Policy**:
+
 ```javascript
 Retention Period: 30 days
 Calculation: Current time - (30 × 24 × 60 × 60 × 1000) ms
@@ -1482,6 +1615,7 @@ Removed:
 ```
 
 **Example**:
+
 ```javascript
 // In saveSyncMetadata()
 const metadata = getMetadata();
@@ -1489,19 +1623,25 @@ const dataSize = JSON.stringify(metadata).length;
 
 if (dataSize > SIZE_THRESHOLD) {
   Logger.log(`[saveSyncMetadata] Size threshold exceeded: ${dataSize} bytes`);
-  Logger.log('[saveSyncMetadata] Running cleanup...');
-  
+  Logger.log("[saveSyncMetadata] Running cleanup...");
+
   metadata = cleanupOldMetadata(metadata);
-  
+
   const newSize = JSON.stringify(metadata).length;
-  Logger.log(`[saveSyncMetadata] Cleanup complete. Size reduced: ${dataSize} → ${newSize} bytes`);
+  Logger.log(
+    `[saveSyncMetadata] Cleanup complete. Size reduced: ${dataSize} → ${newSize} bytes`
+  );
 }
 
 // Save cleaned metadata
-PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata));
+PropertiesService.getScriptProperties().setProperty(
+  KEY,
+  JSON.stringify(metadata)
+);
 ```
 
 **Logging**:
+
 ```javascript
 // Typical log output
 [cleanupOldMetadata] Starting cleanup. Current entries: 45
@@ -1512,12 +1652,14 @@ PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata
 ```
 
 **Use Cases**:
+
 - Called automatically when metadata size exceeds 8KB
 - Prevents Properties Service quota errors
 - Maintains optimal performance
 - No manual intervention required
 
 **Safety Features**:
+
 - Defensive programming: Returns original on error
 - Comprehensive logging for audit trail
 - Only removes truly old data
@@ -1525,6 +1667,7 @@ PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata
 - Does not affect current operations
 
 **Performance**:
+
 - Fast: O(n) where n = number of entries
 - Typical cleanup: <50ms for 50 entries
 - Rare operation: Only when size threshold exceeded
@@ -1537,6 +1680,7 @@ PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata
 ### Configuration Object
 
 **Structure**:
+
 ```javascript
 {
   version: string,              // "5"
@@ -1578,6 +1722,7 @@ PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata
 ### Analytics Object
 
 **Structure**:
+
 ```javascript
 {
   version: string,        // "1.0"
@@ -1623,9 +1768,10 @@ PropertiesService.getScriptProperties().setProperty(KEY, JSON.stringify(metadata
 ### Error Patterns
 
 **Validation Errors**:
+
 ```javascript
 try {
-  addSalesperson({fullName: "A"});  // Too short
+  addSalesperson({ fullName: "A" }); // Too short
 } catch (error) {
   console.error("Validation failed:", error.message);
   // "Validation failed: Full name must be at least 2 characters"
@@ -1633,6 +1779,7 @@ try {
 ```
 
 **Lock Timeouts**:
+
 ```javascript
 try {
   processDaily();
@@ -1644,6 +1791,7 @@ try {
 ```
 
 **Missing Sheets**:
+
 ```javascript
 try {
   const sheets = getSheets();
@@ -1656,6 +1804,7 @@ try {
 ### Logging
 
 **Apps Script Logger**:
+
 ```javascript
 Logger.log("Daily processing started");
 Logger.log(`Processed ${rowCount} rows`);
@@ -1684,16 +1833,16 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
     // Add custom metric
     totalWithTrades: 0,
     sellingDays: 0,
-    salespersonAccumulator: {}
+    salespersonAccumulator: {},
   };
-  
+
   monthlyData.forEach((row, index) => {
     // Existing logic...
-    
+
     // Custom: Count deals with trades
     const newTrade = String(row[5] || "").trim();
     const usedTrade = String(row[12] || "").trim();
-    
+
     if (newTrade && newTrade !== "NT") {
       metrics.totalWithTrades++;
     }
@@ -1701,7 +1850,7 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
       metrics.totalWithTrades++;
     }
   });
-  
+
   return metrics;
 }
 
@@ -1710,9 +1859,26 @@ function buildSummarySection(analyticsData) {
   return [
     ["MONTHLY ANALYTICS", "", "", "", "", ""],
     ["Metric", "Value", "Metric", "Value", "", ""],
-    ["Total Delivered", analyticsData.totals.delivered, "Selling Days", analyticsData.teamMetrics.sellingDays, "", ""],
+    [
+      "Total Delivered",
+      analyticsData.totals.delivered,
+      "Selling Days",
+      analyticsData.teamMetrics.sellingDays,
+      "",
+      "",
+    ],
     // Add custom metric
-    ["Deals with Trades", analyticsData.totals.withTrades, "Trade Percentage", `${(analyticsData.totals.withTrades / analyticsData.totals.delivered * 100).toFixed(1)}%`, "", ""],
+    [
+      "Deals with Trades",
+      analyticsData.totals.withTrades,
+      "Trade Percentage",
+      `${(
+        (analyticsData.totals.withTrades / analyticsData.totals.delivered) *
+        100
+      ).toFixed(1)}%`,
+      "",
+      "",
+    ],
     // ...
   ];
 }
@@ -1726,21 +1892,22 @@ function buildSummarySection(analyticsData) {
 // In config_service.js
 function validateSalesperson(data) {
   const errors = [];
-  
+
   // Existing validation...
-  
+
   // Custom: Require display code to match initials
   if (data.fullName && data.displayCode) {
-    const initials = data.fullName.split(' ')
-      .map(word => word[0])
-      .join('')
+    const initials = data.fullName
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase();
-    
+
     if (data.displayCode !== initials) {
       errors.push(`Display code should be ${initials} based on name`);
     }
   }
-  
+
   return errors;
 }
 ```
@@ -1753,14 +1920,14 @@ function validateSalesperson(data) {
 // In setup_wizard.js or core_saleslogPro.js
 function applyCustomRules(sheet) {
   const existingRules = sheet.getConditionalFormatRules();
-  
+
   // Add rule: Highlight high-gross deals (> $5000)
   const highGrossRule = SpreadsheetApp.newConditionalFormatRule()
     .whenNumberGreaterThan(5000)
-    .setBackground("#90EE90")  // Light green
-    .setRanges([sheet.getRange("H2:H101")])  // Gross column
+    .setBackground("#90EE90") // Light green
+    .setRanges([sheet.getRange("H2:H101")]) // Gross column
     .build();
-  
+
   existingRules.push(highGrossRule);
   sheet.setConditionalFormatRules(existingRules);
 }
@@ -1775,15 +1942,15 @@ function applyCustomRules(sheet) {
 function processDaily() {
   withScriptLock(() => {
     // Standard processing...
-    
+
     try {
       // Existing logic...
-      
+
       // Hook: Custom post-processing
       onDailyProcessComplete({
         date: dateStr,
         rowsProcessed: rowsToLogToMonthly.length,
-        salespeople: countsByFullName
+        salespeople: countsByFullName,
       });
     } catch (e) {
       // Error handling...
@@ -1793,13 +1960,15 @@ function processDaily() {
 
 // Custom hook implementation
 function onDailyProcessComplete(context) {
-  Logger.log(`Post-processing hook: ${context.rowsProcessed} rows on ${context.date}`);
-  
+  Logger.log(
+    `Post-processing hook: ${context.rowsProcessed} rows on ${context.date}`
+  );
+
   // Example: Send email summary
   if (context.rowsProcessed > 0) {
     sendDailySummaryEmail(context);
   }
-  
+
   // Example: Update external system
   updateCRMDashboard(context.salespeople);
 }
@@ -1818,40 +1987,50 @@ function onDailyProcessComplete(context) {
 function generateDailyReport() {
   const sheets = getSheets();
   const analytics = calculateMonthlyAnalytics();
-  
+
   if (!analytics) {
     console.log("No analytics available");
     return;
   }
-  
+
   // Build report
   const report = [];
   report.push("=== DAILY SALES REPORT ===");
   report.push(`Date: ${new Date().toLocaleDateString()}`);
   report.push("");
-  
+
   // Team totals
   report.push("TEAM PERFORMANCE:");
   report.push(`  Total Delivered: ${analytics.totals.delivered}`);
-  report.push(`  New: ${analytics.totals.newDelivered} | Used: ${analytics.totals.usedDelivered}`);
+  report.push(
+    `  New: ${analytics.totals.newDelivered} | Used: ${analytics.totals.usedDelivered}`
+  );
   report.push(`  Selling Days: ${analytics.teamMetrics.sellingDays}`);
-  report.push(`  Daily Average: ${((analytics.totals.delivered / analytics.teamMetrics.sellingDays) || 0).toFixed(2)}`);
+  report.push(
+    `  Daily Average: ${(
+      analytics.totals.delivered / analytics.teamMetrics.sellingDays || 0
+    ).toFixed(2)}`
+  );
   report.push("");
-  
+
   // Top performers
   report.push("TOP PERFORMERS:");
   analytics.salespersonMetrics.slice(0, 5).forEach((person, index) => {
-    report.push(`  ${index + 1}. ${person.displayCode}: ${person.totalSales} units (${person.percentOfTeam.toFixed(1)}%)`);
+    report.push(
+      `  ${index + 1}. ${person.displayCode}: ${
+        person.totalSales
+      } units (${person.percentOfTeam.toFixed(1)}%)`
+    );
   });
-  
+
   // Log or email
   console.log(report.join("\n"));
-  
+
   // Optional: Email to manager
   MailApp.sendEmail({
     to: "manager@dealership.com",
     subject: `Daily Sales Report - ${new Date().toLocaleDateString()}`,
-    body: report.join("\n")
+    body: report.join("\n"),
   });
 }
 ```
@@ -1867,43 +2046,43 @@ function importSalespeopleFromCSV(csvData) {
   const lines = csvData.split("\n");
   const results = {
     success: [],
-    errors: []
+    errors: [],
   };
-  
+
   // Skip header row
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    
+
     const [fullName, aliases, displayCode] = line.split(",");
-    
+
     try {
       addSalesperson({
         fullName: fullName.trim(),
         aliases: aliases.trim(),
-        displayCode: displayCode.trim()
+        displayCode: displayCode.trim(),
       });
-      
+
       results.success.push(fullName.trim());
     } catch (error) {
       results.errors.push({
         name: fullName.trim(),
-        error: error.message
+        error: error.message,
       });
     }
   }
-  
+
   // Report results
   console.log(`Successfully imported: ${results.success.length}`);
   console.log(`Errors: ${results.errors.length}`);
-  
+
   if (results.errors.length > 0) {
     console.log("\nErrors:");
-    results.errors.forEach(err => {
+    results.errors.forEach((err) => {
       console.log(`  ${err.name}: ${err.error}`);
     });
   }
-  
+
   return results;
 }
 
@@ -1925,12 +2104,12 @@ importSalespeopleFromCSV(csvData);
 function createAnalyticsDashboard() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const analytics = calculateMonthlyAnalytics();
-  
+
   if (!analytics) {
     console.log("No analytics data available");
     return;
   }
-  
+
   // Create or get dashboard sheet
   let dashboard = ss.getSheetByName("Dashboard");
   if (!dashboard) {
@@ -1938,50 +2117,68 @@ function createAnalyticsDashboard() {
   } else {
     dashboard.clear();
   }
-  
+
   // Header
-  dashboard.getRange("A1").setValue("SALES DASHBOARD").setFontSize(16).setFontWeight("bold");
-  dashboard.getRange("A2").setValue(`Last Updated: ${new Date().toLocaleString()}`).setFontSize(10);
-  
+  dashboard
+    .getRange("A1")
+    .setValue("SALES DASHBOARD")
+    .setFontSize(16)
+    .setFontWeight("bold");
+  dashboard
+    .getRange("A2")
+    .setValue(`Last Updated: ${new Date().toLocaleString()}`)
+    .setFontSize(10);
+
   // Team metrics
   let row = 4;
-  dashboard.getRange(`A${row}`).setValue("TEAM PERFORMANCE").setFontWeight("bold");
+  dashboard
+    .getRange(`A${row}`)
+    .setValue("TEAM PERFORMANCE")
+    .setFontWeight("bold");
   row++;
-  
+
   const metrics = [
     ["Total Delivered", analytics.totals.delivered],
     ["New Units", analytics.totals.newDelivered],
     ["Used Units", analytics.totals.usedDelivered],
     ["Selling Days", analytics.teamMetrics.sellingDays],
-    ["Units/Day", analytics.teamMetrics.newPerDay + analytics.teamMetrics.usedPerDay]
+    [
+      "Units/Day",
+      analytics.teamMetrics.newPerDay + analytics.teamMetrics.usedPerDay,
+    ],
   ];
-  
+
   dashboard.getRange(row, 1, metrics.length, 2).setValues(metrics);
   row += metrics.length + 2;
-  
+
   // Salesperson rankings
-  dashboard.getRange(`A${row}`).setValue("SALESPERSON RANKINGS").setFontWeight("bold");
+  dashboard
+    .getRange(`A${row}`)
+    .setValue("SALESPERSON RANKINGS")
+    .setFontWeight("bold");
   row++;
-  
+
   const headers = [["Rank", "Name", "New", "Used", "Total", "% Team"]];
   dashboard.getRange(row, 1, 1, 6).setValues(headers).setFontWeight("bold");
   row++;
-  
-  const salespersonData = analytics.salespersonMetrics.map(p => [
+
+  const salespersonData = analytics.salespersonMetrics.map((p) => [
     p.rank,
     p.displayCode,
     p.newSales,
     p.usedSales,
     p.totalSales,
-    `${p.percentOfTeam.toFixed(1)}%`
+    `${p.percentOfTeam.toFixed(1)}%`,
   ]);
-  
-  dashboard.getRange(row, 1, salespersonData.length, 6).setValues(salespersonData);
-  
+
+  dashboard
+    .getRange(row, 1, salespersonData.length, 6)
+    .setValues(salespersonData);
+
   // Formatting
   dashboard.autoResizeColumns(1, 6);
   dashboard.setFrozenRows(3);
-  
+
   console.log("Analytics dashboard created");
 }
 ```
@@ -1997,20 +2194,22 @@ function backupConfiguration() {
   const backup = {
     timestamp: new Date().toISOString(),
     version: "8.0.0",
-    configuration: config
+    configuration: config,
   };
-  
+
   const json = JSON.stringify(backup, null, 2);
-  
+
   // Option 1: Log to console (copy manually)
   console.log("=== CONFIGURATION BACKUP ===");
   console.log(json);
-  
+
   // Option 2: Create in Drive folder
   const folder = DriveApp.getFolderById("YOUR_FOLDER_ID");
-  const fileName = `SalesLogPro_Config_${new Date().toISOString().split('T')[0]}.json`;
+  const fileName = `SalesLogPro_Config_${
+    new Date().toISOString().split("T")[0]
+  }.json`;
   folder.createFile(fileName, json, MimeType.PLAIN_TEXT);
-  
+
   console.log(`Configuration backed up to: ${fileName}`);
 }
 
@@ -2021,16 +2220,16 @@ function restoreConfiguration(jsonString) {
   try {
     const backup = JSON.parse(jsonString);
     const config = backup.configuration;
-    
+
     // Validate before restoring
     const errors = validateConfiguration(config);
     if (errors.length > 0) {
       throw new Error("Invalid configuration: " + errors.join("; "));
     }
-    
+
     // Restore
     updateConfiguration(config);
-    
+
     console.log("Configuration restored successfully");
   } catch (error) {
     console.error("Restore failed:", error.message);
@@ -2073,4 +2272,4 @@ function restoreConfiguration(jsonString) {
 
 ---
 
-*Sales Log Pro API Reference v8.0 | Last Updated: 2025-10-10*
+_Sales Log Pro API Reference v8.0 | Last Updated: 2025-10-10_
