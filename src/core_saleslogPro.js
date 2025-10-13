@@ -1198,9 +1198,11 @@ function recalcMtdFromMonthly() {
 
       const { aliasMap } = getSalespersonMaps();
       const monthlyValues = monthlySheet.getRange(2, 1, lastRowMonthly - 1, maxColsMonthly).getValues();
+      toastInfo("Reading MONTHLY sheet data...", "Working (1/6)");
 
       const salespersonErrorRowsFound = applyMonthlyRowFormatting(monthlySheet, monthlyValues, 2, aliasMap);
       totalSalespersonErrors = salespersonErrorRowsFound.length;
+      toastInfo("Applying formatting and checking for errors...", "Working (2/6)");
 
       const allMonthlyContent = monthlySheet.getRange(1, 1, lastRowMonthly, maxColsMonthly).getValues();
       const mergedRanges = monthlySheet.getRange(1, 1, lastRowMonthly, 1).getMergedRanges();
@@ -1209,6 +1211,7 @@ function recalcMtdFromMonthly() {
         .filter((mr) => mr.getRow() > 0 && mr.getColumn() === 1 && mr.getWidth() >= 14)
         .map((mr) => mr.getRow())
         .sort((a, b) => a - b);
+      toastInfo("Identifying date sections...", "Working (3/6)");
 
       if (dateHeaderRows.length > 0) {
         let startDataRowIdx = dateHeaderRows[0];
@@ -1227,6 +1230,7 @@ function recalcMtdFromMonthly() {
         if (lastRowMonthly > 1) actualDataRows = monthlyValues;
       }
 
+      toastInfo("Extracting sales data...", "Working (4/6)");
       if (!actualDataRows.length) {
         todaySheet.getRange(RANGES.mtd).clearContent();
         reapplyCF();
@@ -1248,7 +1252,9 @@ function recalcMtdFromMonthly() {
       lbValues.sort((a, b) => (Number(b[1]) || 0) - (Number(a[1]) || 0) || (Number(b[2]) || 0) - (Number(a[2]) || 0));
       lbRange.setValues(lbValues);
       todaySheet.getRange(RANGES.mtd).setNumberFormat("0.#");
+      toastInfo("Updating leaderboard counts...", "Working (5/6)");
       reapplyCF();
+      toastInfo("Reapplying conditional formatting...", "Working (6/6)");
 
       toastInfo(`MTD recalculated. Found ${totalSalespersonErrors} salesperson code errors in 'MONTHLY'. Non-delivered deals also highlighted.`, "Recalc & Format Complete");
     } catch (e) {
