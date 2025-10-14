@@ -59,11 +59,21 @@ function runSetupWizard() {
       ss.setActiveSheet(todaySheet);
     }
 
-    // Automatically open configuration sidebar for salesperson setup
-    try {
-      openConfigurationSidebar();
-    } catch (e) {
-      logWarning('runSetupWizard', 'Error opening configuration sidebar', { error: e.toString() });
+    // Prompt user to add sales team
+    const ui = SpreadsheetApp.getUi();
+    const addSalesTeamResponse = ui.alert(
+      'Add Sales Team',
+      'Want to add to the sales team now? You can do it later by going to the Settings menu in Sales Tools.',
+      ui.ButtonSet.YES_NO
+    );
+
+    // Open configuration sidebar if user wants to add sales team
+    if (addSalesTeamResponse === ui.Button.YES) {
+      try {
+        openConfigurationSidebar();
+      } catch (e) {
+        logWarning('runSetupWizard', 'Error opening configuration sidebar', { error: e.toString() });
+      }
     }
 
     Logger.log("Setup wizard completed successfully.");
@@ -132,13 +142,6 @@ function promptForCustomization(ss) {
 
       // Calculate WCAG compliant text color
       newCarTextColor = getWcagCompliantTextColor(newCarBgColor);
-
-      // Show confirmation
-      ui.alert(
-        'Confirm New Car Colors',
-        'New Car headers will use:\n• Background: ' + newCarBgColor + '\n• Text: ' + newCarTextColor,
-        ui.ButtonSet.OK
-      );
     }
 
     // Step 3: UsedCar fixed color (no user prompt)
