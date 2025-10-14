@@ -547,6 +547,9 @@ function updateLeaderboard() {
     // Write updated leaderboard data back to sheet
     leaderboardRange.setValues(newLeaderboardData);
     
+    // Apply left-alignment to names column (P)
+    todaySheet.getRange(`P2:P${endRow}`).setHorizontalAlignment("left");
+    
     Logger.log('Leaderboard updated successfully with ' + salespeople.length + ' salespeople');
     
     return {
