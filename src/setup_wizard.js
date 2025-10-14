@@ -53,6 +53,12 @@ function runSetupWizard() {
     // Show summary dialog
     showSetupSummary(results);
 
+    // Activate the TODAY sheet
+    const todaySheet = ss.getSheetByName('TODAY');
+    if (todaySheet) {
+      ss.setActiveSheet(todaySheet);
+    }
+
     // Automatically open configuration sidebar for salesperson setup
     try {
       openConfigurationSidebar();
@@ -774,12 +780,77 @@ function checkAndCreateDepositsSheet(ss, results) {
     sheet.setColumnWidth(13, 120); // M: EST DELIVERY DATE
     sheet.setColumnWidth(14, 200); // N: NOTES
 
+    // Apply conditional formatting rules
+    applyDepositsConditionalFormatting(sheet);
+
     results.created.push(sheetName);
     Logger.log(sheetName + " sheet created successfully.");
 
   } catch (e) {
     const error = sheetName + ": " + e.message;
     results.errors.push(error);
+/**
+ * Applies conditional formatting rules to the DEPOSITS sheet
+ * Highlights rows where stock numbers match entries on the TODAY sheet
+ * This mirrors the "Stock in Deposits" rules from the TODAY sheet (lines 471-491)
+ * - DEPOSITS STOCK # is column G
+ * - TODAY New car STOCK # is column E
+ * - TODAY Used car STOCK # is column L
+ *
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The DEPOSITS sheet
+ * @returns {void}
+ */
+function applyDepositsConditionalFormatting(sheet) {
+  try {
+    const rules = [];
+
+    // Get colors from configuration, fallback to defaults
+    let duplicateFillColor = "#b4ff0c";
+    let duplicateTextColor = "#ff0000";
+
+    try {
+      const config = getVisualConfig();
+      if (config) {
+        duplicateFillColor = config.duplicateStockFillColor || duplicateFillColor;
+        duplicateTextColor = config.duplicateStockTextColor || duplicateTextColor;
+      }
+    } catch (configError) {
+      logWarning('applyDepositsConditionalFormatting', 'Using default colors for CF', { error: configError.toString() });
+    }
+
+    // Define the data range for DEPOSITS (A2:N1000 to cover plenty of rows)
+    const depositsRange = sheet.getRange("A2:N1000");
+
+    // Rule 1: Stock in TODAY New Cars (column E)
+    // Check if DEPOSITS stock (column G) exists in TODAY!E:E (new car stock numbers)
+    rules.push(
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=COUNTIF(INDIRECT("TODAY!E:E"),$G2)>0')
+        .setBackground(duplicateFillColor)
+        .setFontColor(duplicateTextColor)
+        .setRanges([depositsRange])
+        .build()
+    );
+
+    // Rule 2: Stock in TODAY Used Cars (column L)
+    // Check if DEPOSITS stock (column G) exists in TODAY!L:L (used car stock numbers)
+    rules.push(
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=COUNTIF(INDIRECT("TODAY!L:L"),$G2)>0')
+        .setBackground(duplicateFillColor)
+        .setFontColor(duplicateTextColor)
+        .setRanges([depositsRange])
+        .build()
+    );
+
+    sheet.setConditionalFormatRules(rules);
+    Logger.log("Conditional formatting applied to DEPOSITS sheet.");
+
+  } catch (e) {
+    logError('applyDepositsConditionalFormatting', e);
+  }
+}
+
     logError('checkAndCreateDepositsSheet', e, { sheetName });
   }
 }
