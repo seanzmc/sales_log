@@ -1096,7 +1096,6 @@ Covers:
 | Log Yesterday's Sales                    | Sales Log Pro 2.0  | Process daily entries    |
 | Recalculate MTD & Check Monthly Errors   | Sales Log Pro 2.0  | Rebuild MTD from MONTHLY |
 | 🔄 Refresh Analytics                     | Sales Log Pro 2.0  | Recalculate all metrics  |
-| 🔧 Check for Incomplete Operations       | Sales Log Pro 2.0  | Recovery check           |
 | Start New Month (Rollover)               | Sales Log Pro 2.0  | Month-end rollover       |
 | ⚙️ Settings                              | Sales Log Pro 2.0  | Configuration UI         |
 

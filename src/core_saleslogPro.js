@@ -1019,59 +1019,6 @@ function generateDataHash(rows) {
   }
 }
 
-/**
- * Checks for incomplete operations on startup and offers recovery
- * Called from onOpen() or can be invoked manually
- */
-function checkAndRecoverIncompleteOperations() {
-  try {
-    const checkpoint = getOperationCheckpoint();
-    
-    if (!checkpoint) {
-      Logger.log('✓ No incomplete operations found');
-      return;
-    }
-    
-    // Found incomplete operation
-    const age = ((Date.now() - new Date(checkpoint.timestamp).getTime()) / 60000).toFixed(0);
-    Logger.log(`⚠️ Found incomplete operation: ${checkpoint.dateProcessed} (${age}m ago, phase: ${checkpoint.phase})`);
-    
-    // If analytics phase failed or is pending
-    if (checkpoint.phase === 'ANALYTICS_PENDING' || checkpoint.phase === 'ANALYTICS_FAILED') {
-      // Offer recovery via UI if available
-      try {
-        const ui = SpreadsheetApp.getUi();
-        const response = ui.alert(
-          'Incomplete Operation Detected',
-          `An incomplete daily processing operation was detected:\n\n` +
-          `Date: ${checkpoint.dateProcessed}\n` +
-          `Phase: ${checkpoint.phase}\n` +
-          `Time: ${age} minutes ago\n\n` +
-          `The daily data was successfully saved to MONTHLY, but analytics may not have been calculated.\n\n` +
-          `Would you like to recalculate analytics now?`,
-          ui.ButtonSet.YES_NO
-        );
-        
-        if (response === ui.Button.YES) {
-          recoverAnalyticsForCheckpoint(checkpoint);
-        } else {
-          Logger.log('User declined recovery - clearing checkpoint');
-          clearOperationCheckpoint();
-          toastInfo('Checkpoint cleared. Use "Refresh Analytics" if needed.', 'Recovery Skipped');
-        }
-      } catch (uiError) {
-        // UI not available - log and continue
-        logWarning('checkAndRecoverIncompleteOperations', 'UI not available for recovery prompt', { error: uiError.toString() });
-      }
-    } else {
-      // Other phases - just clear stale checkpoint
-      Logger.log('Clearing stale checkpoint from phase: ' + checkpoint.phase);
-      clearOperationCheckpoint();
-    }
-  } catch (e) {
-    logError('checkAndRecoverIncompleteOperations', e);
-  }
-}
 
 /**
  * Recovers analytics for a checkpoint operation
@@ -1704,14 +1651,6 @@ function onOpen() {
       // Continue with menu creation even if migration fails
     }
     
-    // Check for incomplete operations and offer recovery
-    try {
-      checkAndRecoverIncompleteOperations();
-    } catch (recoveryError) {
-      logWarning('onOpen', 'Recovery check failed (non-critical)', { error: recoveryError.toString() });
-      // Continue with menu creation even if recovery check fails
-    }
-    
     // Create menu with configuration option
     SpreadsheetApp.getUi()
       .createMenu("Sales Tools")
@@ -1721,7 +1660,6 @@ function onOpen() {
       .addSeparator()
       .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
       .addItem("🔄 Refresh Analytics", "refreshAnalyticsManually")
-      .addItem("🔧 Check for Incomplete Operations", "checkAndRecoverIncompleteOperations")
       .addSeparator()
       .addItem("Start New Month (Rollover)", "rolloverMonth")
       .addSeparator()

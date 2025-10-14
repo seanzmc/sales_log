@@ -1,9 +1,22 @@
 {
-    "scriptId": "1Oxee89YYeNPHwtgYD-eQAKqjV4cddLebX739wsboCIxojFPISPo6uHol",
-    "rootDir": "src",
-    "scriptExtensions": [".js", ".gs"],
-    "htmlExtensions": [".html"],
-    "jsonExtensions": [".json"],
-    "filePushOrder": [],
-    "skipSubdirectories": false
+  "scriptId": "1Oxee89YYeNPHwtgYD-eQAKqjV4cddLebX739wsboCIxojFPISPo6uHol",
+  "rootDir": "src",
+  "scriptExtensions": [".js", ".gs"],
+  "htmlExtensions": [".html"],
+  "jsonExtensions": [".json"],
+  "filePushOrder": [
+    "appsscript.json",
+    "config_service.js",
+    "sync_service.js",
+    "sales_analytics.js",
+    "setup_wizard.js",
+    "error_logger.js",
+    "utilities_locks.js",
+    "validation_rules.js",
+    "core_saleslogPro.js",
+    "config_sidebar.html",
+    "config_sidebar.css.html",
+    "sidebar_js.html"
+  ],
+  "skipSubdirectories": false
 }
