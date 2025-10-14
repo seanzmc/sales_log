@@ -341,6 +341,9 @@ function checkAndCreateTodaySheet(ss, results) {
     sheet.getRange("A:R").setFontWeight("bold");
     sheet.getRange("A:R").setHorizontalAlignment("center");
 
+    // Left-align leaderboard names (column P)
+    sheet.getRange("P2:P").setHorizontalAlignment("left");
+
 
 
     // Set text wrapping for specific columns
