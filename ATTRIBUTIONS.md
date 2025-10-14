@@ -307,8 +307,8 @@ Sales Log Pro is committed to full compliance with all applicable licenses and t
 
 ---
 
-**Last Updated**: January 2024
-**Sales Log Pro Version**: 1.0.0
-**Document Version**: 1.0
+**Last Updated**: October 2025
+**Sales Log Pro Version**: 8.0.0
+**Document Version**: 1.1
 
 For the most current version of this document, please refer to the latest release of Sales Log Pro.

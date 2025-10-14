@@ -1,6 +1,6 @@
 # 📊 Sales Log Pro
 
-[![Version](https://img.shields.io/badge/version-8.1.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-8.0.0-blue.svg)](CHANGELOG.md)
 [![Platform](https://img.shields.io/badge/platform-Google%20Apps%20Script-green.svg)](https://developers.google.com/apps-script)
 [![License](https://img.shields.io/badge/license-Commercial-orange.svg)](LICENSE)
 
@@ -118,11 +118,16 @@ Get up and running in under 10 minutes with our streamlined setup process.
 
 ```bash
 sales-log-pro/
-├── src/                          # Source code files
-│   ├── core_saleslogPro.js      # Main processing engine
-│   ├── config_service.js        # Configuration management
-│   ├── sales_analytics.js       # Analytics calculations
-│   ├── setup_wizard.js          # Installation wizard
+├── src/                          # Source code files (8 modules, ~5,700 lines)
+│   ├── core_saleslogPro.js      # Main application logic (1,707 lines)
+│   ├── config_service.js        # Configuration management (1,441 lines)
+│   ├── sync_service.js          # Bidirectional sync (1,834 lines)
+│   ├── sales_analytics.js       # Analytics engine (707 lines)
+│   ├── setup_wizard.js          # Setup wizard (821 lines)
+│   ├── error_logger.js          # Error handling (161 lines)
+│   ├── utilities_locks.js       # Lock management (386 lines)
+│   ├── validation_rules.js      # Validation rules (220 lines)
+│   ├── appsscript.json          # Apps Script manifest
 │   ├── config_sidebar.html      # Settings UI
 │   └── *.html                   # UI components
 ├── docs/                         # Comprehensive documentation
@@ -169,17 +174,9 @@ sales-log-pro/
 
 ## 📋 Version Information
 
-**Current Version:** 8.1.0
-**Release Date:** October 2025
+**Current Version:** 8.0.0
+**Release Date:** October 2024
 **Status:** Production-Ready
-
-### What's New in 8.1.0
-
-- 🔄 **Automatic Lock Retry** — Exponential backoff handles concurrent access gracefully
-- 🛡️ **Robust Error Handling** — Non-fatal cache operations and graceful degradation
-- 📊 **Smart Storage Management** — Automatic cleanup of old metadata prevents quota issues
-- 🎯 **Enhanced Reliability** — Operations continue successfully even when auxiliary services fail
-- 📝 **Comprehensive Logging** — Detailed diagnostics with severity levels for better monitoring
 
 ### What's New in 8.0.0
 
@@ -220,7 +217,7 @@ Ready to transform your dealership's sales tracking? Install **Sales Log Pro** a
 
 ---
 
-**Sales Log Pro v8.1.0** — Transform Your Sales Tracking Today
+**Sales Log Pro v8.0.0** — Transform Your Sales Tracking Today
 
 [![Get Started](https://img.shields.io/badge/Get%20Started-Quick%20Start%20Guide-brightgreen?style=for-the-badge)](QUICKSTART.md)
 [![Documentation](https://img.shields.io/badge/Read-Documentation-blue?style=for-the-badge)](docs/guides/USER_GUIDE.md)

@@ -12,7 +12,7 @@ The Sales Analytics Module provides real-time and historical sales performance m
 - **Per-Salesperson Analytics**: Individual performance breakdowns by inventory type
 - **Automated Integration**: Seamless integration with existing `processDaily()` workflow
 - **Historical Preservation**: Analytics archived during `rolloverMonth()` operations
-- **MONTHLY Sheet Storage**: Results written to columns S-Z for visibility and rollover compatibility
+- **MONTHLY Sheet Storage**: Results written to columns S-X for visibility and rollover compatibility
 
 ### Integration Approach
 
@@ -33,21 +33,22 @@ The module follows a **non-invasive augmentation pattern**:
 
 Primary entry point for generating current month analytics.
 
+**Source:** [`sales_analytics.js:41-99`](../src/sales_analytics.js:41-99)
+
 ```javascript
 /**
  * Calculates comprehensive sales analytics for the current month.
  * Reads all data from MONTHLY sheet, processes by salesperson and inventory type,
- * and writes results to columns S-Z on MONTHLY sheet.
+ * and returns analytics summary object.
  *
- * Uses existing utilities: getSalespersonMaps(), tallyCounts(), memoizedGetSellingDays()
+ * Uses existing utilities: getSalespersonMaps(), findLastRowInCols()
  *
- * @returns {Object} Analytics summary object containing:
- *   - totalSales: {number} Total delivered units (new + used)
- *   - newSales: {number} Total new inventory delivered
- *   - usedSales: {number} Total used inventory delivered
- *   - perSalesperson: {Array<Object>} Individual salesperson metrics
+ * @returns {Object|null} Analytics summary object containing:
+ *   - totals: {Object} Month-level totals (delivered, newDelivered, usedDelivered)
+ *   - teamMetrics: {Object} Team-level metrics (sellingDays, newPerDay, usedPerDay)
+ *   - salespersonMetrics: {Array<Object>} Individual salesperson metrics
  *   - timestamp: {string} ISO timestamp of calculation
- *   - errorCount: {number} Count of data quality issues encountered
+ *   - dataQuality: {Object} Data quality metrics and unknown salespeople
  *
  * @throws {Error} If MONTHLY sheet is missing or has insufficient columns
  */
@@ -58,21 +59,25 @@ function calculateMonthlyAnalytics()
 
 Writes analytics results to MONTHLY sheet starting at column S.
 
+**Source:** [`sales_analytics.js:124-164`](../src/sales_analytics.js:124-164)
+
 ```javascript
 /**
- * Writes analytics data to MONTHLY sheet in designated columns (S-Z).
- * Creates formatted summary section at top of sheet with headers and totals.
+ * Writes analytics data to MONTHLY sheet in designated columns (S-X).
+ * Creates formatted summary section at top of sheet with headers, totals, and team metrics.
  * Writes per-salesperson breakdown below summary section.
  *
- * Column Layout:
- *   S: Salesperson Name
+ * Summary Section (Rows 1-8):
+ *   Columns S-T: Total Delivered, New Delivered, Used Delivered, Last Updated
+ *   Columns U-V: Team metrics (Selling Days, New Sold per Day, Used Sold per Day)
+ *
+ * Salesperson Section (Row 9+):
+ *   S: Salesperson Display Code
  *   T: New Sales Count
  *   U: Used Sales Count
  *   V: Total Sales Count
  *   W: Percentage of Team Total
- *   X: Reserved for future metrics
- *   Y: Reserved for future metrics
- *   Z: Reserved for future metrics
+ *   X: Rank
  *
  * @param {Object} analyticsData - Output from calculateMonthlyAnalytics()
  * @param {GoogleAppsScript.Spreadsheet.Sheet} monthlySheet - MONTHLY sheet reference
@@ -87,14 +92,18 @@ function writeAnalyticsToMonthly(analyticsData, monthlySheet)
 
 Retrieves current analytics without recalculation (read-only).
 
+**Source:** [`sales_analytics.js:173-220`](../src/sales_analytics.js:173-220)
+
 ```javascript
 /**
- * Reads existing analytics data from MONTHLY sheet columns S-Z.
+ * Reads existing analytics data from MONTHLY sheet columns S-X.
  * Returns parsed analytics object without performing new calculations.
  * Useful for displaying current state or exporting data.
  *
  * @returns {Object|null} Analytics object or null if no analytics exist
- *   - Same structure as calculateMonthlyAnalytics() return value
+ *   - totals: Object with delivered, newDelivered, usedDelivered
+ *   - timestamp: ISO timestamp
+ *   - dataQuality: Basic quality metrics
  *
  * @throws {Error} If analytics data is corrupted or unreadable
  */
@@ -107,12 +116,15 @@ function getMonthlyAnalyticsSummary()
 
 Core data processing function that analyzes MONTHLY sheet data.
 
+**Source:** [`sales_analytics.js:261-306`](../src/sales_analytics.js:261-306)
+
 ```javascript
 /**
  * Processes raw MONTHLY sheet data to extract analytics metrics.
  * Filters for delivered deals only (single-letter FI flags A-Z).
  * Separates new vs. used inventory based on column positions.
  * Handles split sales (e.g., "John/Jane") with 0.5 credit each.
+ * Counts selling days where column A contains exactly 1.
  *
  * @param {Array<Array>} monthlyData - 2D array from MONTHLY sheet (columns A-N)
  * @param {Object} aliasMap - Salesperson alias mapping from getSalespersonMaps()
@@ -120,7 +132,8 @@ Core data processing function that analyzes MONTHLY sheet data.
  * @returns {Object} Processed analytics data:
  *   - totalNew: {number} Total new units delivered
  *   - totalUsed: {number} Total used units delivered
- *   - salespersonMetrics: {Object} Map of fullName -> {new, used, total}
+ *   - sellingDays: {number} Count of rows where column A = 1
+ *   - salespersonAccumulator: {Object} Map of fullName -> {newCount, usedCount}
  *   - unknownSalespeople: {Array<string>} Unrecognized salesperson inputs
  */
 function processMonthlyDataForAnalytics(monthlyData, aliasMap)
@@ -130,11 +143,13 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap)
 
 Formats analytics data for human-readable output.
 
+**Source:** [`sales_analytics.js:395-447`](../src/sales_analytics.js:395-447)
+
 ```javascript
 /**
  * Converts processed analytics into formatted display-ready structure.
  * Sorts salespeople by total sales (descending).
- * Calculates team percentages.
+ * Calculates team percentages and team-level metrics.
  * Maps full names to display codes for compact presentation.
  *
  * @param {Object} processedData - Output from processMonthlyDataForAnalytics()
@@ -148,6 +163,8 @@ function formatAnalyticsForDisplay(processedData, displayCodeMap)
 #### `validateAnalyticsData(analyticsData)`
 
 Validates analytics data structure and values.
+
+**Source:** [`sales_analytics.js:583-634`](../src/sales_analytics.js:583-634)
 
 ```javascript
 /**
@@ -174,19 +191,19 @@ function validateAnalyticsData(analyticsData)
 // Each row in MONTHLY sheet:
 [
   sequenceNum, // Col A: Sequential number (1, 2, 3...)
-  newFI, // Col B: New car Finance Indicator (blank or A-Z)
-  newFI, // Col C: New car FI (duplicate for compatibility)
-  newStock, // Col D: New car stock number
-  newPrice, // Col E: New car price
-  newTrade, // Col F: New car trade-in
-  newSalesperson, // Col G: New car salesperson name/alias
+  customer, // Col B: Customer name (new car)
+  newFI, // Col C: New car Finance Indicator (blank or A-Z)
+  model, // Col D: New car model
+  stock, // Col E: New car stock number
+  tradeStkNum, // Col F: New car trade stock number
+  salesperson, // Col G: New car salesperson name/alias
   blank, // Col H: Separator
-  usedFI, // Col I: Used car Finance Indicator (blank or A-Z)
-  usedFI, // Col J: Used car FI (duplicate)
-  usedStock, // Col K: Used car stock number
-  usedPrice, // Col L: Used car price
-  usedTrade, // Col M: Used car trade-in
-  usedSalesperson, // Col N: Used car salesperson name/alias
+  customerUsed, // Col I: Customer name (used car)
+  usedFI, // Col J: Used car Finance Indicator (blank or A-Z)
+  modelUsed, // Col K: Used car model
+  stockUsed, // Col L: Used car stock number
+  tradeStkNumUsed, // Col M: Used car trade stock number
+  salespersonUsed, // Col N: Used car salesperson name/alias
 ];
 ```
 
@@ -203,9 +220,14 @@ function validateAnalyticsData(analyticsData)
   totals: {
     delivered: 45,        // Total delivered units (new + used)
     newDelivered: 28,     // New inventory delivered
-    usedDelivered: 17,    // Used inventory delivered
-    monthStartDate: "1/1", // Month start (M/D format)
-    lastUpdateDate: "1/15" // Last calculation date
+    usedDelivered: 17     // Used inventory delivered
+  },
+
+  // Team-level metrics
+  teamMetrics: {
+    sellingDays: 15,      // Count of rows where column A = 1
+    newPerDay: 1.87,      // New sold per selling day
+    usedPerDay: 1.13      // Used sold per selling day
   },
 
   // Per-salesperson breakdown
@@ -342,17 +364,17 @@ const salespersonAccumulator = {
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
 │            writeAnalyticsToMonthly()                         │
-│  Output - writes to MONTHLY sheet columns S-Z               │
+│  Output - writes to MONTHLY sheet columns S-X               │
 └─────────────────┬───────────────────────────────────────────┘
                   │
-                  ├─► 16. Clear existing analytics (S:Z)
+                  ├─► 16. Clear existing analytics (S:X)
                   │
                   ├─► 17. Write summary section
-                  │       - Rows 1-9 (headers + totals)
+                  │       - Rows 1-8 (headers + totals + team metrics)
                   │       - Formatted with bold, colors
                   │
                   ├─► 18. Write salesperson data
-                  │       - Starting row 10
+                  │       - Starting row 9
                   │       - Batch write for performance
                   │
                   ├─► 19. Apply formatting
@@ -453,56 +475,45 @@ formatted.salespersonMetrics.forEach((person, index) => {
 ```javascript
 // In writeAnalyticsToMonthly():
 const ANALYTICS_START_COL = 19; // Column S (1-indexed)
+const ANALYTICS_COL_COUNT = 6;  // Columns S through X
 
-// Clear existing analytics
+// Clear existing analytics (S:X)
 monthlySheet
-  .getRange(1, ANALYTICS_START_COL, monthlySheet.getMaxRows(), 8)
+  .getRange(1, ANALYTICS_START_COL, monthlySheet.getMaxRows(), ANALYTICS_COL_COUNT)
   .clear();
 
-// Build data arrays for batch write
-const summaryData = [
-  ["MONTHLY ANALYTICS", "", "", "", "", "", "", ""], // Row 1 (will merge)
-  ["Metric", "Value", "", "", "", "", "", ""], // Row 2
-  ["Total Delivered", analyticsData.totals.delivered, "", "", "", "", "", ""],
-  ["New Delivered", analyticsData.totals.newDelivered, "", "", "", "", "", ""],
-  [
-    "Used Delivered",
-    analyticsData.totals.usedDelivered,
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ],
-  ["Last Updated", new Date().toLocaleString(), "", "", "", "", "", ""],
-  ["", "", "", "", "", "", "", ""], // Row 7 (separator)
-  ["Salesperson", "New", "Used", "Total", "% of Team", "", "", "Rank"], // Row 8
-  ["", "", "", "", "", "", "", ""], // Row 9 (separator)
-];
+// Build summary section (rows 1-8)
+const summaryData = buildSummarySection(analyticsData);
+// Returns 8 rows:
+// Row 1: ["MONTHLY ANALYTICS", "", "", "", "", ""] - will merge S1:X1
+// Row 2: ["Metric", "Value", "Metric", "Value", "", ""]
+// Row 3: ["Total Delivered", 45, "Selling Days", 15, "", ""]
+// Row 4: ["New Delivered", 28, "New Sold per Day", 1.87, "", ""]
+// Row 5: ["Used Delivered", 17, "Used Sold per Day", 1.13, "", ""]
+// Row 6: ["Last Updated", "1/15/2025 10:30:00 AM", "", "", "", ""]
+// Row 7: ["", "", "", "", "", ""] - separator
+// Row 8: ["Salesperson", "New", "Used", "Total", "% of Team", "Rank"]
 
-// Batch write summary
+// Write summary section
 monthlySheet
-  .getRange(1, ANALYTICS_START_COL, summaryData.length, 8)
+  .getRange(1, ANALYTICS_START_COL, summaryData.length, ANALYTICS_COL_COUNT)
   .setValues(summaryData);
 
-// Build salesperson data array
-const salespersonData = analyticsData.salespersonMetrics.map((person) => [
-  person.displayCode,
-  person.newSales,
-  person.usedSales,
-  person.totalSales,
-  person.percentOfTeam,
-  "", // Reserved
-  "", // Reserved
-  person.rank,
-]);
+// Apply summary formatting
+formatSummarySection(monthlySheet);
 
-// Batch write salesperson data
+// Build salesperson data array (6 columns: S-X)
+const salespersonData = buildSalespersonSection(analyticsData);
+// Returns array like: [["JD", 8.5, 4, 12.5, 27.8, 1], ...]
+
+// Write salesperson data starting at row 9
 if (salespersonData.length > 0) {
   monthlySheet
-    .getRange(10, ANALYTICS_START_COL, salespersonData.length, 8)
+    .getRange(9, ANALYTICS_START_COL, salespersonData.length, ANALYTICS_COL_COUNT)
     .setValues(salespersonData);
+    
+  // Apply salesperson data formatting
+  formatSalespersonSection(monthlySheet, salespersonData.length);
 }
 ```
 
@@ -596,13 +607,12 @@ try {
 ```javascript
 // In calculateMonthlyAnalytics()
 const maxCols = monthlySheet.getMaxColumns();
-if (maxCols < 26) {
-  // Need columns A-Z (26 columns minimum)
+if (maxCols < 24) {
+  // Need columns A-X (24 columns minimum)
   const msg =
-    "MONTHLY sheet needs at least 26 columns (A-Z) for analytics. Current: " +
+    "MONTHLY sheet needs at least 24 columns (A-X) for analytics. Current: " +
     maxCols;
   Logger.log("Analytics error: " + msg);
-  alertError(msg, "Analytics Error");
   return null;
 }
 ```
@@ -700,7 +710,7 @@ if (processingStartTime.getMonth() !== processingEndTime.getMonth()) {
 ### Error Logging Pattern
 
 ```javascript
-// Follow existing pattern from 7.9.8.js
+// Follow existing pattern from core_saleslogPro.js
 function safeAnalyticsCalculation() {
   try {
     return calculateMonthlyAnalytics();
@@ -755,13 +765,12 @@ summaryRange.setBackground(ANALYTICS_HEADER_COLOR);
 
 ```javascript
 // Analytics automatically uses current salesperson configuration
-// via getSalespersonMaps() which reads from Properties Service
-// or SALESPEOPLE sheet (hybrid storage pattern)
+// via getSalespersonMaps() which reads from SALESPEOPLE sheet
 
 const { aliasMap, displayCodeMap } = getSalespersonMaps();
 // This function already handles:
-// - Reading from Properties Service (primary)
-// - Falling back to SALESPEOPLE sheet
+// - Reading from SALESPEOPLE sheet (columns A-C)
+// - Building alias maps from full names, aliases, and display codes
 // - 5-minute caching
 // - Alias resolution
 ```
@@ -806,23 +815,23 @@ function shouldCalculateAnalytics() {
 
 ### File Structure
 
-**Primary Implementation**: `sales_analytics.js` (new file)
+**Primary Implementation**: [`sales_analytics.js`](../src/sales_analytics.js)
 
 - Contains all analytics-specific functions
-- Imports/references existing utilities from `7.9.8.js` and `config_service.js`
+- References existing utilities from [`core_saleslogPro.js`](../src/core_saleslogPro.js) and [`config_service.js`](../src/config_service.js)
 - Follows same code style and patterns
 
 **Modified Files**:
 
-1. **`7.9.8.js`**
+1. **[`core_saleslogPro.js`](../src/core_saleslogPro.js)**
 
-   - Modify `processDaily()` to call analytics after successful completion
-   - Modify `rolloverMonth()` to preserve analytics columns during archive
-   - Add menu item for manual analytics refresh (optional)
+   - [`processDaily()`](../src/core_saleslogPro.js:1081) calls analytics after successful completion
+   - [`rolloverMonth()`](../src/core_saleslogPro.js:1494) preserves analytics columns during archive
+   - [`onOpen()`](../src/core_saleslogPro.js:1654) includes menu item for manual analytics refresh
 
-2. **`config_service.js`**
-   - Add analytics configuration section (if needed, see section 7)
-   - No changes required for initial implementation
+2. **[`config_service.js`](../src/config_service.js)**
+   - No changes required for analytics implementation
+   - Analytics uses existing configuration patterns
 
 ### Function Grouping in `sales_analytics.js`
 
@@ -839,7 +848,7 @@ function shouldCalculateAnalytics() {
 // MODULE CONSTANTS
 // ============================================================================
 const ANALYTICS_START_COL = 19; // Column S (1-indexed)
-const ANALYTICS_COL_COUNT = 8; // Columns S through Z
+const ANALYTICS_COL_COUNT = 6;  // Columns S through X
 const CACHE_KEY_ANALYTICS = "monthlyAnalytics";
 const CACHE_TTL_ANALYTICS = 300; // 5 minutes
 
@@ -1001,7 +1010,7 @@ function rolloverMonth() {
   withScriptLock(() => {
     // ... existing code ...
     // After archiveSheet is created
-    // Analytics columns (S:Z) are automatically included in copyTo()
+    // Analytics columns (S:X) are automatically included in copyTo()
     // No special handling needed - they transfer with the rest of MONTHLY
     // ... continue with existing code ...
   });
@@ -1091,8 +1100,8 @@ function refreshAnalyticsManually() {
 **Integration Code**:
 
 ```javascript
-// In 7.9.8.js, processDaily() function
-// After line 638 (after cleanup, before final return)
+// In core_saleslogPro.js, processDaily() function
+// Integrated at line 1228 (after MONTHLY operations, before final summary)
 
 try {
   Logger.log("Calculating monthly analytics...");
@@ -1125,10 +1134,10 @@ try {
 **Integration Code**:
 
 ```javascript
-// In 7.9.8.js, rolloverMonth() function
-// After line 872 (after archive sheet is created and named)
+// In core_saleslogPro.js, rolloverMonth() function  
+// Integrated at line 1521 (before archiveSheet = sheets.monthly.copyTo())
 
-// Analytics columns (S:Z) are automatically included in archiveSheet
+// Analytics columns (S:X) are automatically included in archiveSheet
 // because archiveSheet = sheets.monthly.copyTo(SS) copies all columns
 
 // Optional: Recalculate analytics before archiving for accuracy
@@ -1149,7 +1158,7 @@ try {
 // Analytics columns will be included in the archive automatically
 ```
 
-**Archive Preservation**: Analytics columns S:Z transfer to archive automatically via `copyTo()`. No special handling needed.
+**Archive Preservation**: Analytics columns S:X transfer to archive automatically via `copyTo()`. No special handling needed.
 
 ### 9.3 MTD Recalculation Integration
 
@@ -1158,8 +1167,8 @@ try {
 **Integration Code**:
 
 ```javascript
-// In 7.9.8.js, recalcMtdFromMonthly() function
-// After line 838 (after reapplyCF() call, before final toast)
+// In core_saleslogPro.js, recalcMtdFromMonthly() function
+// Would be integrated after reapplyCF() call (currently not implemented)
 
 try {
   Logger.log("Recalculating analytics after MTD refresh...");
@@ -1238,7 +1247,7 @@ function refreshAnalyticsManually() {
 
 ### 9.5 Existing Utility Dependencies
 
-**Required Functions** (from 7.9.8.js and config_service.js):
+**Required Functions** (from core_saleslogPro.js and config_service.js):
 
 - `getSheets()` - Sheet reference retrieval
 - `getSalespersonMaps()` - Alias/display code mapping
@@ -1254,7 +1263,7 @@ function refreshAnalyticsManually() {
 
 ```javascript
 // Analytics shares the same cache instance
-const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
+const CACHE = CacheService.getScriptCache(); // Same as core_saleslogPro.js line 49
 ```
 
 **No Conflicts**: Analytics module does not modify or interfere with existing utilities.
@@ -1269,10 +1278,10 @@ const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
 
 **Write Operations**:
 
-- MONTHLY sheet: Columns S-Z only (analytics output area)
+- MONTHLY sheet: Columns S-X only (analytics output area)
 - Cache: `CACHE_KEY_ANALYTICS` (isolated from other cache keys)
 
-**No Conflicts**: Analytics writes to unused columns S-Z, preserving all existing data.
+**No Conflicts**: Analytics writes to unused columns S-X, preserving all existing data.
 
 ### 9.7 Trigger Sequence Summary
 
@@ -1287,7 +1296,7 @@ const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
    ↓
 5. **[NEW]** calculateMonthlyAnalytics() called
    ↓
-6. Analytics written to columns S-Z
+6. Analytics written to columns S-X
    ↓
 7. User sees completion dialog (existing code)
 
@@ -1299,7 +1308,7 @@ const CACHE = CacheService.getScriptCache(); // Same as 7.9.8.js line 12
    ↓
 10. **[NEW]** Final analytics calculated (optional)
    ↓
-11. MONTHLY sheet copied to archive (includes S-Z)
+11. MONTHLY sheet copied to archive (includes S-X)
    ↓
 12. MONTHLY cleared (existing code)
    ↓
@@ -1398,7 +1407,7 @@ const metrics = {
 **Performance at Scale**:
 
 - 100 rows × 14 columns = 1,400 cells read (< 1 second)
-- 30 salespeople × 8 columns = 240 cells written (< 1 second)
+- 30 salespeople × 6 columns = 180 cells written (< 1 second)
 - Processing: Linear O(n) complexity (< 1 second for 200 rows)
 
 **Tested Limits**:
@@ -1513,7 +1522,7 @@ The architecture supports future enhancements through:
 
 1. **Modular Design**: Functions are independent and composable
 2. **Data Structure**: Analytics object is extensible (add new properties)
-3. **Column Reservation**: Columns X, Y, Z reserved for future metrics
+3. **Column Reservation**: Future metrics can extend beyond column X if needed
 4. **Configuration Integration**: Ready to accept analytics config settings
 5. **Cache Strategy**: Can add new cache keys for new features
 
@@ -1534,7 +1543,7 @@ The architecture supports future enhancements through:
 
 1. [ ] Create `sales_analytics.js` file in Apps Script project
 2. [ ] Copy all analytics functions to new file
-3. [ ] Modify `7.9.8.js`:
+3. [ ] Modify `core_saleslogPro.js`:
    - Add analytics call in `processDaily()`
    - Update `rolloverMonth()` if needed
    - Add menu item for manual refresh (optional)
@@ -1545,7 +1554,7 @@ The architecture supports future enhancements through:
 
 ### Post-Deployment Verification
 
-- [ ] Run "Log Yesterday's Sales" - verify analytics appear in columns S-Z
+- [ ] Run "Log Yesterday's Sales" - verify analytics appear in columns S-X
 - [ ] Check analytics values match manual counts
 - [ ] Verify formatting looks correct
 - [ ] Test manual refresh function
@@ -1618,7 +1627,7 @@ This architectural design provides a **production-ready blueprint** for implemen
 - **4 public functions** for clean API
 - **~10 total functions** for complete implementation
 - **< 3 seconds** overhead added to processDaily()
-- **Columns S-Z** for analytics output (8 columns)
+- **Columns S-X** for analytics output (6 columns)
 - **5-minute cache** TTL matching existing pattern
 - **Zero breaking changes** to existing functionality
 

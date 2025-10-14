@@ -5,9 +5,11 @@
  */
 
 /**
- * Main setup wizard function that checks for and creates missing sheets.
- * Can be called from the menu or directly.
- * Safe to run multiple times (idempotent).
+ * Main setup wizard function that checks for and creates missing sheets
+ * Can be called from the menu or directly
+ * Safe to run multiple times (idempotent)
+ * Prompts for customization, creates required sheets, and opens configuration sidebar
+ * @returns {void}
  */
 function runSetupWizard() {
   try {
@@ -194,7 +196,7 @@ function promptForCustomization(ss) {
 }
 
 /**
- * Checks for and creates the TODAY sheet if missing.
+ * Checks for and creates the TODAY sheet if missing
  * Per setupsheet_headers.md:
  * - Headers: [A:G] #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
  *           [H] blank separator
@@ -206,6 +208,7 @@ function promptForCustomization(ss) {
  *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
+ * @returns {void}
  */
 function checkAndCreateTodaySheet(ss, results) {
   const sheetName = "TODAY";
@@ -413,13 +416,15 @@ function checkAndCreateTodaySheet(ss, results) {
 }
 
 /**
- * Applies conditional formatting rules to the TODAY sheet.
+ * Applies conditional formatting rules to the TODAY sheet
  * Updated for corrected column layout with FI column:
  * - New car STOCK # is column E
  * - Used car STOCK # is column L
  * - DEPOSITS STOCK # is column G
+ * Applies duplicate detection and deposit check rules
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - The TODAY sheet
+ * @returns {void}
  */
 function applyTodayConditionalFormatting(sheet) {
   try {
@@ -494,7 +499,7 @@ function applyTodayConditionalFormatting(sheet) {
 }
 
 /**
- * Checks for and creates the MONTHLY sheet if missing.
+ * Checks for and creates the MONTHLY sheet if missing
  * Per setupsheet_headers.md:
  * - Headers: [A:G] #, CUSTOMER, FI, MODEL, STOCK #, TRADE STK#, SALES PERSON
  *           [H] blank separator
@@ -507,6 +512,7 @@ function applyTodayConditionalFormatting(sheet) {
  *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
+ * @returns {void}
  */
 function checkAndCreateMonthlySheet(ss, results) {
   const sheetName = "MONTHLY";
@@ -635,14 +641,16 @@ function checkAndCreateMonthlySheet(ss, results) {
 }
 
 /**
- * Checks for and creates the SALESPEOPLE sheet if missing.
+ * Checks for and creates the SALESPEOPLE sheet if missing
  * Per setupsheet_headers.md:
  * - Headers: [A:C] FULL NAME, ALIASES, DISPLAY CODE
  * - Column widths: All 150
  * - Font: Calibri, 10pt (default)
+ * Includes example data to guide users
  *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
+ * @returns {void}
  */
 function checkAndCreateSalespeopleSheet(ss, results) {
   const sheetName = "SALESPEOPLE";
@@ -700,7 +708,7 @@ function checkAndCreateSalespeopleSheet(ss, results) {
 }
 
 /**
- * Checks for and creates the DEPOSITS sheet if missing.
+ * Checks for and creates the DEPOSITS sheet if missing
  * Per setupsheet_headers.md:
  * - Headers: [A:N] DATE, NEW/USED, YEAR, MAKE, MODEL, ORDER #, STOCK #,
  *                  SALESPERSON, BDC, CUSTOMER, DIRECTOR, PHONE #, EST DELIVERY DATE, NOTES
@@ -710,6 +718,7 @@ function checkAndCreateSalespeopleSheet(ss, results) {
  *
  * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss - The active spreadsheet
  * @param {Object} results - Results object to track created/existing sheets
+ * @returns {void}
  */
 function checkAndCreateDepositsSheet(ss, results) {
   const sheetName = "DEPOSITS";
@@ -776,8 +785,10 @@ function checkAndCreateDepositsSheet(ss, results) {
 }
 
 /**
- * Shows a summary dialog to the user with setup results.
+ * Shows a summary dialog to the user with setup results
+ * Displays created sheets, existing sheets, and any errors encountered
  * @param {Object} results - Results object containing existed, created, and errors arrays
+ * @returns {void}
  */
 function showSetupSummary(results) {
   const ui = SpreadsheetApp.getUi();

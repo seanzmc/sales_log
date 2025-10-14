@@ -26,7 +26,7 @@ Before starting this workflow:
 ### Step 1.1: Run Setup Wizard
 
 1. Open your Google Spreadsheet
-2. Click **Sales Log** → **⚙️ Run Setup Wizard**
+2. Click **Sales Tools** → **🚀 Run Setup Wizard**
 3. Wait for the wizard to complete
 4. Verify all sheets were created:
    - ✅ TODAY
@@ -42,7 +42,7 @@ Before starting this workflow:
 
 ### Step 1.2: Configure Sales Team
 
-1. Click **Sales Log** → **⚙️ Settings**
+1. Click **Sales Tools** → **⚙️ Settings**
 2. The Settings sidebar opens on the right
 3. Navigate to **👥 Sales Team** tab
 
@@ -224,7 +224,7 @@ Try entering a stock number from the DEPOSITS sheet:
 
 ### Step 2.5: Run Analytics
 
-1. Click **Sales Log** → **📊 Update Analytics**
+1. Click **Sales Tools** → **🔄 Refresh Analytics**
 2. Wait for processing (5-10 seconds)
 3. A confirmation dialog appears
 4. Click **OK**
@@ -232,11 +232,13 @@ Try entering a stock number from the DEPOSITS sheet:
 **Expected Result**: Dialog shows:
 
 ```ruby
-Analytics updated successfully!
+Analytics Refreshed
 
-Period: [Current Month]
-Total Delivered: 4 (2 new, 2 used)
-Pending Delivery: 1
+Total Delivered: 4
+New: 2
+Used: 2
+
+Top Performer: [Display Code] ([count] units)
 ```
 
 ---
@@ -362,15 +364,20 @@ Add these used car sales (rows 4-6):
 
 ### Step 3.3: Update Analytics Again
 
-1. Click **Sales Log** → **📊 Update Analytics**
+1. Click **Sales Tools** → **🔄 Refresh Analytics**
 2. Wait for processing
 3. Review confirmation
 
 **Expected Result**: Dialog shows increased totals:
 
-```code
+```ruby
+Analytics Refreshed
+
 Total Delivered: 8
-Pending Delivery: 3
+New: 5
+Used: 3
+
+Top Performer: [Display Code] ([count] units)
 ```
 
 ---
@@ -435,7 +442,7 @@ Look for salespeople with split sales showing 0.5 credits:
 Before rollover:
 
 1. Ensure all sales for the month are entered in TODAY
-2. Run **Sales Log** → **📊 Update Analytics** one final time
+2. Run **Sales Tools** → **🔄 Refresh Analytics** one final time
 3. Review MONTHLY sheet for final month metrics
 4. Note top performers and team statistics
 
@@ -445,21 +452,20 @@ Before rollover:
 
 ### Step 4.2: Perform Rollover
 
-1. Click **Sales Log** → **🔄 Rollover to New Month**
+1. Click **Sales Tools** → **Start New Month (Rollover)**
 2. Read the confirmation warning carefully
 3. Confirm you want to proceed
 4. Wait for processing (10-15 seconds)
 
 **Expected Result**:
 
-```shell
-Rollover completed successfully!
-
-- TODAY sheet cleared and ready for new entries
-- Historical data preserved in MONTHLY sheet
-- Leaderboard reset for new month
-- Ready to begin [Next Month]
 ```
+Month Rollover Complete!
+
+"[M/YY]" created. "MONTHLY" & MTD reset. Averages updated.
+```
+
+(Where [M/YY] is the archive name like "5/25" for May 2025)
 
 ---
 

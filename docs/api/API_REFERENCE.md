@@ -59,7 +59,7 @@ Sales Log Pro provides a comprehensive JavaScript API for programmatic interacti
 
 Processes daily sales from TODAY sheet to MONTHLY sheet with sequential numbering, validation, and analytics calculation.
 
-**Source**: [`src/core_saleslogPro.js:511`](../../src/core_saleslogPro.js#L511)
+**Source**: [`src/core_saleslogPro.js:1081`](../../src/core_saleslogPro.js#L1081)
 
 **Signature**:
 
@@ -131,7 +131,7 @@ function processDaily() {
 
 - [`tallyCounts()`](#tallycounts): Counts sales by salesperson
 - [`applyMonthlyRowFormatting()`](#applymonthlyrowformatting): Applies error highlighting
-- [`calculateMonthlyAnalytics()`](#calculatemonthl yanalytics): Computes metrics
+- [`calculateMonthlyAnalytics()`](#calculatemonthlyanalytics): Computes metrics
 - [`reapplyCF()`](#reapplycf): Reapplies conditional formatting
 
 ---
@@ -140,7 +140,7 @@ function processDaily() {
 
 Archives current month and prepares system for new month with confirmation dialog.
 
-**Source**: [`src/core_saleslogPro.js:863`](../../src/core_saleslogPro.js#L863)
+**Source**: [`src/core_saleslogPro.js:1494`](../../src/core_saleslogPro.js#L1494)
 
 **Signature**:
 
@@ -220,7 +220,7 @@ function rolloverMonth() {
 
 **Related Functions**:
 
-- [`calculateMonthlyAnalytics()`](#calculatemonthl yanalytics): Final metrics
+- [`calculateMonthlyAnalytics()`](#calculemonthlyanalytics): Final metrics
 - [`writeAnalyticsToMonthly()`](#writeanalyticstomonthly): Preserves analytics
 - [`roundHalf()`](#roundhalf): Average rounding
 
@@ -230,17 +230,17 @@ function rolloverMonth() {
 
 Recalculates MTD totals from MONTHLY sheet data and checks formatting.
 
-**Source**: [`src/core_saleslogPro.js:778`](../../src/core_saleslogPro.js#L778)
+**Source**: [`src/core_saleslogPro.js:1403`](../../src/core_saleslogPro.js#L1403)
 
 **Signature**:
 
 ```javascript
-function recalcMtdFromMonthly(): void
+function recalcMtdFromMonthly(): number
 ```
 
 **Parameters**: None
 
-**Returns**: `void`
+**Returns**: `number` - Count of salesperson errors found
 
 **Behavior**:
 
@@ -327,7 +327,7 @@ function recalcMtdFromMonthly() {
 
 Retrieves complete configuration from Properties Service with caching.
 
-**Source**: [`src/config_service.js:120`](../../src/config_service.js#L120)
+**Source**: [`src/config_service.js:142`](../../src/config_service.js#L142)
 
 **Signature**:
 
@@ -380,7 +380,7 @@ console.log(config.dates.skipSundays); // true
 
 Atomically updates configuration with validation and locking.
 
-**Source**: [`src/config_service.js:167`](../../src/config_service.js#L167)
+**Source**: [`src/config_service.js:189`](../../src/config_service.js#L189)
 
 **Signature**:
 
@@ -461,7 +461,7 @@ const updated = updateConfiguration({
 
 Returns array of all salespeople from configuration.
 
-**Source**: [`src/config_service.js:257`](../../src/config_service.js#L257)
+**Source**: [`src/config_service.js:312`](../../src/config_service.js#L312)
 
 **Signature**:
 
@@ -505,7 +505,7 @@ team.forEach((person) => {
 
 Adds new salesperson with validation and duplicate checking.
 
-**Source**: [`src/config_service.js:275`](../../src/config_service.js#L275)
+**Source**: [`src/config_service.js:330`](../../src/config_service.js#L330)
 
 **Signature**:
 
@@ -562,7 +562,7 @@ try {
 
 Updates existing salesperson with validation.
 
-**Source**: [`src/config_service.js:325`](../../src/config_service.js#L325)
+**Source**: [`src/config_service.js:385`](../../src/config_service.js#L385)
 
 **Signature**:
 
@@ -596,7 +596,7 @@ const result = updateSalesperson("John Smith", {
 
 Removes salesperson from configuration.
 
-**Source**: [`src/config_service.js:382`](../../src/config_service.js#L382)
+**Source**: [`src/config_service.js:447`](../../src/config_service.js#L447)
 
 **Signature**:
 
@@ -629,7 +629,7 @@ console.log("John Smith removed from roster");
 
 Checks if Sundays should be excluded from selling day calculations.
 
-**Source**: [`src/config_service.js:69`](../../src/config_service.js#L69)
+**Source**: [`src/config_service.js:91`](../../src/config_service.js#L91)
 
 **Signature**:
 
@@ -661,7 +661,7 @@ if (shouldSkipSundays() && today.getDay() === 0) {
 
 Checks if Monday processing should default to Saturday's date.
 
-**Source**: [`src/config_service.js:84`](../../src/config_service.js#L84)
+**Source**: [`src/config_service.js:106`](../../src/config_service.js#L106)
 
 **Signature**:
 
@@ -698,7 +698,7 @@ function formatDateOffset(offsetDays = 1) {
 
 Loads visual configuration (colors and thresholds) with caching.
 
-**Source**: [`src/core_saleslogPro.js:52`](../../src/core_saleslogPro.js#L52)
+**Source**: [`src/core_saleslogPro.js:90`](../../src/core_saleslogPro.js#L90)
 
 **Signature**:
 
@@ -1071,7 +1071,7 @@ function runSetupWizard() {
 
 Auto-migration from hardcoded constants to Properties Service configuration.
 
-**Source**: [`src/config_service.js:609`](../../src/config_service.js#L609)
+**Source**: [`src/config_service.js:1010`](../../src/config_service.js#L1010)
 
 **Signature**:
 
@@ -1131,11 +1131,49 @@ if (result.success) {
 
 ## Utility Functions
 
+### findLastRowInCols()
+
+Finds the last row containing data within specific columns using efficient chunked reading.
+
+**Source**: [`src/core_saleslogPro.js:772`](../../src/core_saleslogPro.js#L772)
+
+**Signature**:
+
+```javascript
+function findLastRowInCols(
+  sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  startCol: number,
+  endCol: number
+): number
+```
+
+**Parameters**:
+
+- `sheet`: The sheet object to inspect
+- `startCol`: 1-based starting column index (e.g., 1 for column A)
+- `endCol`: 1-based ending column index (e.g., 14 for column N)
+
+**Returns**: `number` - Last row number with data, or 0 if empty
+
+**Behavior**:
+
+Uses chunked reading (100 rows at a time) from bottom-up to efficiently find the last row with data in specified columns. This prevents memory issues with large sheets and is more reliable than `getLastRow()` when extraneous data exists in other columns.
+
+**Example**:
+
+```javascript
+const sheets = getSheets();
+const lastRow = findLastRowInCols(sheets.monthly, 1, 14); // A:N
+Logger.log('Last data row: ' + lastRow);
+```
+
+---
+
 ### getSheets()
 
 Retrieves references to required sheets with validation.
 
-**Source**: [`src/core_saleslogPro.js:125`](../../src/core_saleslogPro.js#L125)
+**Source**: [`src/core_saleslogPro.js:214`](../../src/core_saleslogPro.js#L214)
 
 **Signature**:
 
@@ -1175,7 +1213,7 @@ try {
 
 Builds and caches alias and display code mappings.
 
-**Source**: [`src/core_saleslogPro.js:192`](../../src/core_saleslogPro.js#L192)
+**Source**: [`src/core_saleslogPro.js:281`](../../src/core_saleslogPro.js#L281)
 
 **Signature**:
 
@@ -1225,7 +1263,7 @@ if (!unknown) {
 
 Counts salesperson sales from row data with split sale handling.
 
-**Source**: [`src/core_saleslogPro.js:320`](../../src/core_saleslogPro.js#L320)
+**Source**: [`src/core_saleslogPro.js:458`](../../src/core_saleslogPro.js#L458)
 
 **Signature**:
 
@@ -1289,7 +1327,7 @@ console.log(unknownInputs); // []
 
 Applies conditional formatting to MONTHLY rows with error detection.
 
-**Source**: [`src/core_saleslogPro.js:402`](../../src/core_saleslogPro.js#L402)
+**Source**: [`src/core_saleslogPro.js:687`](../../src/core_saleslogPro.js#L687)
 
 **Signature**:
 
@@ -1309,7 +1347,7 @@ function applyMonthlyRowFormatting(
 - `startSheetRow`: 1-indexed starting row number
 - `aliasMap`: Alias to full name mapping
 
-**Returns**: Array of 1-indexed row numbers with salesperson errors
+**Returns**: `Array<number>` - Array of 1-indexed row numbers with salesperson errors
 
 **Formatting Logic**:
 
@@ -1350,7 +1388,7 @@ if (errorRows.length > 0) {
 
 Reapplies all conditional formatting rules to TODAY sheet.
 
-**Source**: [`src/core_saleslogPro.js:665`](../../src/core_saleslogPro.js#L665)
+**Source**: [`src/core_saleslogPro.js:1290`](../../src/core_saleslogPro.js#L1290)
 
 **Signature**:
 
@@ -1417,7 +1455,7 @@ reapplyCF(); // Reapply with new thresholds
 
 Executes function with script lock protection to prevent concurrent execution.
 
-**Source**: [`src/core_saleslogPro.js:283`](../../src/core_saleslogPro.js#L283)
+**Source**: [`src/core_saleslogPro.js:414`](../../src/core_saleslogPro.js#L414)
 
 **Signature**:
 
@@ -1462,7 +1500,7 @@ function criticalOperation() {
 
 Acquires a script lock with automatic retry using exponential backoff.
 
-**Source**: [`src/utilities_locks.js:12`](../../src/utilities_locks.js#L12)
+**Source**: [`src/utilities_locks.js:197`](../../src/utilities_locks.js#L197)
 
 **Signature**:
 
@@ -1574,7 +1612,7 @@ const customResult = acquireScriptLockWithRetry(
 
 Cleans up old sync metadata entries to reduce storage size in Properties Service.
 
-**Source**: [`src/config_service.js:847`](../../src/config_service.js#L847) and [`src/sync_service.js:831`](../../src/sync_service.js#L831)
+**Source**: [`src/config_service.js:854`](../../src/config_service.js#L854) and [`src/sync_service.js:838`](../../src/sync_service.js#L838)
 
 **Signature**:
 
@@ -1672,6 +1710,400 @@ PropertiesService.getScriptProperties().setProperty(
 - Typical cleanup: <50ms for 50 entries
 - Rare operation: Only when size threshold exceeded
 - Minimal impact on normal operations
+
+---
+
+### Validation Functions
+
+#### validateName()
+
+Validates full name field.
+
+**Source**: [`src/validation_rules.js:17`](../../src/validation_rules.js#L17)
+
+**Signature**:
+
+```javascript
+function validateName(name: string): {valid: boolean, error?: string}
+```
+
+**Parameters**:
+
+- `name` (string): Full name to validate
+
+**Returns**: Validation result object with `valid` boolean and optional `error` message
+
+**Validation Rules**:
+
+- Required field
+- Must be 2-100 characters
+- Can only contain letters, spaces, hyphens, and apostrophes
+
+---
+
+#### validateAliases()
+
+Validates aliases field (optional).
+
+**Source**: [`src/validation_rules.js:44`](../../src/validation_rules.js#L44)
+
+**Signature**:
+
+```javascript
+function validateAliases(aliases: string): {valid: boolean, error?: string}
+```
+
+**Parameters**:
+
+- `aliases` (string): Comma-separated aliases (can be empty)
+
+**Returns**: Validation result object
+
+**Validation Rules**:
+
+- Optional field (empty is valid)
+- Maximum 200 characters
+- Can contain letters, numbers, spaces, commas, hyphens, apostrophes
+
+---
+
+#### validateDisplayCode()
+
+Validates display code field.
+
+**Source**: [`src/validation_rules.js:69`](../../src/validation_rules.js#L69)
+
+**Signature**:
+
+```javascript
+function validateDisplayCode(code: string): {valid: boolean, error?: string}
+```
+
+**Parameters**:
+
+- `code` (string): Display code to validate
+
+**Returns**: Validation result object
+
+**Validation Rules**:
+
+- Required field
+- Must be 2-4 alphanumeric characters
+
+---
+
+#### validateSalesperson()
+
+Validates complete salesperson data object.
+
+**Source**: [`src/validation_rules.js:94`](../../src/validation_rules.js#L94)
+
+**Signature**:
+
+```javascript
+function validateSalesperson(data: Object): Array<string>
+```
+
+**Parameters**:
+
+- `data` (Object): Salesperson data `{fullName, aliases, displayCode}`
+
+**Returns**: `Array<string>` - Array of error messages (empty if valid)
+
+**Example**:
+
+```javascript
+const errors = validateSalesperson({
+  fullName: 'John Smith',
+  aliases: 'JS, Johnny',
+  displayCode: 'JS'
+});
+
+if (errors.length > 0) {
+  console.log('Validation failed:', errors.join('; '));
+}
+```
+
+---
+
+#### validateSheetRowData()
+
+Validates sheet row data with enhanced error context for sync operations.
+
+**Source**: [`src/validation_rules.js:130`](../../src/validation_rules.js#L130)
+
+**Signature**:
+
+```javascript
+function validateSheetRowData(rowData: Array): Object
+```
+
+**Parameters**:
+
+- `rowData` (Array): Row data array `[fullName, aliases, displayCode]`
+
+**Returns**: Object with structure:
+
+```javascript
+{
+  valid: boolean,
+  isDelete: boolean,
+  errors: Array<Object>  // [{field, message, value, column}]
+}
+```
+
+**Example**:
+
+```javascript
+const result = validateSheetRowData(['John Smith', 'JS', 'JS']);
+if (!result.valid) {
+  result.errors.forEach(err => {
+    console.log(`Column ${err.column} (${err.field}): ${err.message}`);
+  });
+}
+```
+
+---
+
+### Sync Service Functions
+
+#### onEditSalespeopleSheet()
+
+Main entry point for sheet edit events on SALESPEOPLE sheet.
+
+**Source**: [`src/sync_service.js:34`](../../src/sync_service.js#L34)
+
+**Signature**:
+
+```javascript
+function onEditSalespeopleSheet(e: Event): void
+```
+
+**Parameters**:
+
+- `e` (Event): onEdit event object from Google Sheets trigger
+
+**Returns**: `void`
+
+**Behavior**:
+
+- Validates edit is in SALESPEOPLE sheet
+- Only processes data rows (row > 1) and columns A-C
+- Skips formatting-only changes
+- Creates backup before sync
+- Handles validation failures with revert
+- Shows user-friendly error messages
+
+**Note**: This function is automatically called by the onEdit trigger. Manual invocation is not recommended.
+
+---
+
+#### syncRowToProperties()
+
+Syncs a single row from SALESPEOPLE sheet to Properties Service with comprehensive conflict resolution.
+
+**Source**: [`src/sync_service.js:392`](../../src/sync_service.js#L392)
+
+**Signature**:
+
+```javascript
+function syncRowToProperties(
+  row: number,
+  rowData: Array<string>,
+  oldValue: string|undefined
+): Object
+```
+
+**Parameters**:
+
+- `row` (number): 1-indexed row number in sheet (row 2 = first data row)
+- `rowData` (Array): Row data `[fullName, aliases, displayCode]`
+- `oldValue` (string|undefined): Previous cell value before edit
+
+**Returns**: Object with structure:
+
+```javascript
+{
+  success: boolean,
+  error: string|null,
+  operation: string,  // 'add', 'update', 'delete', 'conflict_resolved'
+  conflictResolution: Object|null,
+  recovery: Object|null
+}
+```
+
+**Behavior**:
+
+1. Acquires script lock with retry
+2. Determines operation type (add/update/delete)
+3. Creates pre-operation backup
+4. Validates input data
+5. Detects and resolves conflicts
+6. Performs operation
+7. Runs data integrity checks
+8. Updates sync metadata
+9. Invalidates all caches
+
+**Conflict Resolution**:
+
+- If modified within 1 second: Properties wins (sidebar has better validation)
+- Otherwise: Sheet wins (most recent edit)
+
+**Example** (typically called internally):
+
+```javascript
+// Called by onEditSalespeopleSheet
+const result = syncRowToProperties(2, ['Jane Doe', 'JD', 'JD'], undefined);
+if (result.success) {
+  Logger.log('Sync successful: ' + result.operation);
+}
+```
+
+---
+
+#### readSalespeopleFromSheet()
+
+Reads all salespeople from SALESPEOPLE sheet.
+
+**Source**: [`src/sync_service.js:1632`](../../src/sync_service.js#L1632)
+
+**Signature**:
+
+```javascript
+function readSalespeopleFromSheet(): Array<Object>
+```
+
+**Parameters**: None
+
+**Returns**: `Array<Object>` - Array of salesperson objects from sheet
+
+**Example**:
+
+```javascript
+const salespeople = readSalespeopleFromSheet();
+Logger.log('Found ' + salespeople.length + ' salespeople');
+```
+
+---
+
+#### needsSync()
+
+Determines if sheet data differs from Properties data using deep comparison.
+
+**Source**: [`src/sync_service.js:1756`](../../src/sync_service.js#L1756)
+
+**Signature**:
+
+```javascript
+function needsSync(sheetData: Array, propsData: Array): boolean
+```
+
+**Parameters**:
+
+- `sheetData` (Array): Salespeople from sheet
+- `propsData` (Array): Salespeople from Properties
+
+**Returns**: `boolean` - True if sync is needed
+
+---
+
+### Error Logging Functions
+
+#### logError()
+
+Logs an error with comprehensive details and context.
+
+**Source**: [`src/error_logger.js:20`](../../src/error_logger.js#L20)
+
+**Signature**:
+
+```javascript
+function logError(
+  context: string,
+  error: Error|string,
+  additionalData?: Object
+): Object
+```
+
+**Parameters**:
+
+- `context` (string): Context information (function name, operation)
+- `error` (Error|string): Error object or message
+- `additionalData` (Object, optional): Additional data to log
+
+**Returns**: Object with structure:
+
+```javascript
+{
+  message: string,        // User-friendly message
+  fullLog: string,        // Complete technical log
+  timestamp: string,
+  context: string
+}
+```
+
+**Example**:
+
+```javascript
+try {
+  // risky operation
+} catch (e) {
+  const result = logError('myFunction', e, { userId: 123 });
+  alertError(result.message);
+}
+```
+
+---
+
+#### logWarning()
+
+Logs a non-critical warning with context.
+
+**Source**: [`src/error_logger.js:109`](../../src/error_logger.js#L109)
+
+**Signature**:
+
+```javascript
+function logWarning(
+  context: string,
+  message: string,
+  additionalData?: Object
+): string
+```
+
+**Parameters**:
+
+- `context` (string): Context information
+- `message` (string): Warning message
+- `additionalData` (Object, optional): Additional data
+
+**Returns**: `string` - The warning message
+
+---
+
+#### logInfo()
+
+Logs informational message for tracking successful operations.
+
+**Source**: [`src/error_logger.js:141`](../../src/error_logger.js#L141)
+
+**Signature**:
+
+```javascript
+function logInfo(
+  context: string,
+  message: string,
+  additionalData?: Object
+): void
+```
+
+**Parameters**:
+
+- `context` (string): Context information
+- `message` (string): Info message
+- `additionalData` (Object, optional): Additional data
+
+**Returns**: `void`
 
 ---
 

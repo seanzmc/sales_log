@@ -168,19 +168,23 @@ Display Code: JS
 #### Step 1: Run Setup Wizard
 
 1. Open your Google Sheet
-2. Click **Sales Tools** → **🚀 Run Setup Wizard**
-3. Review the summary showing created sheets
-4. Click **OK** when complete
+2. Click **Sales Log Pro 2.0** → **🚀 Run Setup Wizard**
+3. Choose customization options (optional):
+   - New car header color (4 presets)
+   - Font selection (4 options: Calibri, Arial, Times New Roman, Courier New)
+   - System calculates WCAG-compliant text colors automatically
+4. Review the summary showing created sheets
+5. Settings sidebar opens automatically for team configuration
 
 [Screenshot: Setup wizard completion dialog]
 
-The wizard creates all four sheets with proper formatting and structure.
+The wizard (via [`runSetupWizard()`](../../src/setup_wizard.js:12-68)) creates all four sheets with proper formatting and structure.
 
 #### Step 2: Configure Your Sales Team
 
-1. Click **Sales Tools** → **⚙️ Settings**
+1. Settings sidebar opens automatically after setup, or click **Sales Log Pro 2.0** → **⚙️ Settings**
 2. Go to **👥 Sales Team** tab
-3. Replace example salespeople with your team:
+3. Replace example salespeople (3 provided by default) with your team:
    - Click **Add Salesperson**
    - Enter Full Name (e.g., "Sarah Johnson")
    - Enter Aliases (e.g., "SJ, Sarah, Johnson")
@@ -188,6 +192,8 @@ The wizard creates all four sheets with proper formatting and structure.
    - Click **Add**
 4. Repeat for each team member
 5. Click **Save Changes**
+
+Note: Configuration is stored in Properties Service and syncs bidirectionally with the SALESPEOPLE sheet.
 
 [Screenshot: Settings sidebar - Sales Team tab]
 
@@ -263,23 +269,26 @@ Used Car Sale (same pattern in columns I-N)
 
 **When**: End of business day (or next morning)
 
-**What It Does**:
+**What It Does** (via [`processDaily()`](../../src/core_saleslogPro.js:1081)):
 
 - Transfers TODAY entries to MONTHLY
-- Generates sequential numbering
+- Generates sequential numbering (auto-numbered 1-50)
+- Inserts date header (format: M/D)
 - Updates leaderboard
-- Calculates analytics
-- Applies error highlighting
-- Clears TODAY sheet
+- Calculates analytics (columns S-X)
+- Applies error highlighting (red for non-delivered, light red for unknown salesperson)
+- Clears TODAY sheet (columns B-N)
+- Font colors transfer from TODAY to MONTHLY
 
 **Steps**:
 
-1. Click **Sales Tools** → **Log Yesterday's Sales**
+1. Click **Sales Log Pro 2.0** → **Log Yesterday's Sales**
 2. Review the summary dialog:
    - New/Used/Total delivered counts
    - Trade counts
-   - Salesperson breakdowns
-   - Any errors detected
+   - Salesperson breakdowns (by display code)
+   - Salesperson code errors count
+   - Unknown salespeople listed (if any)
 3. Click **OK**
 
 [Screenshot: Daily processing summary dialog]
@@ -337,10 +346,12 @@ SALESPERSON CODE ERRORS: 0
 **Steps to Fix Salesperson Errors**:
 
 1. Note the unrecognized name from error message
-2. Click **Sales Tools** → **⚙️ Settings**
+2. Click **Sales Log Pro 2.0** → **⚙️ Settings**
 3. Either add new person or add alias to existing
-4. Click **Sales Tools** → **Recalculate MTD & Check Monthly Errors/Formats**
+4. Click **Sales Log Pro 2.0** → **Recalculate MTD & Check Monthly Errors/Formats**
 5. Verify light red highlights cleared
+
+Note: Changes to SALESPEOPLE sheet sync automatically via [`onEditSalespeopleSheet()`](../../src/sync_service.js:34).
 
 [Screenshot: Error highlighting examples]
 
@@ -367,9 +378,14 @@ SALESPERSON CODE ERRORS: 0
 
 **Manual Refresh** (if needed):
 
-1. Click **Sales Tools** → **🔄 Refresh Analytics**
+1. Click **Sales Log Pro 2.0** → **🔄 Refresh Analytics**
 2. Confirm the refresh
-3. Review updated summary dialog
+3. Review updated summary dialog showing:
+   - Total delivered count
+   - New/used breakdown
+   - Top performer and their count
+
+Note: Analytics are automatically calculated during [`processDaily()`](../../src/core_saleslogPro.js:1081) and preserved during [`rolloverMonth()`](../../src/core_saleslogPro.js:1494).
 
 ---
 
@@ -377,7 +393,7 @@ SALESPERSON CODE ERRORS: 0
 
 ### Accessing Settings
 
-Click **Sales Tools** → **⚙️ Settings** to open the sidebar.
+Click **Sales Log Pro 2.0** → **⚙️ Settings** to open the sidebar (via [`openConfigurationSidebar()`](../../src/core_saleslogPro.js:1627)).
 
 [Screenshot: Settings sidebar main view]
 
@@ -604,8 +620,8 @@ During month rollover, analytics are:
 
 #### Step 1: Initiate Rollover
 
-1. Click **Sales Tools** → **Start New Month (Rollover)**
-2. Review confirmation dialog:
+1. Click **Sales Log Pro 2.0** → **Start New Month (Rollover)**
+2. Review confirmation dialog (via [`rolloverMonth()`](../../src/core_saleslogPro.js:1494)):
 
    ```
    This will:
@@ -622,17 +638,19 @@ During month rollover, analytics are:
 
 [Screenshot: Rollover confirmation dialog]
 
+[Screenshot: Rollover confirmation dialog]
+
 #### Step 2: System Processing
 
 The system automatically:
 
-1. **Recalculates Final Analytics** (for accuracy)
-2. **Creates Archive Sheet** (with configured format)
+1. **Recalculates Final Analytics** (via [`calculateMonthlyAnalytics()`](../../src/sales_analytics.js:41) for accuracy)
+2. **Creates Archive Sheet** (with configured format: M/YY, MM/YY, or MMM/YY)
 3. **Copies Leaderboard** (preserves all formatting)
-4. **Includes Analytics** (columns S-X in archive)
+4. **Includes Analytics** (columns S-X preserved in archive)
 5. **Clears MONTHLY** (resets for new month)
-6. **Clears MTD** (Column Q on TODAY)
-7. **Recalculates Averages** (3-month rolling average)
+6. **Clears MTD** (Column Q on TODAY set to 0)
+7. **Recalculates Averages** (3-month rolling average from archive sheets)
 
 [Screenshot: Month rollover progress]
 
@@ -741,9 +759,10 @@ Result:
 
 **Important Notes**:
 
-- Only transfers during [`processDaily()`](../../src/core_saleslogPro.js:511)
-- Manual color changes on MONTHLY don't sync back
-- Colors cleared with TODAY sheet after processing
+- Only transfers during [`processDaily()`](../../src/core_saleslogPro.js:1081)
+- Manual color changes on MONTHLY don't sync back to TODAY
+- Colors cleared from TODAY sheet after processing (columns B-N)
+- Font colors are preserved in MONTHLY permanently
 
 **Example Uses**:
 
@@ -834,8 +853,9 @@ Example:
 **Maintenance**:
 
 - Rules reapplied after each processing
-- Managed by [`reapplyCF()`](../../src/core_saleslogPro.js:665) function
+- Managed by [`reapplyCF()`](../../src/core_saleslogPro.js:1290) function
 - User cannot accidentally delete rules
+- Pace thresholds configurable via Settings
 
 ---
 
@@ -1070,14 +1090,15 @@ Covers:
 
 ### Menu Commands
 
-| Command               | Location    | Purpose                  |
-| --------------------- | ----------- | ------------------------ |
-| 🚀 Run Setup Wizard   | Sales Tools | Create required sheets   |
-| Log Yesterday's Sales | Sales Tools | Process daily entries    |
-| Recalculate MTD       | Sales Tools | Rebuild MTD from MONTHLY |
-| 🔄 Refresh Analytics  | Sales Tools | Recalculate all metrics  |
-| Start New Month       | Sales Tools | Month-end rollover       |
-| ⚙️ Settings           | Sales Tools | Configuration UI         |
+| Command                                  | Location           | Purpose                  |
+| ---------------------------------------- | ------------------ | ------------------------ |
+| 🚀 Run Setup Wizard                      | Sales Log Pro 2.0  | Create required sheets   |
+| Log Yesterday's Sales                    | Sales Log Pro 2.0  | Process daily entries    |
+| Recalculate MTD & Check Monthly Errors   | Sales Log Pro 2.0  | Rebuild MTD from MONTHLY |
+| 🔄 Refresh Analytics                     | Sales Log Pro 2.0  | Recalculate all metrics  |
+| 🔧 Check for Incomplete Operations       | Sales Log Pro 2.0  | Recovery check           |
+| Start New Month (Rollover)               | Sales Log Pro 2.0  | Month-end rollover       |
+| ⚙️ Settings                              | Sales Log Pro 2.0  | Configuration UI         |
 
 ### Keyboard Shortcuts
 

@@ -96,7 +96,7 @@ If wizard fails repeatedly:
 **Common Causes**:
 
 1. Apps Script not bound to spreadsheet
-2. [`onOpen()`](../../src/core_saleslogPro.js#L1023) function not executing
+2. [`onOpen()`](../../src/core_saleslogPro.js:1654-1707) function not executing
 3. Script errors preventing menu creation
 4. Browser cache issues
 
@@ -386,7 +386,7 @@ If colors already applied but not transferred:
 5. Run daily processing
 ```
 
-**Note**: Colors on MONTHLY cannot be synced back to TODAY. Direction is one-way only during [`processDaily()`](../../src/core_saleslogPro.js#L511).
+**Note**: Colors on MONTHLY cannot be synced back to TODAY. Direction is one-way only during [`processDaily()`](../../src/core_saleslogPro.js:1081-1285).
 
 ---
 
@@ -470,11 +470,11 @@ If wrong date already inserted:
 **Solution 2: Verify Column Count**
 
 ```
-MONTHLY sheet needs 26 columns (A-Z) for analytics
+MONTHLY sheet needs at least 24 columns (A-X) for analytics
 
 To check:
 1. Open MONTHLY sheet
-2. Scroll right to verify columns through Z exist
+2. Scroll right to verify columns through X exist (S-X contain analytics)
 3. If columns missing, insert at right edge
 4. Run analytics refresh
 ```
@@ -647,7 +647,7 @@ Note: Complex - only if analytics critical for that month
 ```
 In Apps Script Editor, verify files exist:
 ☐ config_sidebar.html
-☐ config_sidebar_css.html
+☐ config_sidebar.css.html
 ☐ sidebar_js.html
 
 If missing:
@@ -1166,7 +1166,7 @@ Lock timeout per attempt: 30 seconds
 Maximum total time: ~183 seconds
 ```
 
-**What's Protected by Locks**:
+**What's Protected by Locks** (via [`acquireScriptLockWithRetry()`](../../src/utilities_locks.js:197-308)):
 
 - Configuration updates via Settings
 - Daily processing operations
@@ -1351,7 +1351,7 @@ Cleanup Process:
 5. Operation continues normally
 ```
 
-**Typical Sequence**:
+**Typical Sequence** (handled by [`saveSyncMetadata()`](../../src/config_service.js:915-972)):
 
 ```
 1. Normal operation: Size grows gradually
@@ -1394,7 +1394,7 @@ Cleanup Process:
 
 ### Technical Details
 
-**Size Thresholds**:
+**Size Thresholds** (enforced by [`saveSyncMetadata()`](../../src/config_service.js:915-972)):
 
 ```
 Warning Threshold: 6KB (75% of limit)
@@ -1403,7 +1403,7 @@ Hard Limit: 9KB (with safety margin)
 Typical Size: 2-5KB for normal usage
 ```
 
-**Retention Policy**:
+**Retention Policy** (enforced by [`cleanupOldMetadata()`](../../src/config_service.js:854-906)):
 
 ```
 Retention Period: 30 days

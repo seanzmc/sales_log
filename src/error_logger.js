@@ -133,10 +133,11 @@ function logWarning(context, message, additionalData) {
 /**
  * Logs informational message with consistent formatting
  * Use for non-error tracking (e.g., successful operations, milestones)
- * 
+ *
  * @param {string} context - Context information
  * @param {string} message - Info message
  * @param {Object} additionalData - Optional additional data
+ * @returns {void}
  */
 function logInfo(context, message, additionalData) {
   const timestamp = new Date().toISOString();

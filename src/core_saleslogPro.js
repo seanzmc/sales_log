@@ -1,11 +1,18 @@
 /**
- * sales_log_v7.9.8.js (Find last row in A:N, Font Color Handling, etc.)
- * Performance-optimized Google Apps Script for sales logging (v7).
- * Handles flexible salesperson name/code input via an alias system.
- * Copies active rows to MONTHLY, generates sequence in Col A, counts/processes based on single-letter FI rule.
- * Highlights non-delivered deals in red on the MONTHLY sheet, preserving trade column backgrounds, and clears this red if FI is fixed.
- * Applies specified conditional formatting rules to TODAY sheet for duplicate and deposit checks.
- * Resets font color on TODAY clear range and carries over font colors to MONTHLY.
+ * core_saleslogPro.js - Core Sales Log Pro Module
+ * Performance-optimized Google Apps Script for sales logging and analytics.
+ *
+ * Features:
+ * - Flexible salesperson name/code input via configurable alias system
+ * - Daily sales processing with checkpoint system for reliability
+ * - Automatic MONTHLY sheet updates with formatting preservation
+ * - Non-delivered deal highlighting with trade column preservation
+ * - Duplicate stock number and deposit detection via conditional formatting
+ * - Font color preservation when copying from TODAY to MONTHLY
+ * - MTD (Month-to-Date) calculations and leaderboard management
+ * - Month rollover with archive creation and 3-month rolling averages
+ * - Timeout protection (5-minute threshold) for long operations
+ * - Auto-recovery system for incomplete operations
  */
 
 // Import error logging utility
@@ -147,6 +154,7 @@ function getPaceThresholds() {
 /**
  * Invalidates the visual configuration cache
  * Should be called after configuration updates
+ * @returns {void}
  */
 function invalidateVisualConfigCache() {
   colorConfig = null;
@@ -373,10 +381,25 @@ function getDynamicLeaderboardRanges() {
 }
 
 // Basic utilities
+/**
+ * Rounds a number to the nearest 0.5 (half unit)
+ * Used for sales count calculations when deals are split between salespeople
+ * @param {number} v - Value to round
+ * @returns {number} Value rounded to nearest 0.5
+ * @example roundHalf(3.7) returns 3.5, roundHalf(3.8) returns 4.0
+ */
 function roundHalf(v) {
   return Math.round((Number(v) || 0) * 2) / 2;
 }
 
+/**
+ * Formats date for display headers, accounting for weekend logging rules
+ * By default logs yesterday's date, but applies special rules:
+ * - Monday logs Saturday (if mondayLogsSaturday config is true)
+ * - Sunday always logs Friday
+ * @param {number} offsetDays - Number of days to go back (default: 1)
+ * @returns {string} Formatted date string as "M/D" (e.g., "5/15")
+ */
 function formatDateOffset(offsetDays = 1) {
   const d = new Date();
   const dayOfWeek = d.getDay();
@@ -396,6 +419,12 @@ function formatDateOffset(offsetDays = 1) {
 }
 
 // cfOps - Conditional Formatting Operations
+/**
+ * Filters out old script-managed custom formula rules for replacement
+ * Keeps non-custom-formula rules (like built-in date, text, or number conditions)
+ * @param {GoogleAppsScript.Spreadsheet.ConditionalFormatRule[]} rules - Array of existing rules
+ * @returns {GoogleAppsScript.Spreadsheet.ConditionalFormatRule[]} Filtered rules
+ */
 function filterTrafficLightRules(rules) {
   // This function is intended to filter out old script-managed custom formula rules
   // so they can be replaced. It should NOT filter out non-custom-formula rules.
@@ -406,11 +435,25 @@ function filterTrafficLightRules(rules) {
   });
 }
 
+/**
+ * Applies conditional formatting rules to a sheet
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - Target sheet
+ * @param {GoogleAppsScript.Spreadsheet.ConditionalFormatRule[]} rules - Rules to apply
+ * @returns {void}
+ */
 function setCFRulesSheet(sheet, rules) {
   sheet.setConditionalFormatRules(rules);
 }
 
 // lockOps
+/**
+ * Executes a function with script lock protection using exponential backoff retry
+ * Prevents concurrent executions and ensures operation atomicity
+ * Automatically releases lock after function completes or throws error
+ * @param {Function} fn - Function to execute with lock protection
+ * @returns {*} Return value from the executed function
+ * @throws {Error} If lock cannot be acquired after maximum retries
+ */
 function withScriptLock(fn) {
   // Acquire lock with exponential backoff retry logic
   const lockResult = acquireScriptLockWithRetry();

@@ -209,7 +209,7 @@ Customers are notified of all releases via their registered support email.
 
 Sales Log Pro is proprietary software. All rights reserved.
 
-- **Copyright**: © 2024 Sales Log Pro Development Team
+- **Copyright**: © 2025 This is Sean LLC
 - **License**: Commercial use only, pursuant to individual license agreements
 - **Restrictions**: No unauthorized copying, modification, or distribution
 

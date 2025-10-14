@@ -40,15 +40,25 @@ Get up and running with Sales Log Pro in **10 minutes**.
 
 **Files to add:**
 
-- `core_saleslogPro.js` → Code.gs
-- `config_service.js` → config_service.gs
-- `sales_analytics.js` → sales_analytics.gs
-- `setup_wizard.js` → setup_wizard.gs
+JavaScript files (rename .js to .gs):
+- `core_saleslogPro.js` → Code.gs (1,707 lines)
+- `config_service.js` → config_service.gs (1,441 lines)
+- `sync_service.js` → sync_service.gs (1,834 lines)
+- `sales_analytics.js` → sales_analytics.gs (707 lines)
+- `setup_wizard.js` → setup_wizard.gs (821 lines)
+- `error_logger.js` → error_logger.gs (161 lines)
+- `utilities_locks.js` → utilities_locks.gs (386 lines)
+- `validation_rules.js` → validation_rules.gs (220 lines)
+
+HTML files (keep .html extension):
 - `config_sidebar.html` → config_sidebar.html
 - `config_sidebar.css.html` → config_sidebar_css.html
 - `sidebar_js.html` → sidebar_js.html
 
-  _Time: 5 minutes_
+Configuration file:
+- `appsscript.json` → appsscript.json
+
+  _Time: 8-10 minutes (12 files total)_
 
 ---
 
@@ -193,11 +203,11 @@ Get up and running with Sales Log Pro in **10 minutes**.
 
 ## Estimated Total Setup Time
 
-- Installation: **10 minutes**
+- Installation: **12-15 minutes** (copying 12 source files)
 - First configuration: **5 minutes**
 - First use: **5 minutes**
 
-**Total: ~20 minutes** from start to processing your first sales data.
+**Total: ~25 minutes** from start to processing your first sales data.
 
 ---
 

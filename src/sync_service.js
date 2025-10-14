@@ -28,8 +28,10 @@ const COL_DISPLAYCODE = 2; // Column C
 /**
  * Main entry point for sheet edit events
  * Called by onEdit trigger when SALESPEOPLE sheet is edited
+ * Validates edits, syncs to Properties Service, and handles conflicts
  *
- * @param {Object} e - onEdit event object
+ * @param {Object} e - onEdit event object from Google Sheets trigger
+ * @returns {void}
  */
 function onEditSalespeopleSheet(e) {
   let backupKey = null;
@@ -622,9 +624,10 @@ function syncRowToProperties(row, rowData, oldValue) {
 
 /**
  * Handles row deletion by removing salesperson from configuration
- * 
- * @param {number} row - Row number being deleted
- * @returns {Object} {success: boolean, error: string}
+ * Cleans up sync metadata and invalidates caches
+ *
+ * @param {number} row - Row number being deleted (1-indexed)
+ * @returns {Object} Result object {success: boolean, operation: string, error: string}
  */
 function handleRowDeletion(row) {
   try {
@@ -732,6 +735,9 @@ function checkAliasConflictForSync(aliasesStr, excludeFullName) {
 /**
  * Coordinates cache invalidation across all layers
  * Ensures all caches are cleared after sheet edits
+ * Critical operation - throws error if invalidation fails
+ * @returns {void}
+ * @throws {Error} If cache invalidation fails (prevents stale data)
  */
 function invalidateAllCaches() {
   try {
@@ -809,8 +815,9 @@ function getSyncMetadata(fullName) {
 
 /**
  * Gets all sync metadata from Properties Service
- * 
- * @returns {Object} Sync metadata structure
+ * Returns empty object if no metadata exists
+ *
+ * @returns {Object} Sync metadata structure mapping fullName to metadata objects
  */
 function getSyncMetadataFromProperties() {
   try {
@@ -1141,7 +1148,9 @@ function dataEquals(data1, data2) {
 
 /**
  * Logs conflict resolution for monitoring
- * @param {Object} conflictInfo - Conflict details
+ * Increments conflict counter in sync metadata stats
+ * @param {Object} conflictInfo - Conflict details with timestamp, fullName, winner, etc.
+ * @returns {void}
  */
 function logConflict(conflictInfo) {
   try {
@@ -1815,8 +1824,10 @@ function needsSync(sheetData, propsData) {
 
 /**
  * Logs sync events for debugging and monitoring
- * 
- * @param {Object} event - Event data
+ * Currently logs to Apps Script console only
+ *
+ * @param {Object} event - Event data with timestamp, action, success, etc.
+ * @returns {void}
  */
 function logSyncEvent(event) {
   try {

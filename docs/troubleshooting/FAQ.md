@@ -1033,7 +1033,7 @@ One-time purchase:
 **What happens:**
 
 1. At 75% (6KB): Warning logged, no action taken
-2. At 100% (8KB): Automatic cleanup removes entries older than 30 days
+2. At 100% (8KB): Automatic cleanup removes entries older than 30 days via [`cleanupOldMetadata()`](../../src/config_service.js:854-906)
 3. After cleanup: Size reduced (typically to 4-5KB), operations continue normally
 
 **What it means:**

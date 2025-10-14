@@ -220,8 +220,9 @@ function getMonthlyAnalyticsSummary() {
 }
 
 /**
- * Invalidates analytics cache.
- * Should be called after processDaily, recalcMtdFromMonthly, or manual data edits.
+ * Invalidates analytics cache
+ * Should be called after processDaily, recalcMtdFromMonthly, or manual data edits
+ * @returns {void}
  */
 function invalidateAnalyticsCache() {
   try {
@@ -306,12 +307,14 @@ function processMonthlyDataForAnalytics(monthlyData, aliasMap) {
 }
 
 /**
- * Processes a single new car sale.
- * Handles split sales by dividing credit (0.5 each for "John/Jane").
+ * Processes a single new car sale
+ * Handles split sales by dividing credit (0.5 each for "John/Jane")
+ * Updates metrics.totalNew and metrics.salespersonAccumulator
  *
- * @param {string} salespersonInput - Raw salesperson input from sheet
- * @param {Object} metrics - Metrics accumulator object
+ * @param {string} salespersonInput - Raw salesperson input from sheet (may contain "/" for splits)
+ * @param {Object} metrics - Metrics accumulator object to update
  * @param {Object} aliasMap - Alias to full name mapping
+ * @returns {void}
  */
 function processNewSale(salespersonInput, metrics, aliasMap) {
   const parts = salespersonInput.split("/").map(s => s.trim());
@@ -342,12 +345,14 @@ function processNewSale(salespersonInput, metrics, aliasMap) {
 }
 
 /**
- * Processes a single used car sale.
- * Handles split sales by dividing credit (0.5 each for "John/Jane").
+ * Processes a single used car sale
+ * Handles split sales by dividing credit (0.5 each for "John/Jane")
+ * Updates metrics.totalUsed and metrics.salespersonAccumulator
  *
- * @param {string} salespersonInput - Raw salesperson input from sheet
- * @param {Object} metrics - Metrics accumulator object
+ * @param {string} salespersonInput - Raw salesperson input from sheet (may contain "/" for splits)
+ * @param {Object} metrics - Metrics accumulator object to update
  * @param {Object} aliasMap - Alias to full name mapping
+ * @returns {void}
  */
 function processUsedSale(salespersonInput, metrics, aliasMap) {
   const parts = salespersonInput.split("/").map(s => s.trim());
@@ -493,9 +498,11 @@ function buildSalespersonSection(analyticsData) {
 }
 
 /**
- * Applies formatting to summary section (rows 1-7).
+ * Applies formatting to summary section (rows 1-7)
+ * Sets fonts, colors, alignments, and merges header cells
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - MONTHLY sheet
+ * @returns {void}
  */
 function formatSummarySection(sheet) {
   try {
@@ -538,10 +545,12 @@ function formatSummarySection(sheet) {
 }
 
 /**
- * Applies formatting to salesperson data section.
+ * Applies formatting to salesperson data section
+ * Sets fonts, number formats for counts and percentages
  *
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet - MONTHLY sheet
- * @param {number} rowCount - Number of salesperson rows
+ * @param {number} rowCount - Number of salesperson rows to format
+ * @returns {void}
  */
 function formatSalespersonSection(sheet, rowCount) {
   try {
@@ -662,8 +671,10 @@ function createEmptyAnalytics() {
 }
 
 /**
- * Manual refresh function callable from menu.
- * Clears cache and recalculates analytics.
+ * Manual refresh function callable from menu
+ * Prompts user for confirmation, then clears cache and recalculates analytics
+ * Shows summary dialog with results upon completion
+ * @returns {void}
  */
 function refreshAnalyticsManually() {
   try {

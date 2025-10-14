@@ -223,16 +223,25 @@ Current Process:
 ```
 1. In spreadsheet: Extensions → Apps Script
 2. Delete default Code.gs content
-3. Create file structure:
+3. Create file structure (12 files total):
 
-   Files to Create:
-   ☐ Code.gs (from core_saleslogPro.js)
+   JavaScript Files (.gs):
+   ☐ core_saleslogPro.gs (from core_saleslogPro.js)
    ☐ config_service.gs (from config_service.js)
+   ☐ sync_service.gs (from sync_service.js)
    ☐ sales_analytics.gs (from sales_analytics.js)
    ☐ setup_wizard.gs (from setup_wizard.js)
+   ☐ error_logger.gs (from error_logger.js)
+   ☐ utilities_locks.gs (from utilities_locks.js)
+   ☐ validation_rules.gs (from validation_rules.js)
+
+   HTML Files:
    ☐ config_sidebar.html
-   ☐ config_sidebar_css.html
+   ☐ config_sidebar.css.html
    ☐ sidebar_js.html
+
+   Manifest:
+   ☐ appsscript.json (update with OAuth scopes)
 
 4. Copy content from source files
 5. Save project (Ctrl+S / Cmd+S)
@@ -460,7 +469,8 @@ Update `appsscript.json` with required OAuth scopes:
   "oauthScopes": [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/script.container.ui",
-    "https://www.googleapis.com/auth/script.scriptapp"
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/userinfo.email"
   ]
 }
 ```
@@ -480,10 +490,15 @@ Update `appsscript.json` with required OAuth scopes:
 - Show dialogs and sidebars
 - Display alerts and prompts
 
-**`script.scriptapp`** (optional):
+**`script.scriptapp`**:
 
 - Access script properties
-- Create time-driven triggers (if needed)
+- Manage triggers and execution
+
+**`userinfo.email`**:
+
+- Get user email for audit logging
+- Track configuration changes by user
 
 ### Verification
 

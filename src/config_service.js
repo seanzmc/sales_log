@@ -120,9 +120,10 @@ function shouldMondayLogSaturday() {
 /**
  * Server-side include function for HTML templates
  * Allows separation of CSS and JavaScript into separate files
- * 
- * @param {string} filename - Name of the HTML file to include (without .html extension)
- * @returns {string} Content of the file
+ * Used in config_sidebar.html for modular file organization
+ *
+ * @param {string} filename - Name of the HTML file to include (e.g., "config_sidebar.css")
+ * @returns {string} HTML content of the included file
  */
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
@@ -973,10 +974,11 @@ function saveSyncMetadata(metadata) {
 
 /**
  * Updates sync metadata for a salesperson
- * Tracks modifications for conflict detection
+ * Tracks modifications for conflict detection and bidirectional sync
  *
  * @param {string} fullName - Salesperson full name
- * @param {string} source - 'sheet' or 'sidebar'
+ * @param {string} source - Modification source: 'sheet' or 'sidebar'
+ * @returns {void}
  */
 function updateSyncMetadata(fullName, source) {
   try {
@@ -1088,9 +1090,11 @@ function migrateToConfigUI() {
 
 /**
  * Syncs configuration salespeople to SALESPEOPLE sheet for backward compatibility
- * Properties Service remains the source of truth
- * 
- * @param {Object} config - Configuration object containing salespeople
+ * Properties Service remains the source of truth, sheet is secondary storage
+ * Invalidates salesperson maps cache after sync to force refresh
+ *
+ * @param {Object} config - Configuration object containing salespeople array
+ * @returns {void}
  */
 function syncToSalespeopleSheet(config) {
   try {

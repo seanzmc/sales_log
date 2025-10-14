@@ -149,10 +149,10 @@ Stock numbers in the DEPOSITS sheet are automatically highlighted if entered in 
 ### Step-by-Step Quick Start
 
 ```plaintext
-1. Run Setup Wizard (Sales Log → Setup Wizard)
+1. Run Setup Wizard (Sales Tools → 🚀 Run Setup Wizard)
 2. Import salespeople from sample_salespeople.csv
 3. Manually copy a few rows from sample_sales_data.csv to TODAY sheet
-4. Run Update Analytics (Sales Log → Update Analytics)
+4. Run Refresh Analytics (Sales Tools → 🔄 Refresh Analytics)
 5. View the generated analytics in MONTHLY sheet
 6. Add deposits from sample_deposits.csv to DEPOSITS sheet
 7. Try entering a stock number from DEPOSITS into TODAY - see the highlight!

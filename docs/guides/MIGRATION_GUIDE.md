@@ -145,28 +145,24 @@ Optional but recommended:
 ```
 In Apps Script Editor:
 
-1. Update Code.gs:
-   - Replace with latest core_saleslogPro.js
-   - Keep file name as Code.gs
+1. Update or add all JavaScript files (.gs):
+   ☐ core_saleslogPro.gs (from core_saleslogPro.js)
+   ☐ config_service.gs (from config_service.js)
+   ☐ sync_service.gs (from sync_service.js)
+   ☐ sales_analytics.gs (from sales_analytics.js)
+   ☐ setup_wizard.gs (from setup_wizard.js)
+   ☐ error_logger.gs (from error_logger.js)
+   ☐ utilities_locks.gs (from utilities_locks.js)
+   ☐ validation_rules.gs (from validation_rules.js)
 
-2. Update or add config_service.gs:
-   - Create new file if doesn't exist
-   - Paste config_service.js content
+2. Add or update HTML files:
+   ☐ config_sidebar.html
+   ☐ config_sidebar.css.html
+   ☐ sidebar_js.html
 
-3. Add sales_analytics.gs:
-   - Create new file
-   - Paste sales_analytics.js content
+3. Update appsscript.json with OAuth scopes
 
-4. Update setup_wizard.gs:
-   - Replace or create
-   - Paste setup_wizard.js content
-
-5. Add HTML files:
-   - Create config_sidebar.html
-   - Create config_sidebar_css.html
-   - Create sidebar_js.html
-
-6. Save all files (Ctrl+S / Cmd+S)
+4. Save all files (Ctrl+S / Cmd+S)
 ```
 
 **Step 2: Update appsscript.json**
@@ -180,7 +176,8 @@ In Apps Script Editor:
   "oauthScopes": [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/script.container.ui",
-    "https://www.googleapis.com/auth/script.scriptapp"
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/userinfo.email"
   ]
 }
 ```
@@ -188,13 +185,17 @@ In Apps Script Editor:
 **Step 3: Verify File Structure**
 
 ```
-Apps Script Project Files:
-☐ Code.gs (core_saleslogPro.js)
+Apps Script Project Files (12 total):
+☐ core_saleslogPro.gs
 ☐ config_service.gs
+☐ sync_service.gs
 ☐ sales_analytics.gs
 ☐ setup_wizard.gs
+☐ error_logger.gs
+☐ utilities_locks.gs
+☐ validation_rules.gs
 ☐ config_sidebar.html
-☐ config_sidebar_css.html
+☐ config_sidebar.css.html
 ☐ sidebar_js.html
 ☐ appsscript.json (updated)
 ```
@@ -207,19 +208,21 @@ Apps Script Project Files:
 1. Close and reopen spreadsheet
 2. Wait for "Sales Tools" menu to appear
 3. Click: Sales Tools → ⚙️ Settings
-4. Auto-migration runs automatically on first open
+4. Auto-migration runs automatically on first open via migrateToConfigUI()
 5. Toast notification: "Configuration system upgraded!"
 ```
 
-**What Auto-Migration Does**:
+**What Auto-Migration Does** (via [`migrateToConfigUI()`](../../src/config_service.js:1010-1087)):
 
 ```
+✓ Reads existing SALESPEOPLE sheet data
 ✓ Creates Properties Service configuration
-✓ Migrates SALESPEOPLE sheet to configuration
+✓ Migrates salesperson data to Properties Service
 ✓ Sets default visual settings
 ✓ Sets default date settings
 ✓ Preserves all existing data
 ✓ No data loss or modification
+✓ Shows confirmation toast to user
 ```
 
 **Step 2: Verify Migration**
