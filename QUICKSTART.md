@@ -58,6 +58,8 @@ HTML files (keep .html extension):
 Configuration file:
 - `appsscript.json` → appsscript.json
 
+> **ℹ️ Note:** Do **NOT** copy `config.example` to Apps Script. This file is reference documentation only. All configuration is done through the Settings UI (Sales Log → Settings) as described in the First Configuration section below.
+
   _Time: 8-10 minutes (12 files total)_
 
 ---
@@ -88,6 +90,14 @@ Configuration file:
 ---
 
 ## First Configuration
+
+> **✅ Important: Configuration via Settings UI**
+>
+> Sales Log Pro uses a **Settings UI** for all configuration - you don't need to edit any configuration files! The `config.example` file in the repository is **reference documentation only** and should **NOT** be copied to Apps Script.
+>
+> All settings (salesperson roster, visual preferences, date handling, etc.) are managed through the intuitive Settings sidebar: **Sales Log → Settings**
+>
+> This is the **correct and recommended approach** - it's designed to be user-friendly and doesn't require any coding or file editing.
 
 ### Add Your Sales Team
 

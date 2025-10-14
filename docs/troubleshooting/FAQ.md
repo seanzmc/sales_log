@@ -186,6 +186,47 @@ SHEETS CREATED:
 
 ---
 
+### Q: Do I need to copy or configure config.example?
+
+**A:** **No!** You should not copy or edit the [`config.example`](../../config/config.example) file. This is a common point of confusion for new users.
+
+**What config.example is**:
+
+- Reference documentation only
+- Shows what settings exist and their format
+- Provided for developers who want to understand the configuration structure
+- **NOT** meant for end users to modify
+
+**The correct way to configure Sales Log Pro**:
+
+✅ **Use the Settings Sidebar**:
+
+```
+1. Sales Tools → ⚙️ Settings
+2. Make changes through the user-friendly interface
+3. Click Save Changes
+4. All configuration handled automatically
+```
+
+**Why this is the right approach**:
+
+- No code editing required
+- Validation prevents errors
+- Changes sync automatically
+- User-friendly interface
+- No risk of breaking the system
+
+**Technical note**: The config.example file documents the internal configuration format used by the Properties Service. The Settings sidebar reads from and writes to this same configuration - you're just using a safe, validated interface instead of manual editing.
+
+**You're doing it right!** If you've been using the Settings sidebar and ignoring config.example, that's exactly the correct approach. The file is only there for reference and technical documentation.
+
+**Related**:
+
+- See [Can I change colors and formatting without editing code?](#q-can-i-change-colors-and-formatting-without-editing-code) above
+- Settings UI guide: [`docs/guides/USER_GUIDE.md`](../guides/USER_GUIDE.md)
+
+---
+
 ### Q: What happens to my settings if I copy the spreadsheet?
 
 **A:** Settings behavior when copying:

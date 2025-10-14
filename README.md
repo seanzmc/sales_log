@@ -82,6 +82,14 @@ Get up and running in under 10 minutes with our streamlined setup process.
 
 📖 **[Complete Setup Guide →](QUICKSTART.md)** — Full 10-minute installation walkthrough
 
+> **⚠️ Important: Configuration Method**
+>
+> **Sales Log Pro uses a Settings UI-based configuration system.** The `config/config.example` file is **reference documentation only** and should **NOT** be copied or edited.
+>
+> ✅ **All configuration is done through the Settings sidebar:** Sales Log → ⚙️ Settings
+>
+> The Settings UI is the **recommended and supported** configuration method. You never need to edit configuration files manually.
+
 ---
 
 ## 📚 Documentation
@@ -134,8 +142,8 @@ sales-log-pro/
 │   ├── guides/                  # User and deployment guides
 │   ├── api/                     # API reference documentation
 │   └── troubleshooting/         # Help and FAQ
-├── config/                       # Configuration examples
-│   └── config.example           # Sample configuration
+├── config/                       # Configuration reference
+│   └── config.example           # Reference documentation (do not copy or edit)
 ├── examples/                     # Sample data and workflows
 │   ├── sample_sales_data.csv    # Example sales data
 │   ├── sample_salespeople.csv   # Example team roster
