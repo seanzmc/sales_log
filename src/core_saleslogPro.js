@@ -1674,6 +1674,8 @@ function onOpen() {
         .addSeparator()
         .addItem("Start New Month (Rollover)", "rolloverMonth")
         .addSeparator()
+        .addItem("📚 Create Instructional Sheets", "createAllInstructionalSheets")
+        .addSeparator()
         .addItem("⚙️ Settings", "openConfigurationSidebar")
         .addToUi();
   } catch (e) {
