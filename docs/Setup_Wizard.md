@@ -36,6 +36,7 @@ The wizard prompts for the following customizations (all optional):
 ### Color Selection
 
 **New Car Header Color** - Choose from 4 presets:
+
 1. Blue (#234070) - Default
 2. Red (#B71C1C)
 3. Dark Green (#1B5E20)
@@ -44,12 +45,14 @@ The wizard prompts for the following customizations (all optional):
 Text color is automatically calculated using [`getWcagCompliantTextColor()`](../src/config_service.js:680-697) to ensure WCAG AA accessibility compliance.
 
 **Fixed Colors** (not customizable):
+
 - Used Car Headers: #424242 (dark gray) with white text
 - Leaderboard Headers: #434343 (dark gray) with white text
 
 ### Font Selection
 
 Choose from 4 font options:
+
 1. Calibri - Default
 2. Arial
 3. Times New Roman
@@ -117,14 +120,17 @@ The Setup Wizard creates four essential sheets:
 Four automatic rules applied to TODAY sheet:
 
 1. **Duplicate New Car Stock** (Range: E2:E101)
+
    - Formula: `=COUNTIF($E$2:$E$101,$E2)>1`
    - Highlights entire new car row (A2:G101)
 
 2. **Duplicate Used Car Stock** (Range: L2:L101)
+
    - Formula: `=COUNTIF($L$2:$L$101,$L2)>1`
    - Highlights entire used car row (I2:N101)
 
 3. **New Stock in DEPOSITS** (Range: A2:G101)
+
    - Formula: `=COUNTIF(INDIRECT("DEPOSITS!G:G"),$E2)>0`
    - Checks if new car stock (column E) exists in DEPOSITS column G
 
@@ -133,6 +139,7 @@ Four automatic rules applied to TODAY sheet:
    - Checks if used car stock (column L) exists in DEPOSITS column G
 
 Colors use configuration settings via [`getVisualConfig()`](../src/core_saleslogPro.js:90-124), defaulting to:
+
 - Fill: #b4ff0c (bright yellow-green)
 - Text: #ff0000 (red)
 

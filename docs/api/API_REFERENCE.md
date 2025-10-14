@@ -127,13 +127,6 @@ function processDaily() {
 - [`shouldMondayLogSaturday()`](#shouldmondaylogsaturday): Monday date behavior
 - [`getVisualConfig()`](#getvisualconfig): Color configuration
 
-**Related Functions**:
-
-- [`tallyCounts()`](#tallycounts): Counts sales by salesperson
-- [`applyMonthlyRowFormatting()`](#applymonthlyrowformatting): Applies error highlighting
-- [`calculateMonthlyAnalytics()`](#calculatemonthlyanalytics): Computes metrics
-- [`reapplyCF()`](#reapplycf): Reapplies conditional formatting
-
 ---
 
 ### rolloverMonth()
@@ -217,12 +210,6 @@ function rolloverMonth() {
 
 - Archive format from date settings (M/YY, MM/YY, MMM/YY)
 - Rolling average calculation parameters
-
-**Related Functions**:
-
-- [`calculateMonthlyAnalytics()`](#calculemonthlyanalytics): Final metrics
-- [`writeAnalyticsToMonthly()`](#writeanalyticstomonthly): Preserves analytics
-- [`roundHalf()`](#roundhalf): Average rounding
 
 ---
 
@@ -313,12 +300,6 @@ function recalcMtdFromMonthly() {
 - To reapply formatting after corruption
 - To identify salesperson code errors
 
-**Related Functions**:
-
-- [`tallyCounts()`](#tallycounts): Sales counting
-- [`applyMonthlyRowFormatting()`](#applymonthlyrowformatting): Error detection
-- [`reapplyCF()`](#reapplycf): Conditional formatting
-
 ---
 
 ## Configuration API
@@ -368,11 +349,6 @@ console.log(config.salespeople.length); // 12
 console.log(config.visual.nonDeliveredColor); // "#FF0000"
 console.log(config.dates.skipSundays); // true
 ```
-
-**Related Functions**:
-
-- [`updateConfiguration()`](#updateconfiguration): Modify settings
-- [`mergeWithDefaults()`](#mergewithdefaults): Ensure completeness
 
 ---
 
@@ -447,11 +423,6 @@ const updated = updateConfiguration({
 - Invalidates caches
 - Syncs to SALESPEOPLE sheet
 - Increments version number
-
-**Related Functions**:
-
-- [`validateConfiguration()`](#validateconfiguration): Validation logic
-- [`syncToSalespeopleSheet()`](#synctosalespeoplesheet): Sync mechanism
 
 ---
 
@@ -550,11 +521,6 @@ try {
   console.error("Failed to add salesperson:", error.message);
 }
 ```
-
-**Related Functions**:
-
-- [`validateSalesperson()`](#validatesalesperson): Validation
-- [`checkAliasConflict()`](#checkaliasconflict): Duplicate detection
 
 ---
 
@@ -739,11 +705,6 @@ const rule = SpreadsheetApp.newConditionalFormatRule()
 
 **Cache**: 5-minute TTL in script cache
 
-**Related Functions**:
-
-- [`getColor()`](#getcolor): Get specific color
-- [`getPaceThresholds()`](#getpacethresholds): Get threshold values
-
 ---
 
 ## Analytics Functions
@@ -841,12 +802,6 @@ if (analytics) {
 - Unknown salespeople tracked in `dataQuality`
 - Selling days counted where Column A = 1
 
-**Related Functions**:
-
-- [`processMonthlyDataForAnalytics()`](#processmonthlydataforanalytics): Core processing
-- [`formatAnalyticsForDisplay()`](#formatanalyticsfordisplay): Formatting
-- [`validateAnalyticsData()`](#validateanalyticsdata): Validation
-
 ---
 
 ### writeAnalyticsToMonthly()
@@ -885,7 +840,7 @@ function writeAnalyticsToMonthly(
 
 **Summary Section Layout** (Rows 1-8):
 
-```
+```ruby
 Row 1: "MONTHLY ANALYTICS" (merged S1:X1)
 Row 2: Headers ["Metric", "Value", "Metric", "Value", "", ""]
 Row 3: ["Total Delivered", 45, "Selling Days", 15, "", ""]
@@ -898,7 +853,7 @@ Row 8: ["Salesperson", "New", "Used", "Total", "% of Team", "Rank"]
 
 **Salesperson Data Layout** (Rows 9+):
 
-```
+```ruby
 Row 9+: [displayCode, newSales, usedSales, totalSales, percentOfTeam, rank]
 ```
 
@@ -950,7 +905,7 @@ function refreshAnalyticsManually(): void
 
 **Summary Dialog Content**:
 
-```
+```bash
 Total Delivered: 45
 New: 28
 Used: 17
@@ -1018,7 +973,7 @@ function runSetupWizard(): void
 
 **Summary Dialog**:
 
-```
+```bash
 SHEETS CREATED:
 ✓ TODAY
 ✓ MONTHLY
@@ -1057,13 +1012,6 @@ function runSetupWizard() {
 - **MONTHLY**: Historical data + analytics, 24 columns (A-X)
 - **SALESPEOPLE**: Team roster, 3 columns (A-C), includes examples
 - **DEPOSITS**: Deposit tracking, 14 columns (A-N)
-
-**Related Functions**:
-
-- [`checkAndCreateTodaySheet()`](#checkandcreatetodaysheet)
-- [`checkAndCreateMonthlySheet()`](#checkandcreatemonthlysheet)
-- [`checkAndCreateSalespeopleSheet()`](#checkandcreatesalespeoplesheet)
-- [`checkAndCreateDepositsSheet()`](#checkandcreatedepositssheet)
 
 ---
 
@@ -1164,7 +1112,7 @@ Uses chunked reading (100 rows at a time) from bottom-up to efficiently find the
 ```javascript
 const sheets = getSheets();
 const lastRow = findLastRowInCols(sheets.monthly, 1, 14); // A:N
-Logger.log('Last data row: ' + lastRow);
+Logger.log("Last data row: " + lastRow);
 ```
 
 ---
@@ -1543,7 +1491,7 @@ function acquireScriptLockWithRetry(
 
 **Retry Schedule** (with defaults):
 
-```
+```cs
 Attempt 1: Immediate (0ms delay)
 Attempt 2: 100ms delay
 Attempt 3: 200ms delay
@@ -1814,13 +1762,13 @@ function validateSalesperson(data: Object): Array<string>
 
 ```javascript
 const errors = validateSalesperson({
-  fullName: 'John Smith',
-  aliases: 'JS, Johnny',
-  displayCode: 'JS'
+  fullName: "John Smith",
+  aliases: "JS, Johnny",
+  displayCode: "JS",
 });
 
 if (errors.length > 0) {
-  console.log('Validation failed:', errors.join('; '));
+  console.log("Validation failed:", errors.join("; "));
 }
 ```
 
@@ -1855,9 +1803,9 @@ function validateSheetRowData(rowData: Array): Object
 **Example**:
 
 ```javascript
-const result = validateSheetRowData(['John Smith', 'JS', 'JS']);
+const result = validateSheetRowData(["John Smith", "JS", "JS"]);
 if (!result.valid) {
-  result.errors.forEach(err => {
+  result.errors.forEach((err) => {
     console.log(`Column ${err.column} (${err.field}): ${err.message}`);
   });
 }
@@ -1953,9 +1901,9 @@ function syncRowToProperties(
 
 ```javascript
 // Called by onEditSalespeopleSheet
-const result = syncRowToProperties(2, ['Jane Doe', 'JD', 'JD'], undefined);
+const result = syncRowToProperties(2, ["Jane Doe", "JD", "JD"], undefined);
 if (result.success) {
-  Logger.log('Sync successful: ' + result.operation);
+  Logger.log("Sync successful: " + result.operation);
 }
 ```
 
@@ -1981,7 +1929,7 @@ function readSalespeopleFromSheet(): Array<Object>
 
 ```javascript
 const salespeople = readSalespeopleFromSheet();
-Logger.log('Found ' + salespeople.length + ' salespeople');
+Logger.log("Found " + salespeople.length + " salespeople");
 ```
 
 ---
@@ -2048,7 +1996,7 @@ function logError(
 try {
   // risky operation
 } catch (e) {
-  const result = logError('myFunction', e, { userId: 123 });
+  const result = logError("myFunction", e, { userId: 123 });
   alertError(result.message);
 }
 ```

@@ -26,16 +26,16 @@ This guide provides comprehensive instructions for deploying Sales Log Pro in a 
 
 **Typical Deployment**: 1-2 weeks from start to production
 
-```
+```yaml
 Week 1:
-- Days 1-2: Planning and preparation
-- Days 3-4: Installation and configuration
-- Day 5: Testing and validation
+  - Days 1-2: Planning and preparation
+  - Days 3-4: Installation and configuration
+  - Day 5: Testing and validation
 
 Week 2:
-- Days 1-2: User training
-- Day 3: Pilot deployment
-- Days 4-5: Production rollout and monitoring
+  - Days 1-2: User training
+  - Day 3: Pilot deployment
+  - Days 4-5: Production rollout and monitoring
 ```
 
 ### Deployment Prerequisites
@@ -64,7 +64,7 @@ Week 2:
 
 **☐ Define Scope**
 
-```
+```yaml
 - Number of users: _______
 - Number of locations: _______
 - Go-live date: _______
@@ -74,23 +74,23 @@ Week 2:
 
 **☐ Gather Information**
 
-```
+```yaml
 Sales Team:
-- Full names list
-- Common aliases/nicknames
-- Display codes (initials)
-- Active vs. inactive status
+  - Full names list
+  - Common aliases/nicknames
+  - Display codes (initials)
+  - Active vs. inactive status
 
 Current Process:
-- How sales currently tracked
-- Existing spreadsheet format
-- Data fields captured
-- Reporting requirements
+  - How sales currently tracked
+  - Existing spreadsheet format
+  - Data fields captured
+  - Reporting requirements
 ```
 
 **☐ Technical Assessment**
 
-```
+```yaml
 - Google Workspace or Gmail?
 - Admin approval required?
 - Current Apps Script policies?
@@ -100,7 +100,7 @@ Current Process:
 
 **☐ Stakeholder Alignment**
 
-```
+```yaml
 - Management approval: ☐
 - IT/Admin approval: ☐
 - User training scheduled: ☐
@@ -112,7 +112,7 @@ Current Process:
 
 **☐ Personnel**
 
-```
+```yaml
 - System administrator: _______
 - Primary trainer: _______
 - Support contact: _______
@@ -121,7 +121,7 @@ Current Process:
 
 **☐ Documentation**
 
-```
+```yaml
 - User guide distributed: ☐
 - Quick reference cards: ☐
 - Training materials: ☐
@@ -130,7 +130,7 @@ Current Process:
 
 **☐ Environment**
 
-```
+```yaml
 - Test spreadsheet created: ☐
 - Production spreadsheet ready: ☐
 - Backup location identified: ☐
@@ -204,7 +204,7 @@ Current Process:
 
 #### Step 1: Create Spreadsheet
 
-```
+```yaml
 1. Open Google Sheets (sheets.google.com)
 2. Create new blank spreadsheet
 3. Name it: "Sales Log Pro - [Location Name]"
@@ -220,7 +220,7 @@ Current Process:
 
 #### Step 2: Install Apps Script
 
-```
+```yaml
 1. In spreadsheet: Extensions → Apps Script
 2. Delete default Code.gs content
 3. Create file structure (12 files total):
@@ -261,7 +261,7 @@ See [OAuth Scopes Configuration](#oauth-scopes-configuration) section below.
 
 #### Step 4: Initial Authorization
 
-```
+```yaml
 1. In Apps Script editor: Run → Select "onOpen"
 2. Click "Review Permissions"
 3. Select your Google account
@@ -280,7 +280,7 @@ See [OAuth Scopes Configuration](#oauth-scopes-configuration) section below.
 
 #### Step 5: Run Setup Wizard
 
-```
+```yaml
 1. Close and reopen spreadsheet
 2. Wait 10-15 seconds for menu to appear
 3. Click "Sales Tools" → "🚀 Run Setup Wizard"
@@ -298,7 +298,7 @@ See [OAuth Scopes Configuration](#oauth-scopes-configuration) section below.
 
 #### Step 1: Configure Sales Team
 
-```
+```cs
 1. Sales Tools → ⚙️ Settings
 2. Go to 👥 Sales Team tab
 3. Remove example salespeople
