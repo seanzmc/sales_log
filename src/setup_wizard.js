@@ -688,7 +688,7 @@ function checkAndCreateSalespeopleSheet(ss, results) {
     // Set font to Calibri, 10pt for entire sheet
     sheet.getRange("A:C").setFontFamily("Calibri");
     sheet.getRange("A:C").setFontSize(10);
-    sheet.getRange("A:C").setWraps(true);
+    sheet.getRange("A:C").setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
 
     // Add example data to help users understand the format
     const exampleData = [
@@ -789,6 +789,10 @@ function checkAndCreateDepositsSheet(ss, results) {
   } catch (e) {
     const error = sheetName + ": " + e.message;
     results.errors.push(error);
+    logError('checkAndCreateDepositsSheet', e, { sheetName });
+  }
+}
+
 /**
  * Applies conditional formatting rules to the DEPOSITS sheet
  * Highlights rows where stock numbers match entries on the TODAY sheet
@@ -848,10 +852,6 @@ function applyDepositsConditionalFormatting(sheet) {
 
   } catch (e) {
     logError('applyDepositsConditionalFormatting', e);
-  }
-}
-
-    logError('checkAndCreateDepositsSheet', e, { sheetName });
   }
 }
 
