@@ -1663,18 +1663,16 @@ function onOpen() {
 
     // Only show setup wizard if any required sheets are missing
     if (!hasAllSheets) {
-      menu.addItem("🪄 Run Setup Wizard", "runSetupWizard")
+      menu.addItem("🚀 Run Setup Wizard", "runSetupWizard")
           .addSeparator();
     }
 
     menu.addItem("Log Yesterday's Sales", "processDaily")
         .addSeparator()
-        .addItem("Recalculate MTD & Check Monthly Errors/Formats", "recalcMtdFromMonthly")
+        .addItem("Recount MTD & Clear errors on MONTHLY", "recalcMtdFromMonthly")
         .addItem("🔄 Refresh Analytics", "refreshAnalyticsManually")
         .addSeparator()
         .addItem("Start New Month (Rollover)", "rolloverMonth")
-        .addSeparator()
-        .addItem("📚 Create Instructional Sheets", "createAllInstructionalSheets")
         .addSeparator()
         .addItem("⚙️ Settings", "openConfigurationSidebar")
         .addToUi();
