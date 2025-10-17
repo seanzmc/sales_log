@@ -237,6 +237,52 @@ function invalidateAnalyticsCache() {
     // Continue execution - cache invalidation failure is non-fatal
   }
 }
+/**
+ * Internal helper that performs analytics refresh without user prompts.
+ * Used by both recalcMtdFromMonthly() and refreshAnalyticsManually().
+ * 
+ * @param {Object} sheets - Sheet references from getSheets()
+ * @returns {Object} Result object with structure:
+ *   {
+ *     success: boolean,
+ *     data: Object|null,  // Analytics data if successful
+ *     error: string|null   // Error message if failed
+ *   }
+ */
+function refreshAnalyticsInternal(sheets) {
+  try {
+    // Invalidate cache
+    invalidateAnalyticsCache();
+    
+    // Calculate analytics
+    const analytics = calculateMonthlyAnalytics();
+    
+    if (!analytics) {
+      return {
+        success: false,
+        data: null,
+        error: "Analytics calculation returned no data"
+      };
+    }
+    
+    // Write to sheet
+    writeAnalyticsToMonthly(analytics, sheets.monthly);
+    
+    return {
+      success: true,
+      data: analytics,
+      error: null
+    };
+  } catch (e) {
+    Logger.log("refreshAnalyticsInternal error: " + e);
+    return {
+      success: false,
+      data: null,
+      error: e.message || String(e)
+    };
+  }
+}
+
 
 // ============================================================================
 // DATA PROCESSING FUNCTIONS
@@ -671,48 +717,58 @@ function createEmptyAnalytics() {
 }
 
 /**
- * Manual refresh function callable from menu
- * Prompts user for confirmation, then clears cache and recalculates analytics
- * Shows summary dialog with results upon completion
- * @returns {void}
+ * Manually refresh analytics from the menu.
+ * Shows confirmation dialog before execution and summary after completion.
  */
 function refreshAnalyticsManually() {
-  try {
-    const ui = SpreadsheetApp.getUi();
-    const response = ui.alert(
-      "Refresh Analytics",
-      "This will recalculate all monthly analytics from MONTHLY sheet data.\n\nContinue?",
-      ui.ButtonSet.YES_NO
-    );
-
-    if (response !== ui.Button.YES) {
-      toastInfo("Analytics refresh cancelled.", "Cancelled");
-      return;
+  withScriptLock(() => {
+    try {
+      const ui = SpreadsheetApp.getUi();
+      
+      // Confirmation dialog
+      const response = ui.alert(
+        "Refresh Monthly Analytics",
+        "This will recalculate all monthly analytics from MONTHLY sheet data.\n\nContinue?",
+        ui.ButtonSet.YES_NO
+      );
+      
+      if (response !== ui.Button.YES) {
+        return;
+      }
+      
+      // Get sheet references
+      const sheets = getSheets();
+      if (!sheets) {
+        alertError("Required sheets not found.");
+        return;
+      }
+      
+      // Execute analytics refresh
+      toastInfo("Refreshing analytics...", "Analytics", 3);
+      const result = refreshAnalyticsInternal(sheets);
+      
+      if (!result.success) {
+        alertError("Analytics refresh failed: " + (result.error || "Unknown error"));
+        return;
+      }
+      
+      // Show summary dialog
+      const analytics = result.data;
+      const topPerformer = analytics.salespersonMetrics[0] || { displayCode: "N/A", totalSales: 0 };
+      
+      ui.alert(
+        "Analytics Updated",
+        `Monthly analytics refreshed successfully!\n\n` +
+        `Total Delivered: ${analytics.totals.delivered || 0}\n` +
+        `New: ${analytics.totals.newDelivered || 0}\n` +
+        `Used: ${analytics.totals.usedDelivered || 0}\n\n` +
+        `Top Performer: ${topPerformer.displayCode} (${topPerformer.totalSales} units)`,
+        ui.ButtonSet.OK
+      );
+      
+    } catch (e) {
+      logError("refreshAnalyticsManually", e);
+      alertError("Error refreshing analytics: " + e.message);
     }
-
-    toastInfo("Refreshing analytics...", "Working");
-    // Standard sheet validation pattern - ensures all required sheets exist
-    const sheets = getSheets();
-    invalidateAnalyticsCache();
-    const analyticsData = calculateMonthlyAnalytics();
-
-    if (analyticsData) {
-      writeAnalyticsToMonthly(analyticsData, sheets.monthly);
-
-      // Show summary to user
-      const summary =
-        `Total Delivered: ${analyticsData.totals.delivered}\n` +
-        `New: ${analyticsData.totals.newDelivered}\n` +
-        `Used: ${analyticsData.totals.usedDelivered}\n\n` +
-        `Top Performer: ${analyticsData.salespersonMetrics[0]?.displayCode || 'N/A'} ` +
-        `(${analyticsData.salespersonMetrics[0]?.totalSales || 0} units)`;
-
-      ui.alert("Analytics Refreshed", summary, ui.ButtonSet.OK);
-    } else {
-      ui.alert("Analytics Error", "No analytics data was generated.", ui.ButtonSet.OK);
-    }
-  } catch (e) {
-    logError('refreshAnalyticsManually', e);
-    alertError("Failed to refresh analytics: " + e.message, "Analytics Error");
-  }
+  });
 }

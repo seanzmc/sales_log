@@ -1046,7 +1046,7 @@ function recoverAnalyticsForCheckpoint(checkpoint) {
     } else {
       updateCheckpoint('ANALYTICS_FAILED', { recoveryAttempts: (checkpoint.recoveryAttempts || 0) + 1 });
       alertError(
-        'Analytics recovery failed. You can try again using "Refresh Analytics" from the menu.',
+        'Analytics recovery failed. You can try "Recalculate MTD & Check Formats" from the menu to retry.',
         'Recovery Failed'
       );
       Logger.log('✗ Analytics recovery failed - no data generated');
@@ -1260,7 +1260,7 @@ function processDaily() {
       // Enhance summary message if analytics was skipped
       if (analyticsSkipped) {
         summaryMsg += "\n\n⚠️ Analytics calculation was skipped due to time constraints. " +
-                      "Use 'Sales Tools > Refresh Analytics' to update analytics when ready.";
+                      "Use 'Sales Tools > Recalculate MTD & Check Formats' and confirm analytics refresh when prompted.";
       }
 
       // NOW show the complete message to user
@@ -1473,7 +1473,80 @@ function recalcMtdFromMonthly() {
       reapplyCF();
       toastInfo("Reapplying conditional formatting...", "Working (6/6)");
 
-      toastInfo(`MTD recalculated. Found ${totalSalespersonErrors} salesperson code errors in 'MONTHLY'. Non-delivered deals also highlighted.`, "Recalc & Format Complete");
+      toastInfo(`MTD recalculated. Found ${totalSalespersonErrors} salesperson code errors in 'MONTHLY'. Non-delivered deals also highlighted.`, "Recalc & Format Complete", 5);
+      // === NEW: Analytics Prompt and Execution ===
+      // Get UI reference
+      const ui = SpreadsheetApp.getUi();
+      
+      // Prompt user to refresh analytics
+      const analyticsResponse = ui.alert(
+        "Update Monthly Analytics?",
+        "MTD recalculation complete!\n\n" +
+        "Would you like to refresh the monthly analytics now?\n\n" +
+        "This will update the comprehensive sales metrics in columns S-X " +
+        "of the MONTHLY sheet, including:\n" +
+        "• Total delivered units (new/used breakdown)\n" +
+        "• Per-salesperson sales counts\n" +
+        "• Team performance metrics\n\n" +
+        "This typically takes 5-10 seconds.",
+        ui.ButtonSet.YES_NO
+      );
+      
+      if (analyticsResponse === ui.Button.YES) {
+        try {
+          toastInfo("Refreshing analytics...", "Working", 5);
+          
+          // Call the internal analytics helper (imported from sales_analytics.js)
+          const analyticsResult = refreshAnalyticsInternal(sheets);
+          
+          if (analyticsResult.success) {
+            // Show summary dialog
+            const analytics = analyticsResult.data;
+            const topPerformer = analytics.salespersonMetrics[0] || { displayCode: "N/A", totalSales: 0 };
+            
+            ui.alert(
+              "Update Complete",
+              "MTD and Analytics have been updated successfully!\n\n" +
+              "MTD Recalculation:\n" +
+              `• Found ${totalSalespersonErrors} salesperson code errors in MONTHLY\n` +
+              "• Non-delivered deals highlighted\n" +
+              "• Leaderboard updated\n\n" +
+              "Monthly Analytics:\n" +
+              `• Total Delivered: ${analytics.totals.delivered || 0}\n` +
+              `• New: ${analytics.totals.newDelivered || 0}\n` +
+              `• Used: ${analytics.totals.usedDelivered || 0}\n` +
+              `• Top Performer: ${topPerformer.displayCode} (${topPerformer.totalSales} units)`,
+              ui.ButtonSet.OK
+            );
+            
+            toastInfo("MTD and Analytics update complete!", "Complete", 5);
+          } else {
+            // Analytics failed but MTD succeeded
+            alertError(
+              "Analytics Update Failed\n\n" +
+              "MTD recalculation completed successfully, but analytics " +
+              "update encountered an error:\n\n" +
+              (analyticsResult.error || "Unknown error") + "\n\n" +
+              "Your MTD and formatting updates have been saved.\n\n" +
+              "You can refresh analytics manually later via the menu."
+            );
+            toastInfo("MTD complete. Analytics update failed.", "Warning", 5);
+          }
+        } catch (analyticsError) {
+          // Log but don't fail the whole operation since MTD succeeded
+          Logger.log("Analytics refresh error after MTD: " + analyticsError);
+          alertError(
+            "Analytics update failed: " + analyticsError.message + "\n\n" +
+            "MTD recalculation was successful."
+          );
+          toastInfo("MTD complete. Analytics update failed.", "Warning", 5);
+        }
+      } else {
+        // User declined analytics refresh
+        toastInfo("MTD recalculation complete. Analytics not updated.", "Complete", 5);
+      }
+      // === END NEW CODE ===
+
     } catch (e) {
       logError('recalcMtdFromMonthly', e);
       alertError("Error during MTD recalculation: " + e.toString(), "Recalc Failed");
@@ -1669,8 +1742,7 @@ function onOpen() {
 
     menu.addItem("Log Yesterday's Sales", "processDaily")
         .addSeparator()
-        .addItem("Recount MTD & Clear errors on MONTHLY", "recalcMtdFromMonthly")
-        .addItem("🔄 Refresh Analytics", "refreshAnalyticsManually")
+        .addItem("Recalculate MTD & Check Formats", "recalcMtdFromMonthly")
         .addSeparator()
         .addItem("Start New Month (Rollover)", "rolloverMonth")
         .addSeparator()
