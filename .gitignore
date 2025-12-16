@@ -36,3 +36,6 @@ temp/
 
 # Prettier configuration
 .prettierrc
+
+.clasp.json
+.claspignore
